@@ -3,9 +3,7 @@ import emailjs from '@emailjs/browser'
 const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-const PRIVATE_KEY = import.meta.env.VITE_EMAILJS_PRIVATE_KEY
 
-emailjs.init({ publicKey: PUBLIC_KEY, privateKey: PRIVATE_KEY })
 
 export async function sendEmail(params: {
   to_email: string

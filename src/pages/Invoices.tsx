@@ -9,7 +9,7 @@ interface Props {
   settings: Settings
   onSend: (id: string) => Promise<boolean>
   onPaid: (id: string) => Promise<boolean>
-  onRevert: (id: string, status: InvoiceStatus) => Promise<boolean>
+  onRevert: (id: string, status: string) => Promise<boolean>
 }
 
 const STATUS_ALL = ['未請求', '作成済', '送信済', '入金待ち', '入金済'] as const
@@ -40,7 +40,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
     setProcessing(null)
   }
 
-  const handleRevert = async (id: string, status: InvoiceStatus) => {
+  const handleRevert = async (id: string, status: string) => {
     if (!confirm(`ステータスを「${status}」に戻しますか？`)) return
     setProcessing(id)
     await onRevert(id, status)
