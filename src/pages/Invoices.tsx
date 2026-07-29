@@ -10,6 +10,7 @@ interface Props {
   onSend: (id: string) => Promise<boolean>
   onPaid: (id: string) => Promise<boolean>
   onRevert: (id: string, status: string) => Promise<boolean>
+  onUpdateInvoice: (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total'>) => Promise<boolean>
 }
 
 const STATUS_ALL = ['未請求', '作成済', '送信済', '入金待ち', '入金済'] as const
