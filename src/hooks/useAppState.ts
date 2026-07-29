@@ -209,6 +209,18 @@ export function useAppState() {
     }
   }, [invoices, reports, addToast])
 
+  const updateInvoiceManual = useCallback(async (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total'>): Promise<boolean> => {
+    try {
+      await api.updateInvoice(id, updates)
+      setInvoices(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
+      addToast('success', '請求書を保存しました')
+      return true
+    } catch (err) {
+      addToast('error', `保存失敗: ${(err as Error).message}`)
+      return false
+    }
+  }, [addToast])
+
   const savePdf = useCallback(async (id: string, url: string) => {
     try {
       await api.updateReport(id, { voucher: url })
@@ -278,6 +290,7 @@ export function useAppState() {
     updateReport,
     deleteReport,
     savePdf,
+    updateInvoiceManual,
     reload: loadAll,
   }
 }

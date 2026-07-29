@@ -56,7 +56,7 @@ function AppInner() {
             <Route path="/daily" element={<DailyForm onSubmit={app.submitReport} pastReports={app.reports.map(r => ({ port: r.port, ship: r.ship }))} prices={app.settings.prices} />} />
             <Route path="/reports" element={<ReportsList reports={app.reports} onUpdateAmount={app.updateAmount} onSavePdf={app.savePdf} onUpdateReport={app.updateReport} onDeleteReport={app.deleteReport} prices={app.settings.prices} />} />
             <Route path="/sales" element={<Sales reports={app.reports} />} />
-            <Route path="/invoices" element={<Invoices invoices={app.invoices} reports={app.reports} settings={app.settings} onSend={app.sendInvoice} onPaid={app.markPaid} onRevert={app.revertInvoice} />} />
+            <Route path="/invoices" element={<Invoices invoices={app.invoices} reports={app.reports} settings={app.settings} onSend={app.sendInvoice} onPaid={app.markPaid} onRevert={app.revertInvoice} onUpdateInvoice={app.updateInvoiceManual} />} />
             <Route path="/payments" element={<Payments invoices={app.invoices} onPaid={app.markPaid} />} />
             <Route path="/annual" element={<Annual reports={app.reports} invoices={app.invoices} settings={app.settings} />} />
             <Route path="/settings" element={<SettingsPage settings={app.settings} onSave={app.saveSettings} />} />
