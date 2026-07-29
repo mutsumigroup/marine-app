@@ -1,5 +1,7 @@
 import emailjs from '@emailjs/browser'
 
+emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY)
+
 const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
@@ -56,7 +58,7 @@ export function buildDailyReportEmail(report: {
 ${report.voucher ? `Voucher：${report.voucher}` : ''}
 ${report.notes ? `備考：${report.notes}` : ''}
 
-■ 年間売上状況を確認する
+■ 売上・目標管理を確認する
 ${annualUrl}
 
 ---

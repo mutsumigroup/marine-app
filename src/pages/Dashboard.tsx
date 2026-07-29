@@ -40,7 +40,7 @@ export default function Dashboard({ reports, invoices, settings, reload }: Props
         <StatCard label="入金待ち" value={`¥${waitAmt.toLocaleString()}`} color="danger" />
       </StatGrid>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: 14 }}>
         <Card>
           <CardTitle>📊 月別売上（万円）</CardTitle>
           <BarChart data={monthData} />

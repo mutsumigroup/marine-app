@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Card, CardTitle, Field, Input, Select, Grid, Divider, Btn, PageHeader } from '../components/UI'
+import { Card, CardTitle, Field, Input, Select, Divider, Btn, PageHeader, useIsMobile } from '../components/UI'
 import { CATEGORIES } from '../types'
 import type { Report } from '../types'
 
@@ -9,21 +9,15 @@ interface Props {
   prices?: Record<string, { ship: number; crew: number }>
 }
 
-// オートコンプリート
-function AutoInput({ value, onChange, placeholder, suggestions }: {
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-  suggestions: string[]
-}) {
+function AutoInput({ value, onChange, placeholder, suggestions }: { value: string; onChange: (v: string) => void; placeholder?: string; suggestions: string[] }) {
   const [show, setShow] = useState(false)
   const [filtered, setFiltered] = useState<string[]>([])
   const wrapRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
 
   const update = useCallback((v: string) => {
-    const list = [...new Set(suggestions)].filter(s =>
-      v.length === 0 || s.toLowerCase().includes(v.toLowerCase())
-    ).slice(0, 8)
+    if (v.length === 0) { setFiltered([]); setShow(false); return }
+    const list = [...new Set(suggestions)].filter(s => s.toLowerCase().includes(v.toLowerCase())).slice(0, 8)
     setFiltered(list)
     setShow(list.length > 0)
   }, [suggestions])
@@ -31,47 +25,22 @@ function AutoInput({ value, onChange, placeholder, suggestions }: {
   useEffect(() => { update(value) }, [value, update])
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setShow(false)
-    }
+    const handler = (e: MouseEvent) => { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setShow(false) }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const inputStyle = {
-    padding: '6px 9px', border: '1px solid var(--border-dark)',
-    borderRadius: 'var(--radius)', background: 'var(--surface)',
-    color: 'var(--text)', fontSize: 13, width: '100%', outline: 'none',
-  }
-
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
-      <input
-        type="text"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        onFocus={() => update(value)}
-        onBlur={() => setTimeout(() => setShow(false), 150)}
-        placeholder={placeholder}
-        style={inputStyle}
-      />
+      <input type="text" value={value} onChange={e => onChange(e.target.value)} onFocus={() => update(value)} onBlur={() => setTimeout(() => setShow(false), 150)} placeholder={placeholder}
+        style={{ padding: isMobile ? '12px 14px' : '8px 10px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: isMobile ? 16 : 13, width: '100%', outline: 'none' }} />
       {show && filtered.length > 0 && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
-          background: 'var(--surface)', border: '1px solid var(--border-dark)',
-          borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,.12)',
-          maxHeight: 220, overflowY: 'auto', marginTop: 2,
-        }}>
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: 'var(--surface)', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,.12)', maxHeight: 220, overflowY: 'auto', marginTop: 2 }}>
           {filtered.map((s, i) => (
-            <div key={i}
-              onMouseDown={e => { e.preventDefault(); onChange(s); setShow(false) }}
-              style={{
-                padding: '8px 12px', fontSize: 12, cursor: 'pointer',
-                borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
-              }}
+            <div key={i} onMouseDown={e => { e.preventDefault(); onChange(s); setShow(false) }}
+              style={{ padding: isMobile ? '12px 14px' : '8px 12px', fontSize: isMobile ? 15 : 12, cursor: 'pointer', borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}
               onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-bg)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
-            >
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}>
               {s}
             </div>
           ))}
@@ -82,13 +51,9 @@ function AutoInput({ value, onChange, placeholder, suggestions }: {
 }
 
 const EMPTY = {
-  date: new Date().toISOString().slice(0, 10),
-  port: '', ship: '', crew: '', category: '', work: '',
-  amount: '', parkPlace: '', parkFee: '',
-  hwFrom1: '', hwTo1: '', hwFrom2: '', hwTo2: '', hwFee: '',
-  meal: '', otherExp: '', voucher: '',
-  billMonth: new Date().toISOString().slice(0, 7),
-  notes: '',
+  date: new Date().toISOString().slice(0, 10), port: '', ship: '', crew: '', category: '', work: '',
+  amount: '', parkPlace: '', parkFee: '', hwFrom1: '', hwTo1: '', hwFrom2: '', hwTo2: '', hwFee: '',
+  meal: '', otherExp: '', voucher: '', billMonth: new Date().toISOString().slice(0, 7), notes: '',
 }
 
 export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: Props) {
@@ -96,37 +61,16 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [pdfName, setPdfName] = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
-
   const [autoCalc, setAutoCalc] = useState(true)
+  const [section, setSection] = useState<'basic' | 'transport' | 'sales'>('basic')
+  const fileRef = useRef<HTMLInputElement>(null)
+  const isMobile = useIsMobile()
 
-  const calcAmount = (cat: string, crew: number) => {
-    const p = prices[cat] ?? { ship: 10000, crew: 1000 }
-    return p.ship + crew * (p.crew ?? 0)
-  }
-
+  const calcAmount = (cat: string, crew: number) => { const p = prices[cat] ?? { ship: 10000, crew: 1000 }; return p.ship + crew * (p.crew ?? 0) }
   const set = (key: string) => (v: string) => setF(prev => ({ ...prev, [key]: v }))
-
-  // 対応区分変更時に自動計算
-  const handleCategoryChange = (v: string) => {
-    setF(prev => ({
-      ...prev,
-      category: v,
-      amount: autoCalc ? String(calcAmount(v, parseInt(prev.crew) || 0)) : prev.amount
-    }))
-  }
-
-  // 船員人数変更時に自動計算
-  const handleCrewChange = (v: string) => {
-    setF(prev => ({
-      ...prev,
-      crew: v,
-      amount: autoCalc ? String(calcAmount(prev.category, parseInt(v) || 0)) : prev.amount
-    }))
-  }
-
+  const handleCategoryChange = (v: string) => setF(prev => ({ ...prev, category: v, amount: autoCalc ? String(calcAmount(v, parseInt(prev.crew) || 0)) : prev.amount }))
+  const handleCrewChange = (v: string) => setF(prev => ({ ...prev, crew: v, amount: autoCalc ? String(calcAmount(prev.category, parseInt(v) || 0)) : prev.amount }))
   const totalExp = (parseInt(f.parkFee) || 0) + (parseInt(f.hwFee) || 0) + (parseInt(f.meal) || 0) + (parseInt(f.otherExp) || 0)
-
   const portList = [...new Set(pastReports.map(r => r.port).filter(Boolean))].sort()
   const shipList = [...new Set(pastReports.map(r => r.ship).filter(Boolean))].sort()
 
@@ -135,167 +79,248 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
     if (!file) return
     if (file.type !== 'application/pdf') { alert('PDFファイルを選択してください'); return }
     const reader = new FileReader()
-    reader.onload = (ev) => {
-      const url = ev.target?.result as string
-      setF(prev => ({ ...prev, voucher: url }))
-      setPdfName(file.name)
-    }
+    reader.onload = (ev) => { setF(prev => ({ ...prev, voucher: ev.target?.result as string })); setPdfName(file.name) }
     reader.readAsDataURL(file)
   }
 
   const handleSubmit = async () => {
     setError('')
-    if (!f.date || !f.port || !f.ship || !f.category || !f.amount) {
-      setError('必須項目（稼働日・港名・船名・対応区分・売上金額）を入力してください')
-      return
-    }
+    if (!f.date || !f.port || !f.ship || !f.category || !f.amount) { setError('必須項目（稼働日・港名・船名・対応区分・売上金額）を入力してください'); return }
     setSubmitting(true)
-    const data: Omit<Report, 'id' | 'created_at' | 'updated_at'> = {
-      date: f.date, port: f.port, ship: f.ship,
-      crew: parseInt(f.crew) || 0, category: f.category, work: f.work,
-      amount: parseInt(f.amount) || 0,
-      park_place: f.parkPlace, park_fee: parseInt(f.parkFee) || 0,
-      hw_from1: f.hwFrom1, hw_to1: f.hwTo1, hw_from2: f.hwFrom2, hw_to2: f.hwTo2,
-      hw_fee: parseInt(f.hwFee) || 0, meal: parseInt(f.meal) || 0,
-      other_exp: parseInt(f.otherExp) || 0, expenses: totalExp,
-      voucher: f.voucher, bill_month: f.billMonth, notes: f.notes,
-      invoiced: false, paid: false,
-    }
-    const ok = await onSubmit(data)
-    if (ok) {
-      setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) })
-      setPdfName('')
-    }
+    const exp = totalExp
+    const ok = await onSubmit({ date: f.date, port: f.port, ship: f.ship, crew: parseInt(f.crew) || 0, category: f.category, work: f.work, amount: parseInt(f.amount) || 0, park_place: f.parkPlace, park_fee: parseInt(f.parkFee) || 0, hw_from1: f.hwFrom1, hw_to1: f.hwTo1, hw_from2: f.hwFrom2, hw_to2: f.hwTo2, hw_fee: parseInt(f.hwFee) || 0, meal: parseInt(f.meal) || 0, other_exp: parseInt(f.otherExp) || 0, expenses: exp, voucher: f.voucher, bill_month: f.billMonth, notes: f.notes, invoiced: false, paid: false })
+    if (ok) { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfName(''); setSection('basic') }
     setSubmitting(false)
   }
 
-  const clearForm = () => {
-    setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) })
-    setPdfName('')
-    if (fileRef.current) fileRef.current.value = ''
+  const inputSt = { padding: isMobile ? '12px 14px' : '8px 10px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: isMobile ? 16 : 13, width: '100%', outline: 'none' }
+
+  if (isMobile) {
+    // スマホ: ステップ式UI
+    const steps = [
+      { key: 'basic', label: '基本情報', icon: '🚢' },
+      { key: 'transport', label: '交通費', icon: '🚗' },
+      { key: 'sales', label: '売上', icon: '💰' },
+    ] as const
+
+    return (
+      <div style={{ padding: '16px', paddingBottom: 100 }}>
+        {/* ステップインジケーター */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 20, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
+          {steps.map((s, i) => (
+            <button key={s.key} onClick={() => setSection(s.key)}
+              style={{ flex: 1, padding: '12px 4px', border: 'none', borderRight: i < steps.length - 1 ? '1px solid var(--border)' : 'none', background: section === s.key ? 'var(--accent)' : 'var(--surface)', color: section === s.key ? '#fff' : 'var(--text-muted)', cursor: 'pointer', fontSize: 11, fontWeight: section === s.key ? 600 : 400, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <span style={{ fontSize: 18 }}>{s.icon}</span>
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        {error && <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', border: '1px solid var(--danger-border)', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13 }}>⚠ {error}</div>}
+
+        {/* 基本情報 */}
+        {section === 'basic' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Card>
+              <CardTitle>🚢 基本情報</CardTitle>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <Field label="稼働日 *">
+                  <input type="date" value={f.date} onChange={e => set('date')(e.target.value)} style={inputSt} />
+                </Field>
+                <Field label="港名 *">
+                  <AutoInput value={f.port} onChange={set('port')} placeholder="横浜港" suggestions={portList} />
+                </Field>
+                <Field label="船名 *">
+                  <AutoInput value={f.ship} onChange={set('ship')} placeholder="第一丸" suggestions={shipList} />
+                </Field>
+                <div style={{ display: 'grid', gridTemplateColumns: "1fr", gap: 12 }}>
+                  <Field label="船員人数">
+                    <input type="number" value={f.crew} onChange={e => handleCrewChange(e.target.value)} placeholder="5" style={inputSt} />
+                  </Field>
+                  <Field label="請求対象月">
+                    <input type="month" value={f.billMonth} onChange={e => set('billMonth')(e.target.value)} style={inputSt} />
+                  </Field>
+                </div>
+                <Field label="対応区分 *">
+                  <select value={f.category} onChange={e => handleCategoryChange(e.target.value)} style={{ ...inputSt, cursor: 'pointer' }}>
+                    <option value="">選択してください</option>
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="業務内容">
+                  <input value={f.work} onChange={e => set('work')(e.target.value)} placeholder="業務の概要" style={inputSt} />
+                </Field>
+                <Field label="Voucher / PDF領収書">
+                  <input ref={fileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={handlePdfSelect} />
+                  <button type="button" onClick={() => fileRef.current?.click()}
+                    style={{ padding: '12px 14px', borderRadius: 12, border: pdfName ? '1.5px solid var(--success)' : '2px dashed var(--border-dark)', background: pdfName ? 'var(--success-bg)' : 'var(--surface2)', cursor: 'pointer', fontSize: 14, color: pdfName ? 'var(--success)' : 'var(--text-muted)', width: '100%', textAlign: 'left' }}>
+                    {pdfName ? `✅ ${pdfName}` : '📎 PDFをアップロード'}
+                  </button>
+                  {!pdfName && <input value={f.voucher.startsWith('data:') ? '' : f.voucher} onChange={e => set('voucher')(e.target.value)} placeholder="またはVoucher番号" style={{ ...inputSt, marginTop: 8 }} />}
+                </Field>
+              </div>
+            </Card>
+            <button onClick={() => setSection('transport')} style={{ width: '100%', padding: '16px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+              次へ：交通費入力 →
+            </button>
+          </div>
+        )}
+
+        {/* 交通費 */}
+        {section === 'transport' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Card>
+              <CardTitle>🚗 交通費・立替</CardTitle>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <Field label="駐車場場所">
+                  <input value={f.parkPlace} onChange={e => set('parkPlace')(e.target.value)} placeholder="横浜港第3駐車場" style={inputSt} />
+                </Field>
+                <Field label="駐車場料金（円）">
+                  <input type="number" value={f.parkFee} onChange={e => set('parkFee')(e.target.value)} placeholder="0" style={inputSt} />
+                </Field>
+                <Divider />
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>高速道路</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <Field label="行き 出発地"><input value={f.hwFrom1} onChange={e => set('hwFrom1')(e.target.value)} placeholder="横浜IC" style={inputSt} /></Field>
+                  <Field label="行き 到着地"><input value={f.hwTo1} onChange={e => set('hwTo1')(e.target.value)} placeholder="東京IC" style={inputSt} /></Field>
+                  <Field label="帰り 出発地"><input value={f.hwFrom2} onChange={e => set('hwFrom2')(e.target.value)} placeholder="東京IC" style={inputSt} /></Field>
+                  <Field label="帰り 到着地"><input value={f.hwTo2} onChange={e => set('hwTo2')(e.target.value)} placeholder="横浜IC" style={inputSt} /></Field>
+                </div>
+                <Field label="高速料金合計（円）">
+                  <input type="number" value={f.hwFee} onChange={e => set('hwFee')(e.target.value)} placeholder="0" style={inputSt} />
+                </Field>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <Field label="食事代（円）"><input type="number" value={f.meal} onChange={e => set('meal')(e.target.value)} placeholder="0" style={inputSt} /></Field>
+                  <Field label="その他立替（円）"><input type="number" value={f.otherExp} onChange={e => set('otherExp')(e.target.value)} placeholder="0" style={inputSt} /></Field>
+                </div>
+                {totalExp > 0 && (
+                  <div style={{ background: 'var(--surface2)', borderRadius: 10, padding: '12px 14px', fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>立替合計</span>
+                    <strong>¥{totalExp.toLocaleString()}</strong>
+                  </div>
+                )}
+              </div>
+            </Card>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <button onClick={() => setSection('basic')} style={{ padding: '14px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-dark)', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>← 戻る</button>
+              <button onClick={() => setSection('sales')} style={{ padding: '14px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>次へ：売上 →</button>
+            </div>
+          </div>
+        )}
+
+        {/* 売上 */}
+        {section === 'sales' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Card>
+              <CardTitle>💰 売上金額</CardTitle>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'var(--surface2)', borderRadius: 10, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={autoCalc} onChange={e => { setAutoCalc(e.target.checked); if (e.target.checked && f.category) setF(prev => ({ ...prev, amount: String(calcAmount(prev.category, parseInt(prev.crew) || 0)) })) }} style={{ width: 20, height: 20 }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>対応区分・船員人数から自動計算</div>
+                    {autoCalc && f.category && <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 2 }}>計算結果: ¥{calcAmount(f.category, parseInt(f.crew) || 0).toLocaleString()}</div>}
+                  </div>
+                </label>
+                <Field label="売上金額（円）*">
+                  <input type="number" value={f.amount} onChange={e => { setAutoCalc(false); set('amount')(e.target.value) }} placeholder="10000" style={{ ...inputSt, fontSize: 20, fontWeight: 600, color: 'var(--accent)' }} />
+                </Field>
+                <Field label="備考">
+                  <input value={f.notes} onChange={e => set('notes')(e.target.value)} placeholder="特記事項" style={inputSt} />
+                </Field>
+              </div>
+            </Card>
+
+            {/* 送信前サマリー */}
+            <Card>
+              <CardTitle>📋 送信内容確認</CardTitle>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                {[['稼働日', f.date], ['港名', f.port || '未入力'], ['船名', f.ship || '未入力'], ['対応区分', f.category || '未選択'], ['売上金額', f.amount ? `¥${parseInt(f.amount).toLocaleString()}` : '未入力'], ['立替合計', `¥${totalExp.toLocaleString()}`]].map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{k}</span>
+                    <span style={{ fontWeight: 500 }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
+              <button onClick={() => setSection('transport')} style={{ padding: '14px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-dark)', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>← 戻る</button>
+              <button onClick={handleSubmit} disabled={submitting} style={{ padding: '16px', background: submitting ? 'var(--text-muted)' : 'var(--success)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}>
+                {submitting ? '送信中...' : '📨 日報を送信'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
+  // PC版（元のデザイン）
   return (
     <div style={{ padding: '20px 22px' }}>
       <PageHeader title="日報作成" sub="送信すると売上・請求データへ自動連携（Supabase保存）" />
-
-      {error && (
-        <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', border: '1px solid var(--danger-border)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 14, fontSize: 12 }}>
-          ⚠ {error}
-        </div>
-      )}
-
+      {error && <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', border: '1px solid var(--danger-border)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 14, fontSize: 12 }}>⚠ {error}</div>}
       <Card>
         <CardTitle>🚢 基本情報</CardTitle>
-        <Grid cols={3} style={{ marginBottom: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 10 }}>
           <Field label="稼働日" required><Input type="date" value={f.date} onChange={set('date')} /></Field>
-          <Field label="港名" required>
-            <AutoInput value={f.port} onChange={set('port')} placeholder="横浜港" suggestions={portList} />
-          </Field>
-          <Field label="船名" required>
-            <AutoInput value={f.ship} onChange={set('ship')} placeholder="第一丸" suggestions={shipList} />
-          </Field>
-        </Grid>
-        <Grid cols={3} style={{ marginBottom: 10 }}>
-          <Field label="船員人数">
-            <Input type="number" value={f.crew} onChange={handleCrewChange} placeholder="5" min="0" />
-          </Field>
-          <Field label="対応区分" required>
-            <Select value={f.category} onChange={handleCategoryChange}>
-              <option value="">選択してください</option>
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-            </Select>
-          </Field>
+          <Field label="港名" required><AutoInput value={f.port} onChange={set('port')} placeholder="横浜港" suggestions={portList} /></Field>
+          <Field label="船名" required><AutoInput value={f.ship} onChange={set('ship')} placeholder="第一丸" suggestions={shipList} /></Field>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 10 }}>
+          <Field label="船員人数"><Input type="number" value={f.crew} onChange={handleCrewChange} placeholder="5" min="0" /></Field>
+          <Field label="対応区分" required><Select value={f.category} onChange={handleCategoryChange}><option value="">選択してください</option>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</Select></Field>
           <Field label="業務内容"><Input value={f.work} onChange={set('work')} placeholder="業務の概要" /></Field>
-        </Grid>
-        <Grid cols={2}>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <Field label="Voucher / PDF領収書">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <input ref={fileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={handlePdfSelect} />
-              <button type="button" onClick={() => fileRef.current?.click()}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
-                  borderRadius: 'var(--radius)',
-                  border: pdfName ? '1.5px solid var(--success)' : '1px dashed var(--border-dark)',
-                  background: pdfName ? 'var(--success-bg)' : 'var(--surface2)',
-                  cursor: 'pointer', fontSize: 12,
-                  color: pdfName ? 'var(--success)' : 'var(--text-muted)',
-                }}>
-                {pdfName ? <>✅ {pdfName}</> : <>📎 PDFをアップロード（領収書など）</>}
-              </button>
-              {!pdfName && (
-                <Input value={f.voucher.startsWith('data:') ? '' : f.voucher} onChange={set('voucher')} placeholder="または Voucher番号を入力（例: V-2025-001）" />
-              )}
-              {pdfName && (
-                <button type="button"
-                  onClick={() => { setF(prev => ({ ...prev, voucher: '' })); setPdfName(''); if (fileRef.current) fileRef.current.value = '' }}
-                  style={{ fontSize: 11, color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-                  ✕ PDFを削除
-                </button>
-              )}
-            </div>
+            <input ref={fileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={handlePdfSelect} />
+            <button type="button" onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 'var(--radius)', border: pdfName ? '1.5px solid var(--success)' : '1px dashed var(--border-dark)', background: pdfName ? 'var(--success-bg)' : 'var(--surface2)', cursor: 'pointer', fontSize: 12, color: pdfName ? 'var(--success)' : 'var(--text-muted)' }}>
+              {pdfName ? <>✅ {pdfName}</> : <>📎 PDFをアップロード</>}
+            </button>
+            {!pdfName && <Input value={f.voucher.startsWith('data:') ? '' : f.voucher} onChange={set('voucher')} placeholder="またはVoucher番号を入力" />}
           </Field>
           <Field label="請求対象月"><Input type="month" value={f.billMonth} onChange={set('billMonth')} /></Field>
-        </Grid>
+        </div>
       </Card>
-
       <Card>
         <CardTitle>🚗 交通費・立替</CardTitle>
-        <Grid cols={2} style={{ marginBottom: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
           <Field label="駐車場場所"><Input value={f.parkPlace} onChange={set('parkPlace')} placeholder="横浜港第3駐車場" /></Field>
           <Field label="駐車場料金合計（円）"><Input type="number" value={f.parkFee} onChange={set('parkFee')} placeholder="0" min="0" /></Field>
-        </Grid>
+        </div>
         <Divider />
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 500 }}>高速道路</div>
-        <Grid cols={4} style={{ marginBottom: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 10 }}>
           <Field label="行き 出発地"><Input value={f.hwFrom1} onChange={set('hwFrom1')} placeholder="横浜IC" /></Field>
           <Field label="行き 到着地"><Input value={f.hwTo1} onChange={set('hwTo1')} placeholder="東京IC" /></Field>
           <Field label="帰り 出発地"><Input value={f.hwFrom2} onChange={set('hwFrom2')} placeholder="東京IC" /></Field>
           <Field label="帰り 到着地"><Input value={f.hwTo2} onChange={set('hwTo2')} placeholder="横浜IC" /></Field>
-        </Grid>
-        <Grid cols={3}>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
           <Field label="高速料金合計（円）"><Input type="number" value={f.hwFee} onChange={set('hwFee')} placeholder="0" min="0" /></Field>
           <Field label="食事代（円）"><Input type="number" value={f.meal} onChange={set('meal')} placeholder="0" min="0" /></Field>
           <Field label="その他立替（円）"><Input type="number" value={f.otherExp} onChange={set('otherExp')} placeholder="0" min="0" /></Field>
-        </Grid>
-        {totalExp > 0 && (
-          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>
-            立替合計: <strong style={{ color: 'var(--text)' }}>¥{totalExp.toLocaleString()}</strong>
-          </div>
-        )}
+        </div>
+        {totalExp > 0 && <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>立替合計: <strong style={{ color: 'var(--text)' }}>¥{totalExp.toLocaleString()}</strong></div>}
       </Card>
-
       <Card>
         <CardTitle>💰 売上金額</CardTitle>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)' }}>
-            <input type="checkbox" checked={autoCalc} onChange={e => {
-              setAutoCalc(e.target.checked)
-              if (e.target.checked && f.category) {
-                setF(prev => ({ ...prev, amount: String(calcAmount(prev.category, parseInt(prev.crew) || 0)) }))
-              }
-            }} />
+            <input type="checkbox" checked={autoCalc} onChange={e => { setAutoCalc(e.target.checked); if (e.target.checked && f.category) setF(prev => ({ ...prev, amount: String(calcAmount(prev.category, parseInt(prev.crew) || 0)) })) }} />
             対応区分・船員人数から自動計算
           </label>
-          {autoCalc && f.category && (
-            <span style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--accent-bg)', padding: '2px 8px', borderRadius: 'var(--radius)', border: '1px solid var(--accent-border)' }}>
-              自動計算: ¥{calcAmount(f.category, parseInt(f.crew) || 0).toLocaleString()}
-            </span>
-          )}
+          {autoCalc && f.category && <span style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--accent-bg)', padding: '2px 8px', borderRadius: 'var(--radius)', border: '1px solid var(--accent-border)' }}>自動計算: ¥{calcAmount(f.category, parseInt(f.crew) || 0).toLocaleString()}</span>}
         </div>
-        <Grid cols={2}>
-          <Field label="売上金額（円）" required>
-            <Input type="number" value={f.amount} onChange={v => { setAutoCalc(false); set('amount')(v) }} placeholder="10000" min="0" />
-          </Field>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <Field label="売上金額（円）" required><Input type="number" value={f.amount} onChange={v => { setAutoCalc(false); set('amount')(v) }} placeholder="10000" min="0" /></Field>
           <Field label="備考"><Input value={f.notes} onChange={set('notes')} placeholder="特記事項" /></Field>
-        </Grid>
+        </div>
       </Card>
-
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <Btn onClick={clearForm}>↺ クリア</Btn>
-        <Btn variant="primary" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? '送信中...' : '📨 日報送信（Supabase保存・自動連携）'}
-        </Btn>
+        <Btn onClick={() => { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfName('') }}>↺ クリア</Btn>
+        <Btn variant="primary" onClick={handleSubmit} disabled={submitting}>{submitting ? '送信中...' : '📨 日報送信'}</Btn>
       </div>
     </div>
   )
