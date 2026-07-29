@@ -81,7 +81,18 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   }
 
   const initExp = () => {
-    return [{ label: '立替金合計', amount: inv.expenses }]
+    const parkTotal = monthReports.reduce((s, r) => s + r.park_fee, 0)
+    const hwTotal   = monthReports.reduce((s, r) => s + r.hw_fee, 0)
+    const mealTotal = monthReports.reduce((s, r) => s + r.meal, 0)
+    const othTotal  = monthReports.reduce((s, r) => s + r.other_exp, 0)
+    const fixedExp  = settings.fixed_expenses ?? []
+    return [
+      { label: '駐車場料金', amount: parkTotal },
+      { label: '高速料金',   amount: hwTotal },
+      { label: '食事代',     amount: mealTotal },
+      { label: 'その他立替', amount: othTotal },
+      ...fixedExp.map((e) => ({ label: e.label, amount: e.amount })),
+    ].filter(e => e.amount > 0)
   }
 
   const savedSubtotal = inv.subtotal
