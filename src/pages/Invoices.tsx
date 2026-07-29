@@ -81,16 +81,26 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   }
 
   const initExp = () => {
+    const parkTotal = monthReports.reduce((s, r) => s + r.park_fee, 0)
+    const hwTotal   = monthReports.reduce((s, r) => s + r.hw_fee, 0)
+    const mealTotal = monthReports.reduce((s, r) => s + r.meal, 0)
+    const othTotal  = monthReports.reduce((s, r) => s + r.other_exp, 0)
+    const fixedExp  = settings.fixed_expenses ?? []
     const base = [
-      { label: '駐車場料金', amount: monthReports.reduce((s, r) => s + r.park_fee, 0) },
-      { label: '高速料金',   amount: monthReports.reduce((s, r) => s + r.hw_fee, 0) },
-      { label: '食事代',     amount: monthReports.reduce((s, r) => s + r.meal, 0) },
-      { label: 'その他立替', amount: monthReports.reduce((s, r) => s + r.other_exp, 0) },
-      ...(settings.fixed_expenses ?? []).map((e: {label:string;amount:number}) => ({ label: e.label, amount: e.amount })),
-    ]
-    return base.filter(e => e.amount > 0)
+      { label: '駐車場料金', amount: parkTotal },
+      { label: '高速料金',   amount: hwTotal },
+      { label: '食事代',     amount: mealTotal },
+      { label: 'その他立替', amount: othTotal },
+      ...fixedExp.map((e: {label:string;amount:number}) => ({ label: e.label, amount: e.amount })),
+    ].filter(e => e.amount > 0)
+    const calcTotal = base.reduce((s, e) => s + e.amount, 0)
+    if (inv.expenses > 0 && inv.expenses !== calcTotal) {
+      return [{ label: '立替金合計', amount: inv.expenses }]
+    }
+    return base
   }
 
+  const savedSubtotal = inv.subtotal
   const [rows, setRows] = useState(initRows)
   const [expItems, setExpItems] = useState(initExp)
   const [saving, setSaving] = useState(false)
