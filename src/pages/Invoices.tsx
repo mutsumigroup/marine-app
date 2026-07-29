@@ -1,243 +1,89 @@
-import { useState } from 'react'
-import { Card, Table, TR, Empty, Badge, Btn, Modal, PageHeader } from '../components/UI'
-import { generateInvoicePDF } from '../lib/pdf'
-import type { Invoice, Report, Settings } from '../types'
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'">
+    <title>Page not found &middot; GitHub Pages</title>
+    <style type="text/css" media="screen">
+      body {
+        background-color: #f1f1f1;
+        margin: 0;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      }
 
-interface Props {
-  invoices: Invoice[]
-  reports: Report[]
-  settings: Settings
-  onSend: (id: string) => Promise<boolean>
-  onPaid: (id: string) => Promise<boolean>
-  onRevert: (id: string, status: string) => Promise<boolean>
-}
+      .container { margin: 50px auto 40px auto; width: 600px; text-align: center; }
 
-const STATUS_ALL = ['未請求', '作成済', '送信済', '入金待ち', '入金済'] as const
+      a { color: #4183c4; text-decoration: none; }
+      a:hover { text-decoration: underline; }
 
-export default function Invoices({ invoices, reports, settings, onSend, onPaid, onRevert }: Props) {
-  const [filter, setFilter] = useState('')
-  const [previewId, setPreviewId] = useState<string | null>(null)
-  const [processing, setProcessing] = useState<string | null>(null)
-  const [alertMsg, setAlertMsg] = useState('')
+      h1 { width: 800px; position:relative; left: -100px; letter-spacing: -1px; line-height: 60px; font-size: 60px; font-weight: 100; margin: 0px 0 50px 0; text-shadow: 0 1px 0 #fff; }
+      p { color: rgba(0, 0, 0, 0.5); margin: 20px 0; line-height: 1.6; }
 
-  const filtered = filter ? invoices.filter(i => i.status === filter) : invoices
-  const sorted = [...filtered].sort((a, b) => b.billing_month.localeCompare(a.billing_month))
-  const previewInv = previewId ? invoices.find(i => i.id === previewId) : null
+      ul { list-style: none; margin: 25px 0; padding: 0; }
+      li { display: table-cell; font-weight: bold; width: 1%; }
 
-  const handleSend = async (id: string) => {
-    setProcessing(id)
-    // PDF生成
-    const inv = invoices.find(i => i.id === id)!
-    const doc = generateInvoicePDF(inv, reports, settings)
-    doc.save(`${id}.pdf`)
-    await onSend(id)
-    setProcessing(null)
-  }
+      .logo { display: inline-block; margin-top: 35px; }
+      .logo-img-2x { display: none; }
+      @media
+      only screen and (-webkit-min-device-pixel-ratio: 2),
+      only screen and (   min--moz-device-pixel-ratio: 2),
+      only screen and (     -o-min-device-pixel-ratio: 2/1),
+      only screen and (        min-device-pixel-ratio: 2),
+      only screen and (                min-resolution: 192dpi),
+      only screen and (                min-resolution: 2dppx) {
+        .logo-img-1x { display: none; }
+        .logo-img-2x { display: inline-block; }
+      }
 
-  const handlePaid = async (id: string) => {
-    setProcessing(id)
-    await onPaid(id)
-    setProcessing(null)
-  }
+      #suggestions {
+        margin-top: 35px;
+        color: #ccc;
+      }
+      #suggestions a {
+        color: #666666;
+        font-weight: 200;
+        font-size: 14px;
+        margin: 0 10px;
+      }
 
-  const handleRevert = async (id: string, status: string) => {
-    if (!confirm(`ステータスを「${status}」に戻しますか？`)) return
-    setProcessing(id)
-    await onRevert(id, status)
-    setProcessing(null)
-  }
+    </style>
+  </head>
+  <body>
 
-  // 請求書プレビュー HTML
-  const renderPreview = (inv: Invoice) => {
-    const monthReports = reports.filter(r => r.bill_month === inv.billing_month)
-    const catSum: Record<string, { count: number; crew: number }> = {}
-    monthReports.forEach(r => {
-      if (!catSum[r.category]) catSum[r.category] = { count: 0, crew: 0 }
-      catSum[r.category].count++
-      catSum[r.category].crew += r.crew
-    })
-    const pr = settings.prices ?? {}
-    let bizTotal = 0
-    const rows = Object.entries(catSum).map(([cat, d]) => {
-      const p = pr[cat] ?? { ship: 10000, crew: 1000 }
-      const line = d.count * p.ship + d.crew * (p.crew ?? 0)
-      bizTotal += line
-      return { cat, count: d.count, crew: d.crew, shipP: p.ship, crewP: p.crew ?? 0, line }
-    })
-    const parkTotal = monthReports.reduce((s, r) => s + r.park_fee, 0)
-    const hwTotal = monthReports.reduce((s, r) => s + r.hw_fee, 0)
-    const mealTotal = monthReports.reduce((s, r) => s + r.meal, 0)
-    const othTotal = monthReports.reduce((s, r) => s + r.other_exp, 0)
-    const today = new Date().toLocaleDateString('ja-JP')
-    const due = new Date(Date.now() + (settings.pay_days || 30) * 86400000).toLocaleDateString('ja-JP')
-    return { rows, bizTotal, parkTotal, hwTotal, mealTotal, othTotal, fixedExp: (settings.fixed_expenses ?? []), today, due }
-  }
+    <div class="container">
 
-  return (
-    <div style={{ padding: '20px 22px' }}>
-      <PageHeader title="請求書管理" sub="月次請求書の作成・送信・管理（Supabase）" />
+      <h1>404</h1>
+      <p><strong>File not found</strong></p>
 
-      {alertMsg && (
-        <div style={{ background: 'var(--success-bg)', color: 'var(--success)', border: '1px solid var(--success-border)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 14, fontSize: 12 }}>
-          ✓ {alertMsg}
-        </div>
-      )}
+      <p>
+        The site configured at this address does not
+        contain the requested file.
+      </p>
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-        <Btn size="sm" variant={filter === '' ? 'primary' : 'default'} onClick={() => setFilter('')}>すべて</Btn>
-        {STATUS_ALL.map(s => (
-          <Btn key={s} size="sm" variant={filter === s ? 'primary' : 'default'} onClick={() => setFilter(s)}>{s}</Btn>
-        ))}
+      <p>
+        If this is your site, make sure that the filename case matches the URL
+        as well as any file permissions.<br>
+        For root URLs (like <code>http://example.com/</code>) you must provide an
+        <code>index.html</code> file.
+      </p>
+
+      <p>
+        <a href="https://help.github.com/pages/">Read the full documentation</a>
+        for more information about using <strong>GitHub Pages</strong>.
+      </p>
+
+      <div id="suggestions">
+        <a href="https://githubstatus.com">GitHub Status</a> &mdash;
+        <a href="https://twitter.com/githubstatus">@githubstatus</a>
       </div>
 
-      <Card>
-        <Table head={['請求書番号', '請求月', '業務金額', '立替', '合計（税込）', 'ステータス', '操作']}>
-          {sorted.length === 0 ? <Empty label="請求書がありません" /> : sorted.map(inv => (
-            <TR key={inv.id}
-              cells={[
-                <span key="id" style={{ fontFamily: 'monospace', fontSize: 10 }}>{inv.id}</span>,
-                inv.billing_month,
-                `¥${inv.subtotal.toLocaleString()}`,
-                `¥${inv.expenses.toLocaleString()}`,
-                <strong key="t">¥{inv.total.toLocaleString()}</strong>,
-              ]}
-              badge={<Badge status={inv.status} />}
-              actions={<>
-                <Btn size="sm" onClick={() => setPreviewId(inv.id)}>👁 確認</Btn>
-                {['未請求', '作成済'].includes(inv.status) && (
-                  <Btn size="sm" variant="success" disabled={processing === inv.id} onClick={() => handleSend(inv.id)}>
-                    {processing === inv.id ? '処理中...' : '📤 請求書作成済'}
-                  </Btn>
-                )}
-                {['送信済', '入金待ち'].includes(inv.status) && (
-                  <Btn size="sm" variant="primary" disabled={processing === inv.id} onClick={() => handlePaid(inv.id)}>
-                    {processing === inv.id ? '処理中...' : '✓ 入金済'}
-                  </Btn>
-                )}
-                {inv.status === '入金済' && (
-                  <Btn size="sm" variant="ghost" disabled={processing === inv.id} onClick={() => handleRevert(inv.id, '送信済')}
-                    style={{ fontSize: 10, color: 'var(--text-muted)', border: '1px dashed var(--border-dark)' }}>
-                    ↩ 送信済に戻す
-                  </Btn>
-                )}
-                {['送信済', '入金待ち', '作成済'].includes(inv.status) && (
-                  <Btn size="sm" variant="ghost" disabled={processing === inv.id} onClick={() => handleRevert(inv.id, '未請求')}
-                    style={{ fontSize: 10, color: 'var(--text-muted)', border: '1px dashed var(--border-dark)' }}>
-                    ↩ 未請求に戻す
-                  </Btn>
-                )}
-              </>}
-            />
-          ))}
-        </Table>
-      </Card>
+      <a href="/" class="logo logo-img-1x">
+        <img width="32" height="32" title="" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoTWFjaW50b3NoKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpFMTZCRDY3REIzRjAxMUUyQUQzREIxQzRENUFFNUM5NiIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpFMTZCRDY3RUIzRjAxMUUyQUQzREIxQzRENUFFNUM5NiI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkUxNkJENjdCQjNGMDExRTJBRDNEQjFDNEQ1QUU1Qzk2IiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOkUxNkJENjdDQjNGMDExRTJBRDNEQjFDNEQ1QUU1Qzk2Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+SM9MCAAAA+5JREFUeNrEV11Ik1EY3s4+ddOp29Q5b0opCgKFsoKoi5Kg6CIhuwi6zLJLoYLopq4qsKKgi4i6CYIoU/q5iDAKs6syoS76IRWtyJ+p7cdt7sf1PGOD+e0c3dygAx/67ZzzPM95/877GYdHRg3ZjMXFxepQKNS6sLCwJxqNNuFpiMfjVs4ZjUa/pmmjeD6VlJS8NpvNT4QQ7mxwjSsJiEQim/1+/9lgMHgIr5ohuxG1WCw9Vqv1clFR0dCqBODElV6v90ogEDjGdYbVjXhpaendioqK07CIR7ZAqE49PT09BPL2PMgTByQGsYiZlQD4uMXtdr+JxWINhgINYhGT2MsKgMrm2dnZXgRXhaHAg5jEJodUAHxux4LudHJE9RdEdA+i3Juz7bGHe4mhE9FNrgwBCLirMFV9Okh5eflFh8PR5nK5nDabrR2BNJlKO0T35+Li4n4+/J+/JQCxhmu5h3uJoXNHPbmWZAHMshWB8l5/ipqammaAf0zPDDx1ONV3vurdidqwAQL+pEc8sLcAe1CCvQ3YHxIW8Pl85xSWNC1hADDIv0rIE/o4J0k3kww4xSlwIhcq3EFFOm7KN/hUGOQkt0CFa5WpNJlMvxBEz/IVQAxg/ZRZl9wiHA63yDYieM7DnLP5CiAGsC7I5sgtYKJGWe2A8seFqgFJrJjEPY1Cn3pJ8/9W1e5VWsFDTEmFrBcoDhZJEQkXuhICMyKpjhahqN21hRYATKfUOlDmkygrR4o4C0VOLGJKrOITKB4jijzdXygBKixyC5TDQdnk/Pz8qRw6oOWGlsTKGOQW6OH6FBWsyePxdOXLTgxiyebILZCjz+GLgMIKnXNzc49YMlcRdHXcSwxFVgTInQhC9G33UhNoJLuqq6t345p9y3eUy8OTk5PjAHuI9uo4b07FBaOhsu0A4Unc+T1TU1Nj3KsSSE5yJ65jqF2DDd8QqWYmAZrIM2VlZTdnZmb6AbpdV9V6ec9znf5Q7HjYumdRE0JOp3MjitO4SFa+cZz8Umqe3TCbSLvdfkR/kWDdNQl5InuTcysOcpFT35ZrbBxx4p3JAHlZVVW1D/634VRt+FvLBgK/v5LV9WS+10xMTEwtRw7XvqOL+e2Q8V3AYIOIAXQ26/heWVnZCVfcyKHg2CBgTpmPmjYM8l24GyaUHyaIh7XwfR9ErE8qHoDfn2LTNAVC0HX6MFcBIP8Bi+6F6cdW/DICkANRfx99fEYFQ7Nph5i/uQiA214gno7K+guhaiKg9gC62+M8eR7XsBsYJ4ilam60Fb7r7uAj8wFyuwM1oIOWgfmDy6RXEEQzJMPe23DXrVS7rtyD3Df8z/FPgAEAzWU5Ku59ZAUAAAAASUVORK5CYII=">
+      </a>
 
-      {/* Invoice Preview Modal */}
-      <Modal open={!!previewInv} onClose={() => setPreviewId(null)} title={`請求書 — ${previewId}`}>
-        {previewInv && (() => {
-          const { rows, bizTotal, parkTotal, hwTotal, mealTotal, othTotal, fixedExp, today, due } = renderPreview(previewInv)
-          const fixedTotal = fixedExp.reduce((s: number, e: {label: string; amount: number}) => s + e.amount, 0)
-          const expTotal = parkTotal + hwTotal + mealTotal + othTotal + fixedTotal
-          return (
-            <>
-              <div style={{ background: '#fff', color: '#222', padding: 20, borderRadius: 6, fontSize: 11, lineHeight: 1.6, border: '1px solid #ddd' }}>
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '2px solid #1a3a5c', marginBottom: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 3, color: '#1a3a5c' }}>請　求　書</div>
-                    <div style={{ fontSize: 9, color: '#666', marginTop: 2 }}>登録番号: {settings.invoice_no}</div>
-                  </div>
-                  <div style={{ textAlign: 'right', fontSize: 9, color: '#444' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#1a3a5c' }}>{settings.company_name}</div>
-                    <div>{settings.address}</div>
-                    <div>{settings.tel} | {settings.email}</div>
-                  </div>
-                </div>
-                {/* Client */}
-                <div style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 8, color: '#888' }}>請求先</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, borderBottom: '1px solid #333', display: 'inline-block', paddingBottom: 1 }}>{settings.client_name} 御中</div>
-                </div>
-                {/* Meta */}
-                <div style={{ display: 'flex', gap: 20, marginBottom: 10, fontSize: 9, color: '#555' }}>
-                  <div>件名: {previewInv.billing_month}分 業務委託費</div>
-                  <div>請求日: {today}</div>
-                  <div>支払期限: {due}</div>
-                </div>
-                {/* Banner */}
-                <div style={{ background: '#1a3a5c', color: '#fff', padding: '6px 10px', borderRadius: '3px 3px 0 0', fontSize: 10, display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-                  <span>ご請求金額（税込）</span>
-                  <span style={{ fontSize: 15 }}>¥{previewInv.total.toLocaleString()}</span>
-                </div>
-                <div style={{ border: '1px solid #1a3a5c', borderTop: 'none', padding: 10, marginBottom: 10 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: '#1a3a5c', borderBottom: '1px solid #ccc', paddingBottom: 3, marginBottom: 6 }}>業務明細</div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
-                    <thead><tr style={{ background: '#1a3a5c' }}>
-                      {['対応区分', '件数', '船員', '単価（船/人）', '金額'].map(h => (
-                        <th key={h} style={{ padding: '4px 6px', color: '#fff', textAlign: h === '金額' ? 'right' : 'left', fontWeight: 600 }}>{h}</th>
-                      ))}
-                    </tr></thead>
-                    <tbody>{rows.map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '4px 6px' }}>{r.cat}</td>
-                        <td style={{ padding: '4px 6px' }}>{r.count}隻</td>
-                        <td style={{ padding: '4px 6px' }}>{r.crew}名</td>
-                        <td style={{ padding: '4px 6px' }}>¥{r.shipP.toLocaleString()} / ¥{r.crewP.toLocaleString()}</td>
-                        <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 700 }}>¥{r.line.toLocaleString()}</td>
-                      </tr>
-                    ))}</tbody>
-                  </table>
-                  <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid #ddd', fontSize: 9 }}>
-                    {[['業務小計', bizTotal], ['消費税（10%）', previewInv.tax], ['業務請求小計', bizTotal + previewInv.tax]].map(([k, v], i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2, fontWeight: i === 2 ? 700 : 400, borderTop: i === 2 ? '1px solid #bbb' : 'none', paddingTop: i === 2 ? 3 : 0 }}>
-                        <span>{k}</span><span>¥{(v as number).toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {/* Expenses */}
-                {expTotal > 0 && (
-                  <div style={{ border: '1px solid #ddd', padding: 10, marginBottom: 10, borderRadius: 3 }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, borderBottom: '1px solid #eee', paddingBottom: 3, marginBottom: 6 }}>立替金精算</div>
-                    {[[' 駐車場料金', parkTotal], ['高速料金', hwTotal], ['食事代', mealTotal], ['その他立替', othTotal], ...fixedExp.map((e: {label: string; amount: number}) => [e.label, e.amount])].filter(([, v]) => (v as number) > 0).map(([k, v], i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, marginBottom: 2 }}>
-                        <span>{k}</span><span>¥{(v as number).toLocaleString()}</span>
-                      </div>
-                    ))}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, fontWeight: 700, borderTop: '1px solid #aaa', marginTop: 3, paddingTop: 3 }}>
-                      <span>立替金合計</span><span>¥{expTotal.toLocaleString()}</span>
-                    </div>
-                  </div>
-                )}
-                {/* Grand total */}
-                <div style={{ background: '#f0f4f8', borderLeft: '3px solid #1a3a5c', padding: '8px 12px', marginBottom: 10, fontSize: 9 }}>
-                  {[['業務請求金額（税込）', bizTotal + previewInv.tax], ['立替金精算', expTotal]].map(([k, v], i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                      <span style={{ color: '#555' }}>{k}</span><span>¥{(v as number).toLocaleString()}</span>
-                    </div>
-                  ))}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, borderTop: '1px solid #1a3a5c', marginTop: 4, paddingTop: 4, color: '#1a3a5c' }}>
-                    <span>最終請求金額</span><span>¥{previewInv.total.toLocaleString()}</span>
-                  </div>
-                </div>
-                {/* Bank */}
-                <div style={{ background: '#f9f9f9', border: '1px solid #ddd', padding: '8px 10px', borderRadius: 3, fontSize: 9 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 2 }}>お振込先</div>
-                  <div>{settings.bank}</div><div>{settings.account}</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14 }}>
-                <Btn onClick={() => setPreviewId(null)}>閉じる</Btn>
-                {['未請求', '作成済'].includes(previewInv.status) && (
-                  <Btn variant="success" disabled={!!processing} onClick={async () => { await handleSend(previewInv.id); setPreviewId(null) }}>
-                    📤 PDF生成・送信
-                  </Btn>
-                )}
-              </div>
-            </>
-          )
-        })()}
-      </Modal>
+      <a href="/" class="logo logo-img-2x">
+        <img width="32" height="32" title="" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoTWFjaW50b3NoKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpEQUM1QkUxRUI0MUMxMUUyQUQzREIxQzRENUFFNUM5NiIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpEQUM1QkUxRkI0MUMxMUUyQUQzREIxQzRENUFFNUM5NiI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkUxNkJENjdGQjNGMDExRTJBRDNEQjFDNEQ1QUU1Qzk2IiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOkUxNkJENjgwQjNGMDExRTJBRDNEQjFDNEQ1QUU1Qzk2Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+hfPRaQAAB6lJREFUeNrsW2mM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">
+      </a>
     </div>
-  )
-}
+  </body>
+</html>
