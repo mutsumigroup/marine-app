@@ -209,7 +209,7 @@ export function useAppState() {
     }
   }, [invoices, reports, addToast])
 
-  const updateInvoiceManual = useCallback(async (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total'>): Promise<boolean> => {
+  const updateInvoiceManual = useCallback(async (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total' | 'expense_items'>): Promise<boolean> => {
     try {
       await api.updateInvoice(id, updates)
       setInvoices(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
