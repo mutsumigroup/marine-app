@@ -48,6 +48,7 @@ export interface Report {
   meal: number
   other_exp: number
   expenses: number
+  expense_items?: { label: string; amount: number }[]
   voucher: string
   bill_month: string
   notes: string
@@ -63,6 +64,7 @@ export interface Invoice {
   subtotal: number
   tax: number
   expenses: number
+  expense_items?: { label: string; amount: number }[]
   total: number
   status: InvoiceStatus
   sent_at: string

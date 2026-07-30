@@ -122,7 +122,7 @@ export async function syncInvoiceFromReport(
 
   if (existing && existing.status !== '未請求') {
     // 送信済み以降はサブトータルのみ更新（ステータスは変えない）
-    const updated: Partial<Invoice> = { subtotal, expenses, tax, total }
+    const updated: Partial<Invoice> = { subtotal, expenses, tax, total, expense_items }
     await updateInvoice(existing.id, updated)
     return { ...existing, ...updated } as Invoice
   }
