@@ -267,6 +267,8 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       setFilterMonth(month)
     }
   }, [searchParams])
+  const fromInvoices = searchParams.get('from') === 'invoices'
+  const backMonth = searchParams.get('month')
   const [hwReport, setHwReport] = useState<Report | null>(null)
   const [editReport, setEditReport] = useState<Report | null>(null)
 

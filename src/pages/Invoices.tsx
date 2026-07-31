@@ -227,7 +227,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                   const line = r.count * r.shipP + r.crew * r.crewP
                   return (
                     <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
-                      <td style={{...tdS, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline dotted', textUnderlineOffset: 3}} onClick={() => { window.location.href = `#/reports?category=${encodeURIComponent(r.cat)}&month=${inv.billing_month}` }}>{r.cat}</td>
+                      <td style={{...tdS, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline dotted', textUnderlineOffset: 3}} onClick={() => { window.location.href = `#/reports?category=${encodeURIComponent(r.cat)}&month=${inv.billing_month}&from=invoices` }}>{r.cat}</td>
                       <td style={{ ...tdS, textAlign: 'right' }}><InlineNum value={r.count} onChange={v => setRow(i, 'count', v)} width={40} />隻</td>
                       <td style={{ ...tdS, textAlign: 'right' }}><InlineNum value={r.crew} onChange={v => setRow(i, 'crew', v)} width={40} />名</td>
                       <td style={{ ...tdS, textAlign: 'right', color: '#888' }}>¥{r.shipP.toLocaleString()} / ¥{r.crewP.toLocaleString()}</td>
