@@ -32,7 +32,7 @@ export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: (
     <nav style={{ width: 190, background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', flexShrink: 0, overflowY: 'auto', height: '100vh' }}>
       <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: 6 }}>⚓ マリン業務</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: 6 }}>⚓ 船舶日報報告管理アプリ</div>
           <div style={{ fontSize: 10, color: 'var(--text-light)', marginTop: 2 }}>船舶業務管理システム</div>
         </div>
         {isMobile && (
