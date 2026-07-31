@@ -281,7 +281,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                     <td style={{ ...TD, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.ship}>{r.ship}</td>
                     <td style={{ ...TD, textAlign: 'center' }}>{r.crew}</td>
                     <td style={TD}><CatBadge cat={r.category} /></td>
-                    <td style={{ ...TD }} onClick={e => e.stopPropagation()}><WorkCell work={r.work} /></td>
+                  <td style={{ ...TD, overflow: "visible", textOverflow: "clip", whiteSpace: "normal" }} onClick={(e) => e.stopPropagation()}><WorkCell work={r.work} />  </td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.park_fee > 0 ? `¥${r.park_fee.toLocaleString()}` : '—'}</td>
                     <td style={TD} onClick={e => { e.stopPropagation(); setHwReport(r) }}><HwCell report={r} onClick={() => setHwReport(r)} /></td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.meal > 0 ? `¥${r.meal.toLocaleString()}` : '—'}</td>
