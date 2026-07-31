@@ -261,7 +261,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>💡 行をクリックすると編集できます</div>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
                 {COLS.map(([h, w]) => (
