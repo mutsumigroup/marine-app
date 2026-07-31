@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Btn, PageHeader } from '../components/UI'
-import { generateInvoicePDF } from '../lib/pdf'
 import type { Invoice, Report, Settings } from '../types'
 
 interface Props {
@@ -361,9 +360,6 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
 
   const handleSend = async (id: string) => {
     setProcessing(id)
-    const inv = invoices.find(i => i.id === id)!
-    const doc = generateInvoicePDF(inv, reports, settings)
-    doc.save(`invoice-${inv.billing_month}.pdf`)
     await onSend(id)
     setProcessing(null)
   }
