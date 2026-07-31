@@ -261,6 +261,11 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   React.useEffect(() => {
     const cat = searchParams.get('category')
     if (cat) setFilterCategory(cat)
+    const month = searchParams.get('month')
+    if (month) {
+      setFilterYear(month.slice(0, 4))
+      setFilterMonth(month)
+    }
   }, [searchParams])
   const [hwReport, setHwReport] = useState<Report | null>(null)
   const [editReport, setEditReport] = useState<Report | null>(null)
