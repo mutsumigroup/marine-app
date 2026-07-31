@@ -74,7 +74,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
     reader.onload = (ev) => { setF(prev => ({ ...prev, voucher: ev.target?.result as string })); setPdfName(file.name) }
     reader.readAsDataURL(file)
   }
-  const addExtraItem = () => setExtraItems(prev => [...prev, { label: '項目名', amount: 0 }])
+  const addExtraItem = () => setExtraItems(prev => [...prev, { label: '', amount: 0 }])
   const removeExtraItem = (i: number) => setExtraItems(prev => prev.filter((_, idx) => idx !== i))
   const setExtraLabel = (i: number, label: string) => setExtraItems(prev => prev.map((e, idx) => idx === i ? { ...e, label } : e))
   const setExtraAmount = (i: number, amount: number) => setExtraItems(prev => prev.map((e, idx) => idx === i ? { ...e, amount } : e))
