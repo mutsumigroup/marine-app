@@ -143,15 +143,3 @@ export async function syncInvoiceFromReport(
 
   return await upsertInvoice(invoice)
 }
-
-export async function sendEmail({ to_email, subject, message }: {
-  to_email: string
-  subject: string
-  message: string
-}): Promise<void> {
-  // メール送信（既存の実装に合わせて呼び出し）
-  const { supabase } = await import('./supabase')
-  await supabase.functions.invoke('send-email', {
-    body: { to_email, subject, message }
-  })
-}

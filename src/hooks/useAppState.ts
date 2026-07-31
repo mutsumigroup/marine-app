@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Report, Invoice, Settings, Toast } from '../types'
 import * as api from '../lib/api'
-import { buildDailyReportEmail, buildInvoiceEmail } from '../lib/email'
-import { sendEmail } from '../lib/api'
+import { sendEmail, buildDailyReportEmail, buildInvoiceEmail } from '../lib/email'
 
 const DEFAULT_SETTINGS: Settings = {
   company_name: '',
@@ -78,7 +77,7 @@ export function useAppState() {
       if (settings.daily_mail) {
         try {
           const annualUrl = `${window.location.origin}/annual`
-          const { subject, body } = buildDailyReportEmail({
+          const message = buildDailyReportEmail({
             date: reportData.date,
             port: reportData.port,
             ship: reportData.ship,
@@ -93,11 +92,11 @@ export function useAppState() {
             voucher: reportData.voucher ?? '',
             bill_month: reportData.bill_month,
             notes: reportData.notes ?? '',
-          }, annualUrl, { subject: settings.mail_subject, body: settings.mail_body, link: settings.mail_link })
+          }, annualUrl)
           await sendEmail({
             to_email: settings.daily_mail,
-            subject,
-            message: body,
+            subject: `【日報】${reportData.date} ${reportData.ship}`,
+            message,
           })
           addToast('success', `日報を保存しました。${settings.daily_mail} へメール送信しました。売上・請求データを自動登録しました。`)
         } catch {
