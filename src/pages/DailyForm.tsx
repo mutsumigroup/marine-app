@@ -317,6 +317,8 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
           <Field label="高速料金合計（円）"><Input type="number" value={f.hwFee} onChange={set('hwFee')} placeholder="0" min="0" /></Field>
           <Field label="食事代（円）"><Input type="number" value={f.meal} onChange={set('meal')} placeholder="0" min="0" /></Field>
+          <Field label="ホテル代金（円）"><Input type="number" value={f.hotelFee} onChange={set('hotelFee')} placeholder="0" min="0" /></Field>
+          <Field label="新幹線代金（円）"><Input type="number" value={f.shinkansenFee} onChange={set('shinkansenFee')} placeholder="0" min="0" /></Field>
           <Field label="その他立替（円）"><Input type="number" value={f.otherExp} onChange={set('otherExp')} placeholder="0" min="0" /></Field>
         </div>
         <ExtraItemsSection items={extraItems} onAdd={addExtraItem} onRemove={removeExtraItem} onLabelChange={setExtraLabel} onAmountChange={setExtraAmount} inputSt={inputSt} isMobile={isMobile} />
