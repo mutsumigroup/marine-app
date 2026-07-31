@@ -214,7 +214,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #ddd' }}>
-                  <th style={thS}>対応区分</th>
+                  <th style={{...thS, cursor: "default"}}>対応区分</th>
                   <th style={{ ...thS, textAlign: 'right' }}>件数</th>
                   <th style={{ ...thS, textAlign: 'right' }}>船員</th>
                   <th style={{ ...thS, textAlign: 'right' }}>単価（船/人）</th>
@@ -226,7 +226,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                   const line = r.count * r.shipP + r.crew * r.crewP
                   return (
                     <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
-                      <td style={tdS}>{r.cat}</td>
+                      <td style={{...tdS, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline dotted', textUnderlineOffset: 3}} onClick={() => navigate(`/reports?category=${encodeURIComponent(r.cat)}`)}>{r.cat}</td>
                       <td style={{ ...tdS, textAlign: 'right' }}><InlineNum value={r.count} onChange={v => setRow(i, 'count', v)} width={40} />隻</td>
                       <td style={{ ...tdS, textAlign: 'right' }}><InlineNum value={r.crew} onChange={v => setRow(i, 'crew', v)} width={40} />名</td>
                       <td style={{ ...tdS, textAlign: 'right', color: '#888' }}>¥{r.shipP.toLocaleString()} / ¥{r.crewP.toLocaleString()}</td>

@@ -257,6 +257,11 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const [filterYear, setFilterYear] = useState('')
   const [filterMonth, setFilterMonth] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
+  // URLパラメータからcategoryを読み取る
+  React.useEffect(() => {
+    const cat = searchParams.get('category')
+    if (cat) setFilterCategory(cat)
+  }, [searchParams])
   const [hwReport, setHwReport] = useState<Report | null>(null)
   const [editReport, setEditReport] = useState<Report | null>(null)
 
