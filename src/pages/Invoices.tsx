@@ -118,6 +118,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
       { label: '食事代',     amount: mealTotal },
       { label: 'その他立替', amount: othTotal },
       ...fixedExp.map((e) => ({ label: e.label, amount: e.amount })),
+      ...monthReports.flatMap(r => r.extra_expenses ?? []),
     ].filter(e => e.amount > 0)
   }
 
