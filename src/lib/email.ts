@@ -32,6 +32,8 @@ export function buildDailyReportEmail(report: {
   park_fee: number
   hw_fee: number
   meal: number
+  hotel_fee: number
+  shinkansen_fee: number
   expenses: number
   voucher: string
   bill_month: string

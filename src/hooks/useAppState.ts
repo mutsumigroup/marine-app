@@ -88,6 +88,8 @@ export function useAppState() {
             park_fee: reportData.park_fee,
             hw_fee: reportData.hw_fee,
             meal: reportData.meal,
+        hotel_fee: reportData.hotel_fee ?? 0,
+        shinkansen_fee: reportData.shinkansen_fee ?? 0,
             expenses: reportData.expenses,
             voucher: reportData.voucher ?? '',
             bill_month: reportData.bill_month,
