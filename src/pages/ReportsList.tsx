@@ -265,7 +265,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
                 {COLS.map(([h, w]) => (
-                  <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: h === '売上金額' ? 'var(--accent)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.3px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textAlign: 'left', width: w, background: h === '売上金額' ? 'var(--accent-bg)' : undefined }}>{h}</th>
+                  <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: h === '売上金額' ? 'var(--accent)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.3px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textAlign: 'left', width: w === 'auto' ? undefined : w, background: h === '売上金額' ? 'var(--accent-bg)' : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
