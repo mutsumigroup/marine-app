@@ -109,17 +109,21 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     const parkTotal = monthReports.reduce((s, r) => s + r.park_fee, 0)
     const hwTotal   = monthReports.reduce((s, r) => s + r.hw_fee, 0)
     const mealTotal = monthReports.reduce((s, r) => s + r.meal, 0)
+    const hotelTotal = monthReports.reduce((s, r) => s + (r.hotel_fee ?? 0), 0)
+    const shinkansenTotal = monthReports.reduce((s, r) => s + (r.shinkansen_fee ?? 0), 0)
     const othTotal  = monthReports.reduce((s, r) => s + r.other_exp, 0)
     const fixedExp  = settings.fixed_expenses ?? []
     const extraExp  = monthReports.flatMap(r => r.extra_expenses ?? [])
 
     if (inv.expense_items && inv.expense_items.length > 0) {
       // 保存済みの項目リストをベースに、固定4項目の金額だけ日報の最新値で更新する
-      const FIXED_LABELS = ['駐車場料金', '高速料金', '食事代', 'その他立替']
+      const FIXED_LABELS = ['駐車場料金', '高速料金', '食事代', 'ホテル代金', '新幹線代金', 'その他立替']
       const latestFixed: Record<string, number> = {
         '駐車場料金': parkTotal,
         '高速料金':   hwTotal,
         '食事代':     mealTotal,
+        'ホテル代金':   hotelTotal,
+        '新幹線代金':  shinkansenTotal,
         'その他立替': othTotal,
       }
       // 保存済み項目のうち固定4項目は最新値で上書き、それ以外（手動追加等）はそのまま
@@ -135,12 +139,14 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     }
 
     return [
-      { label: '駐車場料金', amount: parkTotal },
-      { label: '高速料金',   amount: hwTotal },
-      { label: '食事代',     amount: mealTotal },
-      { label: 'その他立替', amount: othTotal },
-      ...fixedExp.map((e) => ({ label: e.label, amount: e.amount })),
-      ...extraExp,
+      { label: '駐車場料金', amount: parkTotal, _type: 'business' },
+      { label: '高速料金',   amount: hwTotal,   _type: 'business' },
+      { label: '食事代',     amount: mealTotal, _type: 'business' },
+      { label: 'ホテル代金',   amount: hotelTotal, _type: 'business' },
+      { label: '新幹線代金',  amount: shinkansenTotal, _type: 'business' },
+      { label: 'その他立替', amount: othTotal,   _type: 'business' },
+      ...extraExp.map(e => ({ ...e, _type: 'business' as const })),
+      ...fixedExp.map((e) => ({ label: e.label, amount: e.amount, _type: 'fixed' as const })),
     ].filter(e => e.amount > 0)
   }
 
@@ -171,7 +177,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   }, [])
 
   const addExpItem = () => {
-    setExpItems(prev => [...prev, { label: '新しい項目', amount: 0 }])
+    setExpItems(prev => [...prev, { label: '新しい項目', amount: 0, _type: 'business' as const }])
     setDirty(true)
   }
 
@@ -266,7 +272,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
           </div>
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#888', letterSpacing: '.5px', textTransform: 'uppercase' }}>立替金精算</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#888', letterSpacing: '.5px', textTransform: 'uppercase' }}>業務立替金</div>
               <button onClick={addExpItem}
                 style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
                 ＋ 項目追加
@@ -275,7 +281,32 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
             <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>項目名・金額をクリックして編集、×で削除できます</div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
-                {expItems.map((e, i) => (
+                {/* 業務立替金 */}
+                <tr>
+                  <td colSpan={3} style={{ padding: '8px 8px 4px', fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase', borderBottom: '0.5px solid #ddd' }}>業務立替金</td>
+                </tr>
+                {expItems.map((e, i) => (e as any)._type !== 'fixed' && (
+                  <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
+                    <td style={tdS}>
+                      <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
+                    </td>
+                    <td style={{ ...tdS, textAlign: 'right' }}>
+                      ¥<InlineNum value={e.amount} onChange={v => setExpAmt(i, v)} width={90} />
+                    </td>
+                    <td style={{ padding: '7px 4px', textAlign: 'center', width: 24 }}>
+                      <button onClick={() => removeExpItem(i)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: 14, lineHeight: 1, padding: 0 }}
+                        title="削除">×</button>
+                    </td>
+                  </tr>
+                ))}
+                {/* その他立替金 */}
+                {expItems.some(e => (e as any)._type === 'fixed') && (
+                  <tr>
+                    <td colSpan={3} style={{ padding: '8px 8px 4px', fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase', borderBottom: '0.5px solid #ddd' }}>その他立替金</td>
+                  </tr>
+                )}
+                {expItems.map((e, i) => (e as any)._type === 'fixed' && (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
                     <td style={tdS}>
                       <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />

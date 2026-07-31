@@ -49,9 +49,9 @@ export interface Report {
   hotel_fee: number
   shinkansen_fee: number
   other_exp: number
-  extra_expenses?: { label: string; amount: number }[]
+  extra_expenses?: { label: string; amount: number; _type?: string }[]
   expenses: number
-  expense_items?: { label: string; amount: number }[]
+  expense_items?: { label: string; amount: number; _type?: string }[]
   voucher: string
   bill_month: string
   notes: string
@@ -67,7 +67,7 @@ export interface Invoice {
   subtotal: number
   tax: number
   expenses: number
-  expense_items?: { label: string; amount: number }[]
+  expense_items?: { label: string; amount: number; _type?: string }[]
   total: number
   status: InvoiceStatus
   sent_at: string
