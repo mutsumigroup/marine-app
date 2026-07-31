@@ -76,7 +76,7 @@ export function useAppState() {
 
       if (settings.daily_mail) {
         try {
-          const annualUrl = `${window.location.origin}/annual`
+          const annualUrl = "https://mutsumigroup.github.io/marine-app/#/reports"
           const message = buildDailyReportEmail({
             date: reportData.date,
             port: reportData.port,

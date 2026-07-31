@@ -77,7 +77,7 @@ export function buildDailyReportEmail(report: {
 ${report.voucher ? `Voucher：${report.voucher}` : ''}
 ${report.notes ? `備考：${report.notes}` : ''}
 
-■ 売上・目標管理を確認する
+■ 日報一覧を確認する
 ${annualUrl}
 
 ---
