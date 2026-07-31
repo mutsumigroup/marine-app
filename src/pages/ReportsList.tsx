@@ -110,13 +110,24 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
           <Field label="食事代（円）"><Input type="number" value={String(f.meal)} onChange={setNum('meal')} /></Field>
           <Field label="その他立替（円）"><Input type="number" value={String(f.other_exp)} onChange={setNum('other_exp')} /></Field>
         </Grid>
-        {report.extra_expenses && report.extra_expenses.length > 0 && (
+        {f.extra_expenses && f.extra_expenses.length > 0 && (
           <div style={{ marginTop: 8, marginBottom: 4 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>追加立替項目</div>
-            {report.extra_expenses.map((item, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 8px', background: 'var(--surface2)', borderRadius: 6, marginBottom: 4, fontSize: 13 }}>
-                <span style={{ color: 'var(--text)' }}>{item.label}</span>
-                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>¥{item.amount.toLocaleString()}</span>
+            {f.extra_expenses.map((item, i) => (
+              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                <input
+                  value={item.label}
+                  onChange={(e) => { const updated = [...f.extra_expenses!]; updated[i] = { ...updated[i], label: e.target.value }; setF(prev => ({ ...prev, extra_expenses: updated })) }}
+                  style={{ flex: 1, padding: '6px 8px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }}
+                  placeholder="項目名"
+                />
+                <input
+                  type="number"
+                  value={item.amount}
+                  onChange={(e) => { const updated = [...f.extra_expenses!]; updated[i] = { ...updated[i], amount: parseInt(e.target.value) || 0 }; setF(prev => ({ ...prev, extra_expenses: updated })) }}
+                  style={{ width: 100, padding: '6px 8px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--accent)', fontSize: 13, textAlign: 'right' }}
+                  placeholder="金額"
+                />
               </div>
             ))}
           </div>
