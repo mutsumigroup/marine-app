@@ -195,7 +195,7 @@ function CatBadge({ cat }: { cat: string }) {
 
 const COLS = [
   ['稼働日', '82px'], ['港名', '76px'], ['船名', '110px'], ['人数', '44px'],
-  ['対応区分', '88px'], ['業務内容', 'auto'], ['駐車場', '72px'],
+  ['対応区分', '88px'], ['業務内容', '220px'], ['駐車場', '72px'],
   ['高速料金 🛣', '90px'], ['食事代', '68px'], ['Voucher', '72px'], ['売上金額', '108px'],
 ]
 
@@ -261,7 +261,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>💡 行をクリックすると編集できます</div>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <table style={{ borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
                 {COLS.map(([h, w]) => (
