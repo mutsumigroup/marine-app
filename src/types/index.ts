@@ -47,6 +47,7 @@ export interface Report {
   hw_fee: number
   meal: number
   other_exp: number
+  extra_expenses?: { label: string; amount: number }[]
   expenses: number
   expense_items?: { label: string; amount: number }[]
   voucher: string
