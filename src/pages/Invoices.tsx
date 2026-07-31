@@ -115,39 +115,31 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     const fixedExp  = settings.fixed_expenses ?? []
     const extraExp  = monthReports.flatMap(r => r.extra_expenses ?? [])
 
-    if (inv.expense_items && inv.expense_items.length > 0) {
-      // 保存済みの項目リストをベースに、固定4項目の金額だけ日報の最新値で更新する
-      const FIXED_LABELS = ['駐車場料金', '高速料金', '食事代', 'ホテル代金', '新幹線代金', 'その他立替']
-      const latestFixed: Record<string, number> = {
-        '駐車場料金': parkTotal,
-        '高速料金':   hwTotal,
-        '食事代':     mealTotal,
-        'ホテル代金':   hotelTotal,
-        '新幹線代金':  shinkansenTotal,
-        'その他立替': othTotal,
-      }
-      // 保存済み項目のうち固定4項目は最新値で上書き、それ以外（手動追加等）はそのまま
-      const updated = inv.expense_items.map(e =>
-        FIXED_LABELS.includes(e.label) ? { ...e, amount: latestFixed[e.label] } : e
-      )
-      // 固定4項目のうち保存済みにない項目を追加
-      const existingLabels = updated.map(e => e.label)
-      const missing = FIXED_LABELS
-        .filter(l => !existingLabels.includes(l) && latestFixed[l] > 0)
-        .map(l => ({ label: l, amount: latestFixed[l] }))
-      return [...updated, ...missing].filter(e => e.amount > 0)
-    }
-
-    return [
-      { label: '駐車場料金', amount: parkTotal, _type: 'business' },
-      { label: '高速料金',   amount: hwTotal,   _type: 'business' },
-      { label: '食事代',     amount: mealTotal, _type: 'business' },
-      { label: 'ホテル代金',   amount: hotelTotal, _type: 'business' },
-      { label: '新幹線代金',  amount: shinkansenTotal, _type: 'business' },
-      { label: 'その他立替', amount: othTotal,   _type: 'business' },
+    // 業務立替金（日報から）
+    const businessItems = [
+      { label: '駐車場料金', amount: parkTotal,        _type: 'business' as const },
+      { label: '高速料金',   amount: hwTotal,          _type: 'business' as const },
+      { label: '食事代',     amount: mealTotal,        _type: 'business' as const },
+      { label: 'ホテル代金', amount: hotelTotal,       _type: 'business' as const },
+      { label: '新幹線代金', amount: shinkansenTotal,  _type: 'business' as const },
+      { label: 'その他立替', amount: othTotal,         _type: 'business' as const },
       ...extraExp.map(e => ({ ...e, _type: 'business' as const })),
-      ...fixedExp.map((e) => ({ label: e.label, amount: e.amount, _type: 'fixed' as const })),
-    ].filter(e => e.amount > 0)
+    ]
+    // その他立替金（設定の固定費）
+    const fixedItems = fixedExp.map(e => ({ label: e.label, amount: e.amount, _type: 'fixed' as const }))
+
+    // 保存済みの手動追加項目（業務でも固定でもない）を保持
+    const manualItems = inv.expense_items
+      ? inv.expense_items
+          .filter(e => {
+            const isFixed = fixedExp.some(f => f.label === e.label)
+            const isBusiness = ['駐車場料金','高速料金','食事代','ホテル代金','新幹線代金','その他立替'].includes(e.label)
+            return !isFixed && !isBusiness
+          })
+          .map(e => ({ ...e, _type: 'business' as const }))
+      : []
+
+    return [...businessItems, ...manualItems, ...fixedItems].filter(e => e.amount > 0)
   }
 
   const [rows, setRows] = useState(initRows)
