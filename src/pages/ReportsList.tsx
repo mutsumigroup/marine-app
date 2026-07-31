@@ -145,6 +145,37 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
 
 
 // 業務内容ポップアップ
+function ExtraExpenseCell({ items }: { items: {label: string; amount: number}[] }) {
+  const [show, setShow] = React.useState(false)
+  const total = items.reduce((sum, e) => sum + e.amount, 0)
+  return (
+    <>
+      <div onClick={(e) => { e.stopPropagation(); setShow(true) }}
+        style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: 12, textDecoration: 'underline dotted', textUnderlineOffset: 3 }}>
+        ¥{total.toLocaleString()}
+      </div>
+      {show && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={() => setShow(false)}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', maxWidth: 300, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,.2)' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 10 }}>追加立替項目</div>
+            {items.map((item, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none', fontSize: 13 }}>
+                <span style={{ color: 'var(--text)' }}>{item.label}</span>
+                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>¥{item.amount.toLocaleString()}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0 0', marginTop: 6, fontSize: 13, fontWeight: 700 }}>
+              <span>合計</span>
+              <span style={{ color: 'var(--accent)' }}>¥{total.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 function WorkCell({ work }: { work: string }) {
   const [show, setShow] = React.useState(false)
   if (!work || work === '—') return <span style={{ color: 'var(--text-light)', fontSize: 11 }}>—</span>
@@ -290,7 +321,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                     </td>
                 <td style={{ ...TD, fontSize: 11 }} onClick={(e) => e.stopPropagation()}>
                   {r.extra_expenses && r.extra_expenses.length > 0
-                    ? <span style={{ color: 'var(--accent)', fontSize: 12 }}>¥{r.extra_expenses.reduce((sum: number, e: {label: string; amount: number}) => sum + e.amount, 0).toLocaleString()}</span>
+                    ? <ExtraExpenseCell items={r.extra_expenses} />
                     : <span style={{ color: 'var(--text-light)' }}>—</span>}
                 </td>
                     <td style={{ ...TD, background: 'var(--accent-bg)' }} onClick={e => e.stopPropagation()}>
