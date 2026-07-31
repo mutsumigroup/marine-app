@@ -203,7 +203,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
         <div style={{ padding: '24px 28px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 22, fontWeight: 500, letterSpacing: '0.15em', color: '#1a1a1a' }}>請　求　書</div>
+              <div style={{ fontSize: 22, fontWeight: 500, letterSpacing: '0.15em', color: '#1a1a1a' }}>請求書</div>
               <div style={{ fontSize: 10, color: '#888', marginTop: 4 }}>登録番号: {settings.invoice_no}</div>
             </div>
             <div style={{ textAlign: 'right', fontSize: 11, color: '#555', lineHeight: 1.7 }}>
