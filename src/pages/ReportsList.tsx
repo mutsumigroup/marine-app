@@ -151,7 +151,7 @@ function WorkCell({ work }: { work: string }) {
   return (
     <>
       <div onClick={e => { e.stopPropagation(); setShow(true) }}
-        style={{ cursor: 'pointer', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: 'var(--text-muted)', textDecoration: 'underline dotted', textUnderlineOffset: 3 }}>
+        style={{ cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', textDecoration: 'underline dotted', textUnderlineOffset: 3 }}>
         {work}
       </div>
       {show && (
