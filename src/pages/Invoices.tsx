@@ -10,7 +10,7 @@ interface Props {
   onSend: (id: string) => Promise<boolean>
   onPaid: (id: string) => Promise<boolean>
   onRevert: (id: string, status: string) => Promise<boolean>
-  onUpdateInvoice: (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total'>) => Promise<boolean>
+  onUpdateInvoice: (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total' | 'expense_items'>) => Promise<boolean>
 }
 
 const STATUS_ALL = ['未請求', '作成済', '送信済', '入金待ち', '入金済'] as const
@@ -61,7 +61,7 @@ function InlineNum({ value, onChange, width = 60 }: { value: number; onChange: (
 function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice, processing }: {
   inv: Invoice; reports: Report[]; settings: Settings
   onClose: () => void; onSend: (id: string) => Promise<void>
-  onUpdateInvoice: (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total'>) => Promise<boolean>
+  onUpdateInvoice: (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total' | 'expense_items'>) => Promise<boolean>
   processing: boolean
 }) {
   const monthReports = reports.filter(r => r.bill_month === inv.billing_month)
@@ -81,6 +81,9 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   }
 
   const initExp = () => {
+    if (inv.expense_items && inv.expense_items.length > 0) {
+      return inv.expense_items
+    }
     const parkTotal = monthReports.reduce((s, r) => s + r.park_fee, 0)
     const hwTotal   = monthReports.reduce((s, r) => s + r.hw_fee, 0)
     const mealTotal = monthReports.reduce((s, r) => s + r.meal, 0)
@@ -95,7 +98,6 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     ].filter(e => e.amount > 0)
   }
 
-  const savedSubtotal = inv.subtotal
   const [rows, setRows] = useState(initRows)
   const [expItems, setExpItems] = useState(initExp)
   const [saving, setSaving] = useState(false)
@@ -119,7 +121,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
 
   const handleSave = async () => {
     setSaving(true)
-    await onUpdateInvoice(inv.id, { subtotal, tax, expenses, total })
+    await onUpdateInvoice(inv.id, { subtotal, tax, expenses, total, expense_items: expItems })
     setDirty(false)
     setSaving(false)
   }
@@ -133,7 +135,6 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     <div onClick={e => { if (e.target === e.currentTarget) onClose() }}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 300, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '24px 16px' }}>
       <div style={{ background: '#fff', color: '#222', borderRadius: 10, width: '100%', maxWidth: 680, boxShadow: '0 12px 48px rgba(0,0,0,.22)', overflow: 'hidden' }}>
-
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#f7f7f5', borderBottom: '0.5px solid #ddd' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>請求書 — {inv.billing_month}分</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -141,7 +142,6 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#999' }}>✕</button>
           </div>
         </div>
-
         <div style={{ padding: '24px 28px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <div>
@@ -154,9 +154,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
               <div>{settings.tel} | {settings.email}</div>
             </div>
           </div>
-
           <div style={{ borderTop: '0.5px solid #ccc', marginBottom: 14 }} />
-
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}>
             <div>
               <div style={{ fontSize: 10, color: '#999', marginBottom: 3 }}>請求先</div>
@@ -167,12 +165,10 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
               <div>請求日: {today} / 支払期限: {due}</div>
             </div>
           </div>
-
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1a1a', color: '#fff', borderRadius: 6, padding: '10px 16px', marginBottom: 20 }}>
             <div style={{ fontSize: 12 }}>ご請求金額（税込）</div>
             <div style={{ fontSize: 20, fontWeight: 500 }}>¥{total.toLocaleString()}</div>
           </div>
-
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: '#888', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 4 }}>業務明細</div>
             <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>件数・船員数をクリックして編集できます</div>
@@ -207,7 +203,6 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, borderTop: '0.5px solid #ddd', paddingTop: 6, marginTop: 3 }}><span>業務請求小計</span><span>¥{bizTotal.toLocaleString()}</span></div>
             </div>
           </div>
-
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: '#888', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 4 }}>立替金精算</div>
             <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>金額をクリックして編集できます</div>
@@ -225,7 +220,6 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
               <span>立替金合計</span><span>¥{expenses.toLocaleString()}</span>
             </div>
           </div>
-
           <div style={{ background: '#f7f7f5', borderRadius: 6, padding: '12px 16px', marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#666', marginBottom: 4 }}><span>業務請求金額（税込）</span><span>¥{bizTotal.toLocaleString()}</span></div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#666', marginBottom: 4 }}><span>立替金精算</span><span>¥{expenses.toLocaleString()}</span></div>
@@ -233,19 +227,16 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
               <span>最終請求金額</span><span>¥{total.toLocaleString()}</span>
             </div>
           </div>
-
           <div style={{ fontSize: 11, color: '#555', lineHeight: 1.8, borderTop: '0.5px solid #ddd', paddingTop: 10 }}>
             <div style={{ fontWeight: 600, marginBottom: 2 }}>お振込先</div>
             <div>{settings.bank}</div><div>{settings.account}</div>
           </div>
-
           {dirty && (
             <div style={{ marginTop: 14, padding: '8px 12px', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 6, fontSize: 12, color: '#92400e' }}>
               ✏️ 金額が変更されています。「保存」を押してSupabaseに反映してください。
             </div>
           )}
         </div>
-
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', background: '#f7f7f5', borderTop: '0.5px solid #ddd' }}>
           <Btn onClick={onClose}>閉じる</Btn>
           {dirty && <Btn variant="primary" disabled={saving} onClick={handleSave}>{saving ? '保存中...' : '💾 保存'}</Btn>}
