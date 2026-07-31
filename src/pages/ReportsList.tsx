@@ -110,6 +110,17 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
           <Field label="食事代（円）"><Input type="number" value={String(f.meal)} onChange={setNum('meal')} /></Field>
           <Field label="その他立替（円）"><Input type="number" value={String(f.other_exp)} onChange={setNum('other_exp')} /></Field>
         </Grid>
+        {report.extra_expenses && report.extra_expenses.length > 0 && (
+          <div style={{ marginTop: 8, marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>追加立替項目</div>
+            {report.extra_expenses.map((item, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 8px', background: 'var(--surface2)', borderRadius: 6, marginBottom: 4, fontSize: 13 }}>
+                <span style={{ color: 'var(--text)' }}>{item.label}</span>
+                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>¥{item.amount.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
         <Divider />
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 10 }}>売上</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
