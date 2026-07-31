@@ -288,6 +288,11 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                     <td style={{ ...TD, fontSize: 10, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
                       {r.voucher ? r.voucher.startsWith('http') || r.voucher.startsWith('data:') ? <a href={r.voucher} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline', fontSize: 10 }}>🔗 開く</a> : <span style={{ color: 'var(--text-light)' }}>{r.voucher}</span> : <span style={{ color: 'var(--text-light)' }}>—</span>}
                     </td>
+                <td style={{ ...TD, fontSize: 11 }} onClick={(e) => e.stopPropagation()}>
+                  {r.extra_expenses && r.extra_expenses.length > 0
+                    ? <span style={{ color: 'var(--accent)', fontSize: 12 }}>¥{r.extra_expenses.reduce((sum: number, e: {label: string; amount: number}) => sum + e.amount, 0).toLocaleString()}</span>
+                    : <span style={{ color: 'var(--text-light)' }}>—</span>}
+                </td>
                     <td style={{ ...TD, background: 'var(--accent-bg)' }} onClick={e => e.stopPropagation()}>
                       {r.amount > 0 ? <strong style={{ color: 'var(--accent)', fontSize: 12 }}>¥{r.amount.toLocaleString()}</strong> : <span style={{ color: 'var(--text-light)', fontSize: 11 }}>未入力</span>}
                     </td>
