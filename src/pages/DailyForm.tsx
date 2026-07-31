@@ -2,11 +2,59 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Card, CardTitle, Field, Input, Select, Divider, Btn, PageHeader, useIsMobile } from '../components/UI'
 import { CATEGORIES } from '../types'
 import type { Report } from '../types'
+
 interface Props {
   onSubmit: (data: Omit<Report, 'id' | 'created_at' | 'updated_at'>) => Promise<boolean>
   pastReports?: { port: string; ship: string }[]
   prices?: Record<string, { ship: number; crew: number }>
 }
+
+interface ExtraItem { label: string; amount: number }
+
+interface ExtraItemsProps {
+  items: ExtraItem[]
+  onAdd: () => void
+  onRemove: (i: number) => void
+  onLabelChange: (i: number, v: string) => void
+  onAmountChange: (i: number, v: number) => void
+  inputSt: React.CSSProperties
+  isMobile: boolean
+}
+
+function ExtraItemsSection({ items, onAdd, onRemove, onLabelChange, onAmountChange, inputSt, isMobile }: ExtraItemsProps) {
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div style={{ fontSize: isMobile ? 13 : 11, color: 'var(--text-muted)', fontWeight: 600 }}>追加立替項目</div>
+        <button onClick={onAdd}
+          style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
+          ＋ 項目追加
+        </button>
+      </div>
+      {items.map((e, i) => (
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 28px', gap: 6, marginBottom: 6, alignItems: 'center' }}>
+          <input
+            value={e.label}
+            onChange={ev => onLabelChange(i, ev.target.value)}
+            style={{ ...inputSt, padding: isMobile ? '10px 12px' : '6px 8px' }}
+            placeholder="項目名"
+          />
+          <input
+            type="number"
+            value={e.amount || ''}
+            onChange={ev => onAmountChange(i, parseInt(ev.target.value) || 0)}
+            style={{ ...inputSt, padding: isMobile ? '10px 12px' : '6px 8px' }}
+            placeholder="0"
+            min="0"
+          />
+          <button onClick={() => onRemove(i)}
+            style={{ background: '#fee2e2', border: 'none', borderRadius: 4, color: '#dc2626', cursor: 'pointer', fontSize: 14, height: isMobile ? 44 : 30, fontWeight: 600 }}>×</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function AutoInput({ value, onChange, placeholder, suggestions }: { value: string; onChange: (v: string) => void; placeholder?: string; suggestions: string[] }) {
   const [show, setShow] = useState(false)
   const [filtered, setFiltered] = useState<string[]>([])
@@ -43,11 +91,13 @@ function AutoInput({ value, onChange, placeholder, suggestions }: { value: strin
     </div>
   )
 }
+
 const EMPTY = {
   date: new Date().toISOString().slice(0, 10), port: '', ship: '', crew: '', category: '', work: '',
   amount: '', parkPlace: '', parkFee: '', hwFrom1: '', hwTo1: '', hwFrom2: '', hwTo2: '', hwFee: '',
   meal: '', otherExp: '', voucher: '', billMonth: new Date().toISOString().slice(0, 7), notes: '',
 }
+
 export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: Props) {
   const [f, setF] = useState(EMPTY)
   const [submitting, setSubmitting] = useState(false)
@@ -55,9 +105,10 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
   const [pdfName, setPdfName] = useState('')
   const [autoCalc, setAutoCalc] = useState(true)
   const [section, setSection] = useState<'basic' | 'transport' | 'sales'>('basic')
-  const [extraItems, setExtraItems] = useState<{ label: string; amount: number }[]>([])
+  const [extraItems, setExtraItems] = useState<ExtraItem[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
   const isMobile = useIsMobile()
+
   const calcAmount = (cat: string, crew: number) => { const p = prices[cat] ?? { ship: 10000, crew: 1000 }; return p.ship + crew * (p.crew ?? 0) }
   const set = (key: string) => (v: string) => setF(prev => ({ ...prev, [key]: v }))
   const handleCategoryChange = (v: string) => setF(prev => ({ ...prev, category: v, amount: autoCalc ? String(calcAmount(v, parseInt(prev.crew) || 0)) : prev.amount }))
@@ -66,6 +117,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
   const totalExp = (parseInt(f.parkFee) || 0) + (parseInt(f.hwFee) || 0) + (parseInt(f.meal) || 0) + (parseInt(f.otherExp) || 0) + extraTotal
   const portList = [...new Set(pastReports.map(r => r.port).filter(Boolean))].sort()
   const shipList = [...new Set(pastReports.map(r => r.ship).filter(Boolean))].sort()
+
   const handlePdfSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -74,10 +126,12 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
     reader.onload = (ev) => { setF(prev => ({ ...prev, voucher: ev.target?.result as string })); setPdfName(file.name) }
     reader.readAsDataURL(file)
   }
-  const addExtraItem = () => setExtraItems(prev => [...prev, { label: '', amount: 0 }])
-  const removeExtraItem = (i: number) => setExtraItems(prev => prev.filter((_, idx) => idx !== i))
-  const setExtraLabel = (i: number, label: string) => setExtraItems(prev => prev.map((e, idx) => idx === i ? { ...e, label } : e))
-  const setExtraAmount = (i: number, amount: number) => setExtraItems(prev => prev.map((e, idx) => idx === i ? { ...e, amount } : e))
+
+  const addExtraItem = useCallback(() => setExtraItems(prev => [...prev, { label: '', amount: 0 }]), [])
+  const removeExtraItem = useCallback((i: number) => setExtraItems(prev => prev.filter((_, idx) => idx !== i)), [])
+  const setExtraLabel = useCallback((i: number, label: string) => setExtraItems(prev => prev.map((e, idx) => idx === i ? { ...e, label } : e)), [])
+  const setExtraAmount = useCallback((i: number, amount: number) => setExtraItems(prev => prev.map((e, idx) => idx === i ? { ...e, amount } : e)), [])
+
   const handleSubmit = async () => {
     setError('')
     if (!f.date || !f.port || !f.ship || !f.category || !f.amount) { setError('必須項目（稼働日・港名・船名・対応区分・売上金額）を入力してください'); return }
@@ -86,29 +140,8 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
     if (ok) { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfName(''); setSection('basic'); setExtraItems([]) }
     setSubmitting(false)
   }
-  const inputSt = { padding: isMobile ? '12px 14px' : '8px 10px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: isMobile ? 16 : 13, width: '100%', outline: 'none' }
 
-  const ExtraItemsSection = () => (
-    <div style={{ marginTop: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <div style={{ fontSize: isMobile ? 13 : 11, color: 'var(--text-muted)', fontWeight: 600 }}>追加立替項目</div>
-        <button onClick={addExtraItem}
-          style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
-          ＋ 項目追加
-        </button>
-      </div>
-      {extraItems.map((e, i) => (
-        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 28px', gap: 6, marginBottom: 6, alignItems: 'center' }}>
-          <input value={e.label} onChange={ev => setExtraLabel(i, ev.target.value)}
-            style={{ ...inputSt, padding: isMobile ? '10px 12px' : '6px 8px' }} placeholder="項目名" />
-          <input type="number" value={e.amount || ''} onChange={ev => setExtraAmount(i, parseInt(ev.target.value) || 0)}
-            style={{ ...inputSt, padding: isMobile ? '10px 12px' : '6px 8px' }} placeholder="0" min="0" />
-          <button onClick={() => removeExtraItem(i)}
-            style={{ background: '#fee2e2', border: 'none', borderRadius: 4, color: '#dc2626', cursor: 'pointer', fontSize: 14, height: isMobile ? 44 : 30, fontWeight: 600 }}>×</button>
-        </div>
-      ))}
-    </div>
-  )
+  const inputSt: React.CSSProperties = { padding: isMobile ? '12px 14px' : '8px 10px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: isMobile ? 16 : 13, width: '100%', outline: 'none' }
 
   if (isMobile) {
     const steps = [
@@ -180,7 +213,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
                   <Field label="食事代（円）"><input type="number" value={f.meal} onChange={e => set('meal')(e.target.value)} placeholder="0" style={inputSt} /></Field>
                   <Field label="その他立替（円）"><input type="number" value={f.otherExp} onChange={e => set('otherExp')(e.target.value)} placeholder="0" style={inputSt} /></Field>
                 </div>
-                <ExtraItemsSection />
+                <ExtraItemsSection items={extraItems} onAdd={addExtraItem} onRemove={removeExtraItem} onLabelChange={setExtraLabel} onAmountChange={setExtraAmount} inputSt={inputSt} isMobile={isMobile} />
                 {totalExp > 0 && (
                   <div style={{ background: 'var(--surface2)', borderRadius: 10, padding: '12px 14px', fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)' }}>立替合計</span>
@@ -233,6 +266,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
       </div>
     )
   }
+
   return (
     <div style={{ padding: '20px 22px' }}>
       <PageHeader title="日報作成" sub="送信すると売上・請求データへ自動連携（Supabase保存）" />
@@ -279,7 +313,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
           <Field label="食事代（円）"><Input type="number" value={f.meal} onChange={set('meal')} placeholder="0" min="0" /></Field>
           <Field label="その他立替（円）"><Input type="number" value={f.otherExp} onChange={set('otherExp')} placeholder="0" min="0" /></Field>
         </div>
-        <ExtraItemsSection />
+        <ExtraItemsSection items={extraItems} onAdd={addExtraItem} onRemove={removeExtraItem} onLabelChange={setExtraLabel} onAmountChange={setExtraAmount} inputSt={inputSt} isMobile={isMobile} />
         {totalExp > 0 && <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>立替合計: <strong style={{ color: 'var(--text)' }}>¥{totalExp.toLocaleString()}</strong></div>}
       </Card>
       <Card>
