@@ -70,7 +70,7 @@ function AppInner() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/marine-app">
       <AppInner />
     </BrowserRouter>
   )
