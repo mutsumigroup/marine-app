@@ -312,6 +312,11 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
           <option value="">すべての区分</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </Select>
+        {fromInvoices && backMonth && (
+          <div style={{ padding: "8px 0 4px" }}>
+            <button onClick={() => { window.location.href = "#/invoices" }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>← {backMonth} 請求分に戻る</button>
+          </div>
+        )}
       </PageHeader>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
