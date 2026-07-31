@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { HashRouter as BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useAppState } from './hooks/useAppState'
 import Sidebar from './components/Sidebar'
 import { LoadingSpinner, ToastContainer, useIsMobile } from './components/UI'
@@ -70,7 +70,7 @@ function AppInner() {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/marine-app">
+    <BrowserRouter>
       <AppInner />
     </BrowserRouter>
   )
