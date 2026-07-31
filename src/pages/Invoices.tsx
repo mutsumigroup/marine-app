@@ -387,6 +387,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
           })
         }
       </div>
+  const navigate = useNavigate()
       {previewInv && <InvoiceSheet key={previewInv.id} inv={previewInv} reports={reports} settings={settings} onClose={() => setPreviewId(null)} onSend={handleSend} onUpdateInvoice={onUpdateInvoice} processing={processing===previewInv.id} />}
     </div>
   )
