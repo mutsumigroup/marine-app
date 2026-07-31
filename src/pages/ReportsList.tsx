@@ -41,12 +41,9 @@ function HwPopup({ report, onClose, onSavePdf }: { report: Report; onClose: () =
             </div>
           ))}
         </div>
-        <div style={{ background: report.hw_fee === 0 ? '#fff7ed' : 'var(--accent-bg)', borderRadius: 8, padding: '12px 14px', border: `1px solid ${report.hw_fee === 0 ? '#f97316' : 'var(--accent-border)'}`, marginBottom: 14 }}>
+        <div style={{ background: 'var(--accent-bg)', borderRadius: 8, padding: '12px 14px', border: '1px solid var(--accent-border)', marginBottom: 14 }}>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>高速料金合計</div>
-          {report.hw_fee === 0
-            ? <div style={{ fontSize: 14, fontWeight: 700, color: '#c2410c' }}>⚠️ 未入力 — 日報を編集して金額を入力してください</div>
-            : <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>¥{report.hw_fee.toLocaleString()}</div>
-          }
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>¥{report.hw_fee.toLocaleString()}</div>
         </div>
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10, color: 'var(--text-secondary)' }}>📎 領収書PDF</div>
@@ -225,26 +222,13 @@ function WorkCell({ work }: { work: string }) {
   )
 }
 
-function HwCell({ report, onClick, onEditClick }: { report: Report; onClick: () => void; onEditClick: () => void }) {
-  // 区間なし・金額なし → 何も表示しない
+function HwCell({ report, onClick }: { report: Report; onClick: () => void }) {
   if (report.hw_fee === 0 && !report.hw_from1 && !report.hw_from2) return <span style={{ color: 'var(--text-light)', fontSize: 11 }}>—</span>
-  // 区間あり・金額ゼロ → オレンジ警告バッジ（クリックで編集モーダルへ）
-  const needsFee = report.hw_fee === 0 && (report.hw_from1 || report.hw_from2)
-  if (needsFee) {
-    return (
-      <div onClick={onEditClick} title="高速料金が未入力です。クリックして金額を入力してください"
-        style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 7px', borderRadius: 'var(--radius)', border: '1px solid #f97316', background: '#fff7ed', color: '#c2410c', fontWeight: 600, fontSize: 11, transition: 'all .12s' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#ffedd5' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '#fff7ed' }}>
-        ⚠️ 金額未入力
-      </div>
-    )
-  }
   return (
     <div onClick={onClick} title="クリックして高速詳細を表示" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 6px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--surface2)', transition: 'all .12s', fontSize: 11 }}
       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-bg)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent-border)' }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface2)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)' }}>
-      🛣 ¥{report.hw_fee.toLocaleString()}
+      🛣 {report.hw_fee > 0 ? `¥${report.hw_fee.toLocaleString()}` : '詳細'}
     </div>
   )
 }
@@ -369,7 +353,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                     <td style={TD}><CatBadge cat={r.category} /></td>
                   <td style={{ ...TD, overflow: "visible", textOverflow: "clip", whiteSpace: "normal" }} onClick={(e) => e.stopPropagation()}><WorkCell work={r.work} />  </td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.park_fee > 0 ? `¥${r.park_fee.toLocaleString()}` : '—'}</td>
-                    <td style={TD} onClick={e => e.stopPropagation()}><HwCell report={r} onClick={() => setHwReport(r)} onEditClick={() => setEditReport(r)} /></td>
+                    <td style={TD} onClick={e => { e.stopPropagation(); setHwReport(r) }}><HwCell report={r} onClick={() => setHwReport(r)} /></td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.meal > 0 ? `¥${r.meal.toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 10, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
                       {r.voucher ? r.voucher.startsWith('http') || r.voucher.startsWith('data:') ? <a href={r.voucher} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline', fontSize: 10 }}>🔗 開く</a> : <span style={{ color: 'var(--text-light)' }}>{r.voucher}</span> : <span style={{ color: 'var(--text-light)' }}>—</span>}

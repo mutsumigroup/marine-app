@@ -105,21 +105,42 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   }
 
   const initExp = () => {
-    if (inv.expense_items && inv.expense_items.length > 0) {
-      return inv.expense_items
-    }
+    // 日報から最新の合計を計算（常に最新値を使う）
     const parkTotal = monthReports.reduce((s, r) => s + r.park_fee, 0)
     const hwTotal   = monthReports.reduce((s, r) => s + r.hw_fee, 0)
     const mealTotal = monthReports.reduce((s, r) => s + r.meal, 0)
     const othTotal  = monthReports.reduce((s, r) => s + r.other_exp, 0)
     const fixedExp  = settings.fixed_expenses ?? []
+    const extraExp  = monthReports.flatMap(r => r.extra_expenses ?? [])
+
+    if (inv.expense_items && inv.expense_items.length > 0) {
+      // 保存済みの項目リストをベースに、固定4項目の金額だけ日報の最新値で更新する
+      const FIXED_LABELS = ['駐車場料金', '高速料金', '食事代', 'その他立替']
+      const latestFixed: Record<string, number> = {
+        '駐車場料金': parkTotal,
+        '高速料金':   hwTotal,
+        '食事代':     mealTotal,
+        'その他立替': othTotal,
+      }
+      // 保存済み項目のうち固定4項目は最新値で上書き、それ以外（手動追加等）はそのまま
+      const updated = inv.expense_items.map(e =>
+        FIXED_LABELS.includes(e.label) ? { ...e, amount: latestFixed[e.label] } : e
+      )
+      // 固定4項目のうち保存済みにない項目を追加
+      const existingLabels = updated.map(e => e.label)
+      const missing = FIXED_LABELS
+        .filter(l => !existingLabels.includes(l) && latestFixed[l] > 0)
+        .map(l => ({ label: l, amount: latestFixed[l] }))
+      return [...updated, ...missing].filter(e => e.amount > 0)
+    }
+
     return [
       { label: '駐車場料金', amount: parkTotal },
       { label: '高速料金',   amount: hwTotal },
       { label: '食事代',     amount: mealTotal },
       { label: 'その他立替', amount: othTotal },
       ...fixedExp.map((e) => ({ label: e.label, amount: e.amount })),
-      ...monthReports.flatMap(r => r.extra_expenses ?? []),
+      ...extraExp,
     ].filter(e => e.amount > 0)
   }
 
