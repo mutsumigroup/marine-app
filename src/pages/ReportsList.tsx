@@ -194,9 +194,9 @@ function CatBadge({ cat }: { cat: string }) {
 }
 
 const COLS = [
-  ['稼働日', '82px'], ['港名', '76px'], ['船名', '110px'], ['人数', '44px'],
-  ['対応区分', '88px'], ['業務内容', '160px'], ['駐車場', '78px'],
-  ['高速料金 🛣', '90px'], ['食事代', '68px'], ['Voucher', '72px'], ['売上金額', '108px'],
+  ['稼働日', '82px'], ['港名', '80px'], ['船名', '120px'], ['人数', '48px'],
+  ['対応区分', '92px'], ['業務内容', '200px'], ['駐車場', '82px'],
+  ['高速料金 🛣', '90px'], ['食事代', '76px'], ['Voucher', '80px'], ['売上金額', '114px'],
 ]
 
 export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpdateReport, onDeleteReport, prices = {} }: Props) {
