@@ -58,6 +58,29 @@ function InlineNum({ value, onChange, width = 60 }: { value: number; onChange: (
   )
 }
 
+function InlineLabel({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const open = () => { setDraft(value); setEditing(true) }
+  const commit = () => { if (draft.trim()) onChange(draft.trim()); setEditing(false) }
+  if (editing) {
+    return (
+      <input autoFocus value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+        style={{ width: 120, padding: '2px 4px', border: '1.5px solid #2563eb', borderRadius: 4, fontSize: 12, background: '#eff6ff', color: '#1d4ed8', outline: 'none', fontFamily: 'inherit' }}
+      />
+    )
+  }
+  return (
+    <span onClick={open} title="クリックして編集"
+      style={{ cursor: 'text', borderBottom: '1px dashed #bbb', paddingBottom: 1 }}>
+      {value}
+    </span>
+  )
+}
+
 function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice, processing }: {
   inv: Invoice; reports: Report[]; settings: Settings
   onClose: () => void; onSend: (id: string) => Promise<void>
@@ -116,6 +139,21 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
 
   const setExpAmt = useCallback((i: number, v: number) => {
     setExpItems(prev => prev.map((e, idx) => idx === i ? { ...e, amount: v } : e))
+    setDirty(true)
+  }, [])
+
+  const setExpLabel = useCallback((i: number, label: string) => {
+    setExpItems(prev => prev.map((e, idx) => idx === i ? { ...e, label } : e))
+    setDirty(true)
+  }, [])
+
+  const addExpItem = () => {
+    setExpItems(prev => [...prev, { label: '新しい項目', amount: 0 }])
+    setDirty(true)
+  }
+
+  const removeExpItem = useCallback((i: number) => {
+    setExpItems(prev => prev.filter((_, idx) => idx !== i))
     setDirty(true)
   }, [])
 
@@ -204,14 +242,29 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
             </div>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#888', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 4 }}>立替金精算</div>
-            <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>金額をクリックして編集できます</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#888', letterSpacing: '.5px', textTransform: 'uppercase' }}>立替金精算</div>
+              <button onClick={addExpItem}
+                style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
+                ＋ 項目追加
+              </button>
+            </div>
+            <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>項目名・金額をクリックして編集、×で削除できます</div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 {expItems.map((e, i) => (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
-                    <td style={tdS}>{e.label}</td>
-                    <td style={{ ...tdS, textAlign: 'right' }}>¥<InlineNum value={e.amount} onChange={v => setExpAmt(i, v)} width={90} /></td>
+                    <td style={tdS}>
+                      <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
+                    </td>
+                    <td style={{ ...tdS, textAlign: 'right' }}>
+                      ¥<InlineNum value={e.amount} onChange={v => setExpAmt(i, v)} width={90} />
+                    </td>
+                    <td style={{ padding: '7px 4px', textAlign: 'center', width: 24 }}>
+                      <button onClick={() => removeExpItem(i)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: 14, lineHeight: 1, padding: 0 }}
+                        title="削除">×</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
