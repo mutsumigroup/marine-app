@@ -110,10 +110,15 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
           <Field label="食事代（円）"><Input type="number" value={String(f.meal)} onChange={setNum('meal')} /></Field>
           <Field label="その他立替（円）"><Input type="number" value={String(f.other_exp)} onChange={setNum('other_exp')} /></Field>
         </Grid>
-        {f.extra_expenses && f.extra_expenses.length > 0 && (
-          <div style={{ marginTop: 8, marginBottom: 4 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>追加立替項目</div>
-            {f.extra_expenses.map((item, i) => (
+        <div style={{ marginTop: 8, marginBottom: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px' }}>追加立替項目</div>
+            <button onClick={() => setF(prev => ({ ...prev, extra_expenses: [...(prev.extra_expenses ?? []), { label: '', amount: 0 }] }))}
+              style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius)', padding: '2px 10px', cursor: 'pointer', fontWeight: 600 }}>
+              ＋ 項目追加
+            </button>
+          </div>
+          {(f.extra_expenses ?? []).map((item, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
                 <input
                   value={item.label}
@@ -130,8 +135,7 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
                 />
               </div>
             ))}
-          </div>
-        )}
+        </div>
         <Divider />
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 10 }}>売上</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
