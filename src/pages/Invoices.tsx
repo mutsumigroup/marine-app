@@ -340,7 +340,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
           {dirty && <Btn variant="primary" disabled={saving} onClick={handleSave}>{saving ? '保存中...' : '💾 保存'}</Btn>}
           {['未請求', '作成済'].includes(inv.status) && (
             <Btn variant="success" disabled={processing} onClick={async () => { await onSend(inv.id); onClose() }}>
-              {processing ? '処理中...' : '📤 PDF生成・送信'}
+              {processing ? '処理中...' : '📤 請求書を送信'}
             </Btn>
           )}
         </div>
@@ -417,7 +417,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <Btn size="sm" onClick={() => setPreviewId(inv.id)}>👁 確認・編集</Btn>
-                  {['未請求','作成済'].includes(inv.status) && <Btn size="sm" variant="success" disabled={processing===inv.id} onClick={() => handleSend(inv.id)}>{processing===inv.id?'処理中...':'📤 PDF生成・送信'}</Btn>}
+                  {['未請求','作成済'].includes(inv.status) && <Btn size="sm" variant="success" disabled={processing===inv.id} onClick={() => handleSend(inv.id)}>{processing===inv.id?'処理中...':'📤 請求書を送信'}</Btn>}
                   {['送信済','入金待ち'].includes(inv.status) && <Btn size="sm" variant="primary" disabled={processing===inv.id} onClick={() => handlePaid(inv.id)}>{processing===inv.id?'処理中...':'✓ 入金済にする'}</Btn>}
                   {inv.status==='入金済' && <Btn size="sm" variant="ghost" disabled={processing===inv.id} onClick={() => handleRevert(inv.id,'送信済')} style={{fontSize:11,color:'var(--text-muted)',border:'1px dashed var(--border-dark)'}}>↩ 送信済に戻す</Btn>}
                   {['送信済','入金待ち','作成済'].includes(inv.status) && <Btn size="sm" variant="ghost" disabled={processing===inv.id} onClick={() => handleRevert(inv.id,'未請求')} style={{fontSize:11,color:'var(--text-muted)',border:'1px dashed var(--border-dark)'}}>↩ 未請求に戻す</Btn>}
