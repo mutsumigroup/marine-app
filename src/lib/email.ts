@@ -1,71 +1,78 @@
-import emailjs from '@emailjs/browser'
-
-emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY)
-
-const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
-const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
-const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-
-
-export async function sendEmail(params: {
-  to_email: string
-  subject: string
-  message: string
-}): Promise<void> {
-  await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
-    to_email: params.to_email,
-    subject: params.subject,
-    message: params.message,
-    email: params.to_email,
-  })
-}
-
-// 日報メール送信
-export function buildDailyReportEmail(report: {
-  date: string
-  port: string
-  ship: string
-  crew: number
-  category: string
-  work: string
-  amount: number
-  park_fee: number
-  hw_fee: number
-  meal: number
-  expenses: number
-  voucher: string
-  bill_month: string
-  notes: string
-}, annualUrl: string): string {
-  return `【日報】${report.date} ${report.ship}
-
-■ 基本情報
-稼働日：${report.date}
-港名：${report.port}
-船名：${report.ship}
-船員人数：${report.crew}名
-対応区分：${report.category}
-業務内容：${report.work || '—'}
-請求対象月：${report.bill_month}
+// メールテンプレートのデフォルト値（設定未入力時に使用）
+export const DEFAULT_DAILY_MAIL_SUBJECT = '【日報】{{date}} {{ship}}'
+export const DEFAULT_DAILY_MAIL_BODY = `■ 基本情報
+稼働日：{{date}}
+港名：{{port}}
+船名：{{ship}}
+船員人数：{{crew}}名
+対応区分：{{category}}
+業務内容：{{work}}
+請求対象月：{{bill_month}}
 
 ■ 費用
-売上金額：¥${report.amount.toLocaleString()}
-駐車場料金：¥${report.park_fee.toLocaleString()}
-高速料金：¥${report.hw_fee.toLocaleString()}
-食事代：¥${report.meal.toLocaleString()}
-立替合計：¥${report.expenses.toLocaleString()}
+売上金額：¥{{amount}}
+駐車場料金：¥{{park_fee}}
+高速料金：¥{{hw_fee}}
+食事代：¥{{meal}}
+立替合計：¥{{expenses}}
 
-${report.voucher ? `Voucher：${report.voucher}` : ''}
-${report.notes ? `備考：${report.notes}` : ''}
+{{voucher}}
+{{notes}}
+{{link}}`
 
-■ 売上・目標管理を確認する
-${annualUrl}
-
----
-マリン業務管理システム`
+// テンプレート変数を実際の値に置換する
+function applyTemplate(template: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce((str, [key, val]) => {
+    return str.split(`{{${key}}}`).join(val)
+  }, template)
 }
 
-// 請求書メール送信
+export function buildDailyReportEmail(
+  report: {
+    date: string
+    port: string
+    ship: string
+    crew: number
+    category: string
+    work: string
+    amount: number
+    park_fee: number
+    hw_fee: number
+    meal: number
+    expenses: number
+    voucher: string
+    bill_month: string
+    notes: string
+  },
+  annualUrl: string,
+  template?: { subject?: string; body?: string; link?: string }
+): { subject: string; body: string } {
+  const link = template?.link || annualUrl
+  const vars: Record<string, string> = {
+    date: report.date,
+    port: report.port,
+    ship: report.ship,
+    crew: String(report.crew),
+    category: report.category,
+    work: report.work || '—',
+    amount: report.amount.toLocaleString(),
+    park_fee: report.park_fee.toLocaleString(),
+    hw_fee: report.hw_fee.toLocaleString(),
+    meal: report.meal.toLocaleString(),
+    expenses: report.expenses.toLocaleString(),
+    voucher: report.voucher ? `Voucher：${report.voucher}` : '',
+    notes: report.notes ? `備考：${report.notes}` : '',
+    bill_month: report.bill_month,
+    link: link ? `■ 確認リンク\n${link}` : '',
+  }
+
+  const subject = applyTemplate(template?.subject || DEFAULT_DAILY_MAIL_SUBJECT, vars)
+  const body = applyTemplate(template?.body || DEFAULT_DAILY_MAIL_BODY, vars)
+
+  return { subject, body }
+}
+
+// 請求書メール送信（変更なし）
 export function buildInvoiceEmail(invoice: {
   id: string
   billing_month: string

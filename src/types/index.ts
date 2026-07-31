@@ -21,6 +21,9 @@ export interface Settings {
   bank: string
   account: string
   daily_mail: string
+  mail_subject?: string
+  mail_body?: string
+  mail_link?: string
   inv_mail: string
   prices: Record<string, PriceEntry>
   fixed_expenses: { label: string; amount: number }[]

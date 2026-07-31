@@ -1,3 +1,4 @@
+import { DEFAULT_DAILY_MAIL_SUBJECT, DEFAULT_DAILY_MAIL_BODY } from '../lib/email'
 import { useState, useEffect } from 'react'
 import { Card, CardTitle, Field, Input, Grid, Divider, Btn, PageHeader } from '../components/UI'
 import { CATEGORIES } from '../types'
@@ -196,6 +197,36 @@ export default function Settings({ settings, onSave }: Props) {
         )}
       </Card>
 
+
+      <Card>
+        <CardTitle>✉️ 日報メールテンプレート</CardTitle>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.7 }}>
+          日報送信時のメール内容をカスタマイズできます。未入力の場合はデフォルト文面が使われます。<br />
+          使える変数：{' '}
+          {['{{date}}稼働日','{{ship}}船名','{{port}}港名','{{crew}}人数','{{category}}区分','{{work}}業務内容','{{amount}}売上','{{park_fee}}駐車場','{{hw_fee}}高速料金','{{meal}}食事代','{{expenses}}立替合計','{{bill_month}}請求月','{{link}}共有リンク'].map(v => (
+            <span key={v} style={{ display:'inline-block', margin:'2px 4px 2px 0', background:'var(--accent-bg)', border:'1px solid var(--accent-border)', borderRadius:4, padding:'1px 6px', fontSize:11, fontFamily:'monospace', color:'var(--accent)' }}>{v}</span>
+          ))}
+        </div>
+        <Grid cols={1} style={{ marginBottom: 10 }}>
+          <Field label="件名">
+            <Input value={f.mail_subject ?? ''} onChange={set('mail_subject')} placeholder={DEFAULT_DAILY_MAIL_SUBJECT} />
+          </Field>
+        </Grid>
+        <Grid cols={1} style={{ marginBottom: 10 }}>
+          <Field label="共有リンク（{{link}} に挿入されるURL）">
+            <Input value={f.mail_link ?? ''} onChange={set('mail_link')} placeholder="https://（相手に確認してほしいページのURL）" />
+          </Field>
+        </Grid>
+        <Field label="本文">
+          <textarea
+            value={f.mail_body ?? ''}
+            onChange={e => set('mail_body')(e.target.value)}
+            placeholder={DEFAULT_DAILY_MAIL_BODY}
+            rows={16}
+            style={{ width:'100%', padding:'8px 10px', border:'1px solid var(--border-dark)', borderRadius:'var(--radius)', background:'var(--surface)', color:'var(--text)', fontSize:12, fontFamily:'monospace', resize:'vertical', lineHeight:1.7, boxSizing:'border-box' }}
+          />
+        </Field>
+      </Card>
       <div style={{ textAlign: 'right', marginTop: 4 }}>
         <Btn variant="success" onClick={handleSave} disabled={saving}>
           {saving ? '保存中...' : '✓ 設定を保存（Supabase）'}
