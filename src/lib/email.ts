@@ -6,7 +6,6 @@ const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
-
 export async function sendEmail(params: {
   to_email: string
   subject: string
@@ -20,7 +19,23 @@ export async function sendEmail(params: {
   })
 }
 
-// 日報メール送信
+export async function sendInvoiceEmail(params: {
+  to_email: string
+  subject: string
+  message: string
+  pdf_base64: string
+  pdf_filename: string
+}): Promise<void> {
+  await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+    to_email: params.to_email,
+    subject: params.subject,
+    message: params.message,
+    email: params.to_email,
+    pdf_base64: params.pdf_base64,
+    pdf_filename: params.pdf_filename,
+  }, { publicKey: PUBLIC_KEY })
+}
+
 export function buildDailyReportEmail(report: {
   date: string
   port: string
@@ -55,6 +70,8 @@ export function buildDailyReportEmail(report: {
 駐車場料金：¥${report.park_fee.toLocaleString()}
 高速料金：¥${report.hw_fee.toLocaleString()}
 食事代：¥${report.meal.toLocaleString()}
+ホテル代金：¥${report.hotel_fee.toLocaleString()}
+新幹線代金：¥${report.shinkansen_fee.toLocaleString()}
 立替合計：¥${report.expenses.toLocaleString()}
 
 ${report.voucher ? `Voucher：${report.voucher}` : ''}
@@ -67,7 +84,6 @@ ${annualUrl}
 マリン業務管理システム`
 }
 
-// 請求書メール送信
 export function buildInvoiceEmail(invoice: {
   id: string
   billing_month: string
@@ -76,6 +92,7 @@ export function buildInvoiceEmail(invoice: {
   expenses: number
   total: number
 }, clientName: string): string {
+  const invoiceUrl = 'https://mutsumigroup.github.io/marine-app/#/invoices'
   return `${clientName} 御中
 
 いつもお世話になっております。
@@ -87,6 +104,9 @@ ${invoice.billing_month}分の請求書をお送りします。
 ■ 消費税（10%）：¥${invoice.tax.toLocaleString()}
 ■ 立替金精算：¥${invoice.expenses.toLocaleString()}
 ■ 最終請求金額（税込）：¥${invoice.total.toLocaleString()}
+
+■ 請求書の確認はこちら：
+${invoiceUrl}
 
 お手数ですが、ご確認のうえお振込みくださいますようお願いいたします。
 
