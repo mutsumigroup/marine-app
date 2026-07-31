@@ -95,7 +95,9 @@ function AutoInput({ value, onChange, placeholder, suggestions }: { value: strin
 const EMPTY = {
   date: new Date().toISOString().slice(0, 10), port: '', ship: '', crew: '', category: '', work: '',
   amount: '', parkPlace: '', parkFee: '', hwFrom1: '', hwTo1: '', hwFrom2: '', hwTo2: '', hwFee: '',
-  meal: '', otherExp: '', voucher: '', billMonth: new Date().toISOString().slice(0, 7), notes: '',
+  meal: '',
+  hotelFee: '',
+  shinkansenFee: '', otherExp: '', voucher: '', billMonth: new Date().toISOString().slice(0, 7), notes: '',
 }
 
 export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: Props) {
@@ -114,7 +116,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
   const handleCategoryChange = (v: string) => setF(prev => ({ ...prev, category: v, amount: autoCalc ? String(calcAmount(v, parseInt(prev.crew) || 0)) : prev.amount }))
   const handleCrewChange = (v: string) => setF(prev => ({ ...prev, crew: v, amount: autoCalc ? String(calcAmount(prev.category, parseInt(v) || 0)) : prev.amount }))
   const extraTotal = extraItems.reduce((s, e) => s + e.amount, 0)
-  const totalExp = (parseInt(f.parkFee) || 0) + (parseInt(f.hwFee) || 0) + (parseInt(f.meal) || 0) + (parseInt(f.otherExp) || 0) + extraTotal
+  const totalExp = (parseInt(f.parkFee) || 0) + (parseInt(f.hwFee) || 0) + (parseInt(f.meal) || 0) + (parseInt(f.hotelFee) || 0) + (parseInt(f.shinkansenFee) || 0) + (parseInt(f.otherExp) || 0) + extraTotal
   const portList = [...new Set(pastReports.map(r => r.port).filter(Boolean))].sort()
   const shipList = [...new Set(pastReports.map(r => r.ship).filter(Boolean))].sort()
 
@@ -136,7 +138,9 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
     setError('')
     if (!f.date || !f.port || !f.ship || !f.category || !f.amount) { setError('必須項目（稼働日・港名・船名・対応区分・売上金額）を入力してください'); return }
     setSubmitting(true)
-    const ok = await onSubmit({ date: f.date, port: f.port, ship: f.ship, crew: parseInt(f.crew) || 0, category: f.category, work: f.work, amount: parseInt(f.amount) || 0, park_place: f.parkPlace, park_fee: parseInt(f.parkFee) || 0, hw_from1: f.hwFrom1, hw_to1: f.hwTo1, hw_from2: f.hwFrom2, hw_to2: f.hwTo2, hw_fee: parseInt(f.hwFee) || 0, meal: parseInt(f.meal) || 0, other_exp: parseInt(f.otherExp) || 0, expenses: totalExp, extra_expenses: extraItems.length > 0 ? extraItems : undefined, voucher: f.voucher, bill_month: f.billMonth, notes: f.notes, invoiced: false, paid: false })
+    const ok = await onSubmit({ date: f.date, port: f.port, ship: f.ship, crew: parseInt(f.crew) || 0, category: f.category, work: f.work, amount: parseInt(f.amount) || 0, park_place: f.parkPlace, park_fee: parseInt(f.parkFee) || 0, hw_from1: f.hwFrom1, hw_to1: f.hwTo1, hw_from2: f.hwFrom2, hw_to2: f.hwTo2, hw_fee: parseInt(f.hwFee) || 0, meal: parseInt(f.meal) || 0, hotel_fee: parseInt(f.hotelFee) || 0,
+        shinkansen_fee: parseInt(f.shinkansenFee) || 0,
+        other_exp: parseInt(f.otherExp) || 0, expenses: totalExp, extra_expenses: extraItems.length > 0 ? extraItems : undefined, voucher: f.voucher, bill_month: f.billMonth, notes: f.notes, invoiced: false, paid: false })
     if (ok) { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfName(''); setSection('basic'); setExtraItems([]) }
     setSubmitting(false)
   }

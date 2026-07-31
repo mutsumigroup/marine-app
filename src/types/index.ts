@@ -46,6 +46,8 @@ export interface Report {
   hw_to2: string
   hw_fee: number
   meal: number
+  hotel_fee: number
+  shinkansen_fee: number
   other_exp: number
   extra_expenses?: { label: string; amount: number }[]
   expenses: number
