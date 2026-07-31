@@ -29,7 +29,7 @@ export default function Annual({ reports, invoices, settings }: Props) {
 
   return (
     <div style={{ padding: '20px 22px' }}>
-      <PageHeader title="売上・目標管理" sub={`${settings.client_name} — ${yr}年`} />
+      <PageHeader title="目標報酬内訳" sub={`${settings.client_name} — ${yr}年`} />
       <StatGrid>
         <StatCard label="年間目標" value={`¥${goal.toLocaleString()}`} />
         <StatCard label="現在請求額" value={`¥${total.toLocaleString()}`} color="accent" />
@@ -98,7 +98,7 @@ export default function Annual({ reports, invoices, settings }: Props) {
         </Table>
       </Card>
       <Card>
-        <CardTitle>🔗 売上・目標管理URL（日報メールに自動添付）</CardTitle>
+        <CardTitle>🔗 目標報酬内訳URL（日報メールに自動添付）</CardTitle>
         <div style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 12, color: 'var(--accent)', fontFamily: 'monospace' }}>
           {window.location.origin}/annual
         </div>
