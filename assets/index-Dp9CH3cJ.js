@@ -112,7 +112,7 @@ ${p}`}class de extends Error{constructor({message:t,code:r,cause:n,name:s}){var 
 新幹線代金：¥${e.shinkansen_fee.toLocaleString()}
 立替合計：¥${e.expenses.toLocaleString()}
 
-${e.voucher?`Voucher：${e.voucher}`:""}
+${e.voucher&&!e.voucher.startsWith("data:")?`Voucher：${e.voucher}`:""}
 ${e.notes?`備考：${e.notes}`:""}
 
 ■ 日報一覧を確認する
