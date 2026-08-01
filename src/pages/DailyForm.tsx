@@ -97,19 +97,40 @@ const EMPTY = {
   amount: '', parkPlace: '', parkFee: '', hwFrom1: '', hwTo1: '', hwFrom2: '', hwTo2: '', hwFee: '',
   meal: '',
   hotelFee: '',
-  shinkansenFee: '', otherExp: '', voucher: '', billMonth: new Date().toISOString().slice(0, 7), notes: '',
+  shinkansenFee: '', otherExp: '', vouchers: [] as string[], billMonth: new Date().toISOString().slice(0, 7), notes: '',
 }
 
 export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: Props) {
   const [f, setF] = useState(EMPTY)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [pdfName, setPdfName] = useState('')
+  const [pdfNames, setPdfNames] = useState<string[]>([])
   const [autoCalc, setAutoCalc] = useState(true)
   const [section, setSection] = useState<'basic' | 'transport' | 'sales'>('basic')
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
   const isMobile = useIsMobile()
+
+  const DRAFT_KEY = 'marine_daily_draft'
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY)
+      if (saved) {
+        const draft = JSON.parse(saved)
+        setF(draft.f ?? EMPTY)
+        setPdfNames(draft.pdfNames ?? [])
+        setExtraItems(draft.extraItems ?? [])
+        setAutoCalc(draft.autoCalc ?? true)
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ f, pdfNames, extraItems, autoCalc }))
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [f, pdfNames, extraItems, autoCalc])
 
   const calcAmount = (cat: string, crew: number) => { const p = prices[cat] ?? { ship: 10000, crew: 1000 }; return p.ship + crew * (p.crew ?? 0) }
   const set = (key: string) => (v: string) => setF(prev => ({ ...prev, [key]: v }))
@@ -121,12 +142,26 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
   const shipList = [...new Set(pastReports.map(r => r.ship).filter(Boolean))].sort()
 
   const handlePdfSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.type !== 'application/pdf') { alert('PDFファイルを選択してください'); return }
-    const reader = new FileReader()
-    reader.onload = (ev) => { setF(prev => ({ ...prev, voucher: ev.target?.result as string })); setPdfName(file.name) }
-    reader.readAsDataURL(file)
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    const pdfs = files.filter(f => f.type === 'application/pdf')
+    if (pdfs.length !== files.length) { alert('PDFファイルのみ選択できます'); return }
+    const remaining = 5 - pdfNames.length
+    const toAdd = pdfs.slice(0, remaining)
+    if (pdfs.length > remaining) alert('最大5枚までです')
+    toAdd.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        setF(prev => ({ ...prev, vouchers: [...prev.vouchers, ev.target?.result as string] }))
+        setPdfNames(prev => [...prev, file.name])
+      }
+      reader.readAsDataURL(file)
+    })
+    e.target.value = ''
+  }
+  const removePdf = (i: number) => {
+    setF(prev => ({ ...prev, vouchers: prev.vouchers.filter((_, idx) => idx !== i) }))
+    setPdfNames(prev => prev.filter((_, idx) => idx !== i))
   }
 
   const addExtraItem = useCallback(() => setExtraItems(prev => [...prev, { label: '', amount: 0 }]), [])
@@ -140,8 +175,8 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
     setSubmitting(true)
     const ok = await onSubmit({ date: f.date, port: f.port, ship: f.ship, crew: parseInt(f.crew) || 0, category: f.category, work: f.work, amount: parseInt(f.amount) || 0, park_place: f.parkPlace, park_fee: parseInt(f.parkFee) || 0, hw_from1: f.hwFrom1, hw_to1: f.hwTo1, hw_from2: f.hwFrom2, hw_to2: f.hwTo2, hw_fee: parseInt(f.hwFee) || 0, meal: parseInt(f.meal) || 0, hotel_fee: parseInt(f.hotelFee) || 0,
         shinkansen_fee: parseInt(f.shinkansenFee) || 0,
-        other_exp: parseInt(f.otherExp) || 0, expenses: totalExp, extra_expenses: extraItems.length > 0 ? extraItems : undefined, voucher: f.voucher, bill_month: f.billMonth, notes: f.notes, invoiced: false, paid: false })
-    if (ok) { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfName(''); setSection('basic'); setExtraItems([]) }
+        other_exp: parseInt(f.otherExp) || 0, expenses: totalExp, extra_expenses: extraItems.length > 0 ? extraItems : undefined, voucher: f.vouchers.join(","), bill_month: f.billMonth, notes: f.notes, invoiced: false, paid: false })
+    if (ok) { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfNames([]); localStorage.removeItem('marine_daily_draft'); setSection('basic'); setExtraItems([]) }
     setSubmitting(false)
   }
 
@@ -184,13 +219,20 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
                   </select>
                 </Field>
                 <Field label="業務内容"><input value={f.work} onChange={e => set('work')(e.target.value)} placeholder="業務の概要" style={inputSt} /></Field>
-                <Field label="Voucher / PDF領収書">
-                  <input ref={fileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={handlePdfSelect} />
-                  <button type="button" onClick={() => fileRef.current?.click()}
-                    style={{ padding: '12px 14px', borderRadius: 12, border: pdfName ? '1.5px solid var(--success)' : '2px dashed var(--border-dark)', background: pdfName ? 'var(--success-bg)' : 'var(--surface2)', cursor: 'pointer', fontSize: 14, color: pdfName ? 'var(--success)' : 'var(--text-muted)', width: '100%', textAlign: 'left' }}>
-                    {pdfName ? `✅ ${pdfName}` : '📎 PDFをアップロード'}
-                  </button>
-                  {!pdfName && <input value={f.voucher.startsWith('data:') ? '' : f.voucher} onChange={e => set('voucher')(e.target.value)} placeholder="またはVoucher番号" style={{ ...inputSt, marginTop: 8 }} />}
+                <Field label="Voucher / PDF領収書（最大5枚）">
+                  <input ref={fileRef} type="file" accept="application/pdf" multiple style={{ display: 'none' }} onChange={handlePdfSelect} />
+                  {pdfNames.length < 5 && (
+                    <button type="button" onClick={() => fileRef.current?.click()}
+                      style={{ padding: '12px 14px', borderRadius: 12, border: '2px dashed var(--border-dark)', background: 'var(--surface2)', cursor: 'pointer', fontSize: 14, color: 'var(--text-muted)', width: '100%', textAlign: 'left', marginBottom: pdfNames.length ? 8 : 0 }}>
+                      📎 PDFを追加（{pdfNames.length}/5枚）
+                    </button>
+                  )}
+                  {pdfNames.map((name, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: 'var(--success-bg)', border: '1px solid var(--success)', marginBottom: 6 }}>
+                      <span style={{ flex: 1, fontSize: 13, color: 'var(--success)' }}>✅ {name}</span>
+                      <button type="button" onClick={() => removePdf(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>×</button>
+                    </div>
+                  ))}
                 </Field>
               </div>
             </Card>
@@ -290,12 +332,19 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
           <Field label="業務内容"><Input value={f.work} onChange={set('work')} placeholder="業務の概要" /></Field>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <Field label="Voucher / PDF領収書">
-            <input ref={fileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={handlePdfSelect} />
-            <button type="button" onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 'var(--radius)', border: pdfName ? '1.5px solid var(--success)' : '1px dashed var(--border-dark)', background: pdfName ? 'var(--success-bg)' : 'var(--surface2)', cursor: 'pointer', fontSize: 12, color: pdfName ? 'var(--success)' : 'var(--text-muted)' }}>
-              {pdfName ? <>✅ {pdfName}</> : <>📎 PDFをアップロード</>}
-            </button>
-            {!pdfName && <Input value={f.voucher.startsWith('data:') ? '' : f.voucher} onChange={set('voucher')} placeholder="またはVoucher番号を入力" />}
+          <Field label="Voucher / PDF領収書（最大5枚）">
+            <input ref={fileRef} type="file" accept="application/pdf" multiple style={{ display: 'none' }} onChange={handlePdfSelect} />
+            {pdfNames.length < 5 && (
+              <button type="button" onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 'var(--radius)', border: '1px dashed var(--border-dark)', background: 'var(--surface2)', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', marginBottom: pdfNames.length ? 6 : 0 }}>
+                📎 PDFを追加（{pdfNames.length}/5枚）
+              </button>
+            )}
+            {pdfNames.map((name, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 'var(--radius)', background: 'var(--success-bg)', border: '1px solid var(--success)', marginBottom: 4 }}>
+                <span style={{ flex: 1, fontSize: 11, color: 'var(--success)' }}>✅ {name}</span>
+                <button type="button" onClick={() => removePdf(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, padding: 0 }}>×</button>
+              </div>
+            ))}
           </Field>
           <Field label="請求対象月"><Input type="month" value={f.billMonth} onChange={set('billMonth')} /></Field>
         </div>
@@ -339,7 +388,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
         </div>
       </Card>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <Btn onClick={() => { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfName(''); setExtraItems([]) }}>↺ クリア</Btn>
+        <Btn onClick={() => { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfNames([]); localStorage.removeItem('marine_daily_draft'); setExtraItems([]) }}>↺ クリア</Btn>
         <Btn variant="primary" onClick={handleSubmit} disabled={submitting}>{submitting ? '送信中...' : '📨 日報送信'}</Btn>
       </div>
     </div>
