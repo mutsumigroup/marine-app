@@ -74,7 +74,7 @@ export function buildDailyReportEmail(report: {
 新幹線代金：¥${report.shinkansen_fee.toLocaleString()}
 立替合計：¥${report.expenses.toLocaleString()}
 
-${report.voucher ? `Voucher：${report.voucher}` : ''}
+${report.voucher && !report.voucher.startsWith("data:") ? `Voucher：${report.voucher}` : ""}
 ${report.notes ? `備考：${report.notes}` : ''}
 
 ■ 日報一覧を確認する
