@@ -14,7 +14,7 @@ interface Props {
 }
 
 function HwPopup({ report, onClose, onSavePdf }: { report: Report; onClose: () => void; onSavePdf: (id: string, url: string) => void }) {
-  const [pdfUrl, setPdfUrl] = useState(report.voucher?.startsWith('http') ? report.voucher : '')
+  const [pdfUrl, setPdfUrl] = useState(report.hw_voucher ?? '')
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {

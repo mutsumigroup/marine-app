@@ -225,8 +225,8 @@ export function useAppState() {
 
   const savePdf = useCallback(async (id: string, url: string) => {
     try {
-      await api.updateReport(id, { voucher: url })
-      setReports(prev => prev.map(r => r.id === id ? { ...r, voucher: url } : r))
+      await api.updateReport(id, { hw_voucher: url })
+      setReports(prev => prev.map(r => r.id === id ? { ...r, hw_voucher: url } : r))
       addToast('success', 'PDFを保存しました')
     } catch (err) {
       addToast('error', `保存失敗: ${(err as Error).message}`)
