@@ -47,7 +47,7 @@ function HwPopup({ report, onClose, onSavePdf }: { report: Report; onClose: () =
         </div>
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10, color: 'var(--text-secondary)' }}>📎 領収書PDF</div>
-          {pdfUrl && <div style={{ marginBottom: 10 }}><a href={pdfUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 12, textDecoration: 'underline' }}>🔗 添付PDFを開く</a></div>}
+          {pdfUrl && <div style={{ marginBottom: 10 }}><button onClick={() => { const [meta, b64] = pdfUrl.split(','); const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'; const bin = atob(b64); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); window.open(URL.createObjectURL(new Blob([arr], { type: mime })), '_blank') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, textDecoration: 'underline', padding: 0 }}>🔗 添付PDFを開く</button></div>}
           <input ref={fileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={handleFile} />
           <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 'var(--radius)', border: '1px dashed var(--border-dark)', background: 'var(--surface2)', cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary)', width: '100%', justifyContent: 'center' }}>
             {uploading ? '読み込み中...' : '📄 PDFをアップロード'}
