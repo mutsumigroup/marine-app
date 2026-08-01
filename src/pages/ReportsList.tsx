@@ -368,7 +368,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                     <td style={{ ...TD, fontSize: 11 }}>{r.hotel_fee > 0 ? `¥${r.hotel_fee.toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.shinkansen_fee > 0 ? `¥${r.shinkansen_fee.toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 10, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
-                      {r.voucher ? r.voucher.startsWith('http') || r.voucher.startsWith('data:') ? <a href={r.voucher} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline', fontSize: 10 }}>🔗 開く</a> : <span style={{ color: 'var(--text-light)' }}>{r.voucher}</span> : <span style={{ color: 'var(--text-light)' }}>—</span>}
+                      {r.voucher ? (() => { const parts = r.voucher.split(','); const links = parts.filter(p => p.startsWith('http') || p.startsWith('data:')); const texts = parts.filter(p => !p.startsWith('http') && !p.startsWith('data:')); return <>{links.map((url, i) => <a key={i} href={url} target='_blank' rel='noopener noreferrer' style={{ color: 'var(--accent)', textDecoration: 'underline', fontSize: 10, display: 'block' }}>🔗 PDF{links.length > 1 ? i+1 : ''}</a>)}{texts.length > 0 && <span style={{ color: 'var(--text-light)', fontSize: 10 }}>{texts.join(', ')}</span>}</> })() : <span style={{ color: 'var(--text-light)' }}>—</span>}
                     </td>
                 <td style={{ ...TD, fontSize: 11 }} onClick={(e) => e.stopPropagation()}>
                   {r.extra_expenses && r.extra_expenses.length > 0
