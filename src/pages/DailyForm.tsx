@@ -94,7 +94,7 @@ function AutoInput({ value, onChange, placeholder, suggestions }: { value: strin
 
 const EMPTY = {
   date: new Date().toISOString().slice(0, 10), port: '', ship: '', crew: '', category: '', work: '',
-  amount: '', parkPlace: '', parkFee: '', hwFrom1: '', hwTo1: '', hwFrom2: '', hwTo2: '', hwFee: '',
+  amount: '', parkPlace: '', parkFee: '', hwFrom1: '', hwTo1: '', hwFrom2: '', hwTo2: '', hwFee: '', hwVoucher: '',
   meal: '',
   hotelFee: '',
   shinkansenFee: '', otherExp: '', vouchers: [] as string[], billMonth: new Date().toISOString().slice(0, 7), notes: '',
@@ -105,6 +105,8 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [pdfNames, setPdfNames] = useState<string[]>([])
+  const [hwPdfName, setHwPdfName] = useState('')
+  const hwFileRef = useRef<HTMLInputElement>(null)
   const [autoCalc, setAutoCalc] = useState(true)
   const [section, setSection] = useState<'basic' | 'transport' | 'sales'>('basic')
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([])
@@ -159,6 +161,16 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
     })
     e.target.value = ''
   }
+
+  const handleHwPdfSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.type !== 'application/pdf') { alert('PDFファイルを選択してください'); return }
+    const reader = new FileReader()
+    reader.onload = (ev) => { setF(prev => ({ ...prev, hwVoucher: ev.target?.result as string })); setHwPdfName(file.name) }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
   const removePdf = (i: number) => {
     setF(prev => ({ ...prev, vouchers: prev.vouchers.filter((_, idx) => idx !== i) }))
     setPdfNames(prev => prev.filter((_, idx) => idx !== i))
@@ -173,7 +185,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
     setError('')
     if (!f.date || !f.port || !f.ship || !f.category || !f.amount) { setError('必須項目（稼働日・港名・船名・対応区分・売上金額）を入力してください'); return }
     setSubmitting(true)
-    const ok = await onSubmit({ date: f.date, port: f.port, ship: f.ship, crew: parseInt(f.crew) || 0, category: f.category, work: f.work, amount: parseInt(f.amount) || 0, park_place: f.parkPlace, park_fee: parseInt(f.parkFee) || 0, hw_from1: f.hwFrom1, hw_to1: f.hwTo1, hw_from2: f.hwFrom2, hw_to2: f.hwTo2, hw_fee: parseInt(f.hwFee) || 0, meal: parseInt(f.meal) || 0, hotel_fee: parseInt(f.hotelFee) || 0,
+    const ok = await onSubmit({ date: f.date, port: f.port, ship: f.ship, crew: parseInt(f.crew) || 0, category: f.category, work: f.work, amount: parseInt(f.amount) || 0, park_place: f.parkPlace, park_fee: parseInt(f.parkFee) || 0, hw_from1: f.hwFrom1, hw_to1: f.hwTo1, hw_from2: f.hwFrom2, hw_to2: f.hwTo2, hw_fee: parseInt(f.hwFee) || 0, hw_voucher: f.hwVoucher, meal: parseInt(f.meal) || 0, hotel_fee: parseInt(f.hotelFee) || 0,
         shinkansen_fee: parseInt(f.shinkansenFee) || 0,
         other_exp: parseInt(f.otherExp) || 0, expenses: totalExp, extra_expenses: extraItems.length > 0 ? extraItems : undefined, voucher: f.vouchers.join(","), bill_month: f.billMonth, notes: f.notes, invoiced: false, paid: false })
     if (ok) { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfNames([]); localStorage.removeItem('marine_daily_draft'); setSection('basic'); setExtraItems([]) }

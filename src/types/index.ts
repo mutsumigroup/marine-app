@@ -45,6 +45,7 @@ export interface Report {
   hw_from2: string
   hw_to2: string
   hw_fee: number
+  hw_voucher?: string
   meal: number
   hotel_fee: number
   shinkansen_fee: number
