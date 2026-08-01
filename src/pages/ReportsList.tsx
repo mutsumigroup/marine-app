@@ -64,8 +64,49 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [autoCalc, setAutoCalc] = useState(true)
+  const [voucherUploading, setVoucherUploading] = useState(false)
+  const voucherFileRef = useRef<HTMLInputElement>(null)
   const set = (key: keyof Report) => (v: string) => setF(prev => ({ ...prev, [key]: v }))
   const setNum = (key: keyof Report) => (v: string) => setF(prev => ({ ...prev, [key]: parseInt(v) || 0 }))
+
+  // Voucher（最大5枚）アップロード処理
+  const voucherList = f.voucher ? f.voucher.split('|||').filter(Boolean) : []
+  const handleVoucherFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []).filter(fi => fi.type === 'application/pdf')
+    if (!files.length) return
+    const remaining = 5 - voucherList.length
+    if (remaining <= 0) { alert('Voucherは最大5枚までです'); return }
+    const toAdd = files.slice(0, remaining)
+    setVoucherUploading(true)
+    let loaded = 0
+    const newDataUrls: string[] = []
+    toAdd.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        newDataUrls.push(ev.target?.result as string)
+        loaded++
+        if (loaded === toAdd.length) {
+          const merged = [...voucherList, ...newDataUrls].join('|||')
+          setF(prev => ({ ...prev, voucher: merged }))
+          setVoucherUploading(false)
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+    e.target.value = ''
+  }
+  const openVoucherPdf = (dataUrl: string) => {
+    const [meta, b64] = dataUrl.split(',')
+    const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'
+    const binary = atob(b64)
+    const arr = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i)
+    window.open(URL.createObjectURL(new Blob([arr], { type: mime })), '_blank')
+  }
+  const removeVoucher = (idx: number) => {
+    const next = voucherList.filter((_, i) => i !== idx).join('|||')
+    setF(prev => ({ ...prev, voucher: next }))
+  }
   const calcAmount = (cat: string, crew: number) => { const p = prices[cat] ?? { ship: 10000, crew: 1000 }; return p.ship + crew * (p.crew ?? 0) }
   const handleCategoryChange = (v: string) => { setF(prev => { const newAmount = autoCalc ? calcAmount(v, Number(prev.crew)) : prev.amount; return { ...prev, category: v, amount: newAmount } }) }
   const handleCrewChange = (v: string) => { setF(prev => { const crew = parseInt(v) || 0; const newAmount = autoCalc ? calcAmount(prev.category, crew) : prev.amount; return { ...prev, crew, amount: newAmount } }) }
@@ -90,7 +131,52 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
           <Field label="業務内容"><Input value={f.work} onChange={set('work')} /></Field>
         </Grid>
         <Grid cols={2} style={{ marginBottom: 10 }}>
-          <Field label="Voucher"><Input value={f.voucher} onChange={set('voucher')} /></Field>
+          <Field label={`Voucher（${voucherList.length}/5枚）`}>
+            <div>
+              {/* アップロード済みPDFリスト */}
+              {voucherList.length > 0 && (
+                <div style={{ marginBottom: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {voucherList.map((url, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 6, padding: '3px 8px' }}>
+                      <button
+                        onClick={() => openVoucherPdf(url)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, padding: 0, textDecoration: 'underline' }}
+                      >
+                        🔗 PDF{voucherList.length > 1 ? i + 1 : ''}
+                      </button>
+                      <button
+                        onClick={() => removeVoucher(i)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, padding: '0 2px', lineHeight: 1 }}
+                        title="削除"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* アップロードボタン（5枚未満のときのみ表示） */}
+              {voucherList.length < 5 && (
+                <>
+                  <input
+                    ref={voucherFileRef}
+                    type="file"
+                    accept="application/pdf"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleVoucherFiles}
+                  />
+                  <button
+                    onClick={() => voucherFileRef.current?.click()}
+                    disabled={voucherUploading}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--radius)', border: '1px dashed var(--border-dark)', background: 'var(--surface2)', cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary)', width: '100%', justifyContent: 'center' }}
+                  >
+                    {voucherUploading ? '読み込み中...' : `📎 PDFを追加（残り${5 - voucherList.length}枚）`}
+                  </button>
+                </>
+              )}
+            </div>
+          </Field>
           <Field label="請求対象月"><Input type="month" value={f.bill_month} onChange={set('bill_month')} /></Field>
         </Grid>
         <Divider />
