@@ -15,12 +15,91 @@ interface Props {
   settings?: Settings
 }
 
-function HwPopup({ report, onClose, onSavePdf, settings }: { report: Report; onClose: () => void; onSavePdf: (id: string, url: string) => void; settings?: Settings }) {
+interface HwParsed { from1: string; to1: string; from2: string; to2: string; fee: number }
+
+async function parseEtcPdf(file: File): Promise<HwParsed | null> {
+  try {
+    const pdfjsLib = await import('pdfjs-dist')
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
+    const ab = await file.arrayBuffer()
+    const pdf = await pdfjsLib.getDocument({ data: ab }).promise
+    let fullText = ''
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i)
+      const tc = await page.getTextContent()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fullText += tc.items.map((it: any) => it.str ?? '').join('\n') + '\n'
+    }
+
+    // 後納料金合計を取得（支払い総額行）
+    const totalMatch = fullText.match(/支払い?総額[\s\S]*?[¥\\￥]?\s*([\d,]+)/)
+    const total = totalMatch ? parseInt(totalMatch[1].replace(/,/g, '')) : 0
+
+    // 利用IC行を抽出: 「出発IC 到着IC 通行料金 後納料金」の繰り返し
+    // ETC明細のテキストは各セルが改行区切りで出るため行ベースでパース
+    const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean)
+
+    // IC名っぽい行（漢字・カナを含む2文字以上）を拾う
+    const icPattern = /^[^\d¥\\￥\s*]{2,}$/
+    const numPattern = /^\d[\d,]*$/
+
+    const rows: { from: string; to: string; fee: number }[] = []
+    let i = 0
+    while (i < lines.length) {
+      if (icPattern.test(lines[i]) && i + 1 < lines.length && icPattern.test(lines[i + 1])) {
+        const from = lines[i]
+        const to = lines[i + 1]
+        // 後続から数値を探す（通行料金 後納料金）
+        let fee = 0
+        let j = i + 2
+        let numCount = 0
+        while (j < lines.length && numCount < 4) {
+          if (numPattern.test(lines[j].replace(/,/g, ''))) {
+            numCount++
+            if (numCount === 2) { // 2番目の数値が後納料金
+              fee = parseInt(lines[j].replace(/,/g, ''))
+            }
+          } else if (icPattern.test(lines[j]) && icPattern.test(lines[j + 1] ?? '')) {
+            break
+          }
+          j++
+        }
+        if (fee > 0 || numCount > 0) {
+          rows.push({ from, to, fee })
+          i = j
+          continue
+        }
+      }
+      i++
+    }
+
+    if (rows.length === 0) return null
+
+    return {
+      from1: rows[0]?.from ?? '',
+      to1:   rows[0]?.to   ?? '',
+      from2: rows[1]?.from ?? '',
+      to2:   rows[1]?.to   ?? '',
+      fee:   total || rows.reduce((s, r) => s + r.fee, 0),
+    }
+  } catch (e) {
+    console.error('ETC PDF parse error', e)
+    return null
+  }
+}
+
+function HwPopup({ report, onClose, onSavePdf, settings, onUpdateReport }: { report: Report; onClose: () => void; onSavePdf: (id: string, url: string) => void; settings?: Settings; onUpdateReport?: (id: string, updates: Partial<Report>) => Promise<boolean> }) {
+  const [hw, setHw] = useState({ from1: report.hw_from1, to1: report.hw_to1, from2: report.hw_from2, to2: report.hw_to2, fee: report.hw_fee })
   const [pdfUrl, setPdfUrl] = useState(report.hw_voucher ?? '')
   const [uploading, setUploading] = useState(false)
+  const [parsing, setParsing] = useState(false)
+  const [parseResult, setParseResult] = useState<'success' | 'error' | null>(null)
+  const [saving, setSaving] = useState(false)
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<'success' | 'error' | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const etcFileRef = useRef<HTMLInputElement>(null)
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || file.type !== 'application/pdf') return
@@ -28,6 +107,33 @@ function HwPopup({ report, onClose, onSavePdf, settings }: { report: Report; onC
     const reader = new FileReader()
     reader.onload = (ev) => { const url = ev.target?.result as string; setPdfUrl(url); onSavePdf(report.id, url); setUploading(false) }
     reader.readAsDataURL(file)
+  }
+
+  const handleEtcPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setParsing(true)
+    setParseResult(null)
+    const parsed = await parseEtcPdf(file)
+    if (parsed) {
+      setHw(parsed)
+      setParseResult('success')
+    } else {
+      setParseResult('error')
+    }
+    setParsing(false)
+    e.target.value = ''
+    // 領収書PDFとしても保存
+    const reader = new FileReader()
+    reader.onload = (ev) => { const url = ev.target?.result as string; setPdfUrl(url); onSavePdf(report.id, url) }
+    reader.readAsDataURL(file)
+  }
+
+  const handleSave = async () => {
+    if (!onUpdateReport) return
+    setSaving(true)
+    await onUpdateReport(report.id, { hw_from1: hw.from1, hw_to1: hw.to1, hw_from2: hw.from2, hw_to2: hw.to2, hw_fee: hw.fee })
+    setSaving(false)
   }
   const handleResend = async () => {
     if (!settings?.daily_mail) return
@@ -44,7 +150,7 @@ function HwPopup({ report, onClose, onSavePdf, settings }: { report: Report; onC
         work: report.work ?? '',
         amount: report.amount,
         park_fee: report.park_fee,
-        hw_fee: report.hw_fee,
+        hw_fee: hw.fee,
         meal: report.meal,
         hotel_fee: report.hotel_fee ?? 0,
         shinkansen_fee: report.shinkansen_fee ?? 0,
@@ -54,9 +160,9 @@ function HwPopup({ report, onClose, onSavePdf, settings }: { report: Report; onC
         notes: report.notes ?? '',
       }, annualUrl)
       const hwDetailUrl = `https://mutsumigroup.github.io/marine-app/#/reports?month=${report.bill_month}`
-      const hwFrom = report.hw_from1 || report.hw_to1 ? `行き：${report.hw_from1 || '—'} → ${report.hw_to1 || '—'}` : ''
-      const hwReturn = report.hw_from2 || report.hw_to2 ? `帰り：${report.hw_from2 || '—'} → ${report.hw_to2 || '—'}` : ''
-      const hwDetail = [`■ 高速道路明細（反映済み）`, `高速料金合計：¥${report.hw_fee.toLocaleString()}`, hwFrom, hwReturn].filter(Boolean).join('\n')
+      const hwFrom = hw.from1 || hw.to1 ? `行き：${hw.from1 || '—'} → ${hw.to1 || '—'}` : ''
+      const hwReturn = hw.from2 || hw.to2 ? `帰り：${hw.from2 || '—'} → ${hw.to2 || '—'}` : ''
+      const hwDetail = [`■ 高速道路明細（反映済み）`, `高速料金合計：¥${hw.fee.toLocaleString()}`, hwFrom, hwReturn].filter(Boolean).join('\n')
       const message = `【高速道路料金反映済み】\n高速道路料金の詳細を更新しました。\n\n${hwDetail}\n\n高速明細の確認はこちら：\n${hwDetailUrl}\n\n` + baseMessage
       await sendEmail({
         to_email: settings.daily_mail,
@@ -72,30 +178,56 @@ function HwPopup({ report, onClose, onSavePdf, settings }: { report: Report; onC
   }
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '20px 24px', width: 500, boxShadow: '0 8px 32px rgba(0,0,0,.18)', border: '1px solid var(--border)' }}>
+      <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '20px 24px', width: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,.18)', border: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 14, fontWeight: 600 }}>🛣 高速道路詳細</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>✕</button>
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>{report.date}　{report.ship}</div>
+
+        {/* ETC明細PDF自動読み込み */}
+        <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8, padding: '10px 14px', marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#1D4ED8', marginBottom: 6 }}>📄 ETC明細PDFから自動入力</div>
+          {parseResult === 'success' && (
+            <div style={{ fontSize: 12, color: '#0F6E56', background: '#E1F5EE', borderRadius: 6, padding: '5px 10px', marginBottom: 8 }}>✅ 読み取り成功！内容を確認して「保存」してください</div>
+          )}
+          {parseResult === 'error' && (
+            <div style={{ fontSize: 12, color: '#b91c1c', background: '#fef2f2', borderRadius: 6, padding: '5px 10px', marginBottom: 8 }}>❌ 読み取りに失敗しました。手動で入力してください</div>
+          )}
+          <input ref={etcFileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={handleEtcPdf} />
+          <button onClick={() => etcFileRef.current?.click()} disabled={parsing} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 'var(--radius)', border: 'none', background: '#2563EB', color: '#fff', cursor: parsing ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+            {parsing ? '🔄 読み取り中...' : '📂 ETCご利用明細PDFを読み込む'}
+          </button>
+        </div>
+
+        {/* 明細表示（編集可能） */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-          {[['行き 出発地', report.hw_from1], ['行き 到着地', report.hw_to1], ['帰り 出発地', report.hw_from2], ['帰り 到着地', report.hw_to2]].map(([label, val]) => (
-            <div key={label} style={{ background: 'var(--surface2)', borderRadius: 8, padding: '10px 12px' }}>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>{val || '—'}</div>
+          {([['行き 出発地', 'from1'], ['行き 到着地', 'to1'], ['帰り 出発地', 'from2'], ['帰り 到着地', 'to2']] as const).map(([label, key]) => (
+            <div key={key} style={{ background: 'var(--surface2)', borderRadius: 8, padding: '10px 12px' }}>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
+              <input value={hw[key]} onChange={e => setHw(prev => ({ ...prev, [key]: e.target.value }))} style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 13, fontWeight: 500, outline: 'none', color: 'var(--text)' }} placeholder="—" />
             </div>
           ))}
         </div>
-        <div style={{ background: 'var(--accent-bg)', borderRadius: 8, padding: '12px 14px', border: '1px solid var(--accent-border)', marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>高速料金合計</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>¥{report.hw_fee.toLocaleString()}</div>
+        <div style={{ background: 'var(--accent-bg)', borderRadius: 8, padding: '12px 14px', border: '1px solid var(--accent-border)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>高速料金合計</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)' }}>¥</span>
+              <input type="number" value={hw.fee} onChange={e => setHw(prev => ({ ...prev, fee: parseInt(e.target.value) || 0 }))} style={{ border: 'none', background: 'transparent', fontSize: 18, fontWeight: 700, color: 'var(--accent)', outline: 'none', width: 120 }} />
+            </div>
+          </div>
+          <button onClick={handleSave} disabled={saving} style={{ padding: '8px 18px', borderRadius: 'var(--radius)', border: 'none', background: saving ? 'var(--surface2)' : '#16A34A', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
+            {saving ? '保存中...' : '💾 保存'}
+          </button>
         </div>
+
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10, color: 'var(--text-secondary)' }}>📎 領収書PDF</div>
           {pdfUrl && <div style={{ marginBottom: 10 }}><button onClick={() => { const [meta, b64] = pdfUrl.split(','); const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'; const bin = atob(b64); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); window.open(URL.createObjectURL(new Blob([arr], { type: mime })), '_blank') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, textDecoration: 'underline', padding: 0 }}>🔗 添付PDFを開く</button></div>}
           <input ref={fileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={handleFile} />
           <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 'var(--radius)', border: '1px dashed var(--border-dark)', background: 'var(--surface2)', cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary)', width: '100%', justifyContent: 'center' }}>
-            {uploading ? '読み込み中...' : '📄 PDFをアップロード'}
+            {uploading ? '読み込み中...' : '📄 領収書PDFをアップロード（別途）'}
           </button>
         </div>
         {settings?.daily_mail && (
@@ -541,7 +673,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         </div>
       </Card>
 
-      {hwReport && <HwPopup report={hwReport} onClose={() => setHwReport(null)} onSavePdf={onSavePdf} settings={settings} />}
+      {hwReport && <HwPopup report={hwReport} onClose={() => setHwReport(null)} onSavePdf={onSavePdf} settings={settings} onUpdateReport={onUpdateReport} />}
       {editReport && <EditModal report={editReport} onClose={() => setEditReport(null)} onSave={onUpdateReport} onDelete={onDeleteReport} prices={prices} />}
     </div>
   )
