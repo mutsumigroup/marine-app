@@ -19,8 +19,10 @@ interface HwParsed { from1: string; to1: string; from2: string; to2: string; fee
 
 async function parseEtcPdf(file: File): Promise<HwParsed | null> {
   try {
-    const pdfjsLib = await import('pdfjs-dist')
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
+    // CDNからpdf.jsをロード（型定義不要）
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdfjsLib: any = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs' as string)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs'
     const ab = await file.arrayBuffer()
     const pdf = await pdfjsLib.getDocument({ data: ab }).promise
     let fullText = ''
