@@ -53,7 +53,11 @@ function HwPopup({ report, onClose, onSavePdf, settings }: { report: Report; onC
         bill_month: report.bill_month,
         notes: report.notes ?? '',
       }, annualUrl)
-      const message = `【高速道路料金反映済み】\n高速料金（¥${report.hw_fee.toLocaleString()}）を更新しました。\n\n` + baseMessage
+      const hwDetailUrl = `https://mutsumigroup.github.io/marine-app/#/reports?month=${report.bill_month}`
+      const hwFrom = report.hw_from1 || report.hw_to1 ? `行き：${report.hw_from1 || '—'} → ${report.hw_to1 || '—'}` : ''
+      const hwReturn = report.hw_from2 || report.hw_to2 ? `帰り：${report.hw_from2 || '—'} → ${report.hw_to2 || '—'}` : ''
+      const hwDetail = [`■ 高速道路明細（反映済み）`, `高速料金合計：¥${report.hw_fee.toLocaleString()}`, hwFrom, hwReturn].filter(Boolean).join('\n')
+      const message = `【高速道路料金反映済み】\n高速道路料金の詳細を更新しました。\n\n${hwDetail}\n\n高速明細の確認はこちら：\n${hwDetailUrl}\n\n` + baseMessage
       await sendEmail({
         to_email: settings.daily_mail,
         subject: `【日報・高速料金反映済み】${report.date} ${report.ship}`,
