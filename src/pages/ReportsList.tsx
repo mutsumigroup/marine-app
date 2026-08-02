@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Card, Select, PageHeader, Btn, Field, Input, Grid, Divider, useIsMobile } from '../components/UI'
 import { CATEGORIES } from '../types'
-import type { Report } from '../types'
+import type { Report, Settings } from '../types'
+import { sendEmail, buildDailyReportEmail } from '../lib/email'
 
 interface Props {
   reports: Report[]
@@ -11,11 +12,14 @@ interface Props {
   onUpdateReport: (id: string, updates: Partial<Report>) => Promise<boolean>
   onDeleteReport: (id: string) => Promise<boolean>
   prices?: Record<string, { ship: number; crew: number }>
+  settings?: Settings
 }
 
-function HwPopup({ report, onClose, onSavePdf }: { report: Report; onClose: () => void; onSavePdf: (id: string, url: string) => void }) {
+function HwPopup({ report, onClose, onSavePdf, settings }: { report: Report; onClose: () => void; onSavePdf: (id: string, url: string) => void; settings?: Settings }) {
   const [pdfUrl, setPdfUrl] = useState(report.hw_voucher ?? '')
   const [uploading, setUploading] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sendResult, setSendResult] = useState<'success' | 'error' | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -24,6 +28,43 @@ function HwPopup({ report, onClose, onSavePdf }: { report: Report; onClose: () =
     const reader = new FileReader()
     reader.onload = (ev) => { const url = ev.target?.result as string; setPdfUrl(url); onSavePdf(report.id, url); setUploading(false) }
     reader.readAsDataURL(file)
+  }
+  const handleResend = async () => {
+    if (!settings?.daily_mail) return
+    setSending(true)
+    setSendResult(null)
+    try {
+      const annualUrl = `https://mutsumigroup.github.io/marine-app/#/reports?month=${report.bill_month}`
+      const baseMessage = buildDailyReportEmail({
+        date: report.date,
+        port: report.port,
+        ship: report.ship,
+        crew: report.crew,
+        category: report.category,
+        work: report.work ?? '',
+        amount: report.amount,
+        park_fee: report.park_fee,
+        hw_fee: report.hw_fee,
+        meal: report.meal,
+        hotel_fee: report.hotel_fee ?? 0,
+        shinkansen_fee: report.shinkansen_fee ?? 0,
+        expenses: report.expenses,
+        voucher: report.voucher ?? '',
+        bill_month: report.bill_month,
+        notes: report.notes ?? '',
+      }, annualUrl)
+      const message = `【高速道路料金反映済み】\n高速料金（¥${report.hw_fee.toLocaleString()}）を更新しました。\n\n` + baseMessage
+      await sendEmail({
+        to_email: settings.daily_mail,
+        subject: `【日報・高速料金反映済み】${report.date} ${report.ship}`,
+        message,
+      })
+      setSendResult('success')
+    } catch {
+      setSendResult('error')
+    } finally {
+      setSending(false)
+    }
   }
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
@@ -53,6 +94,31 @@ function HwPopup({ report, onClose, onSavePdf }: { report: Report; onClose: () =
             {uploading ? '読み込み中...' : '📄 PDFをアップロード'}
           </button>
         </div>
+        {settings?.daily_mail && (
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: 'var(--text-secondary)' }}>📧 メール再送信</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+              高速道路料金（¥{report.hw_fee.toLocaleString()}）を反映済みとして日報メールを再送信します
+            </div>
+            {sendResult === 'success' && (
+              <div style={{ fontSize: 12, color: '#0F6E56', background: '#E1F5EE', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
+                ✅ メールを送信しました（{settings.daily_mail}）
+              </div>
+            )}
+            {sendResult === 'error' && (
+              <div style={{ fontSize: 12, color: '#b91c1c', background: '#fef2f2', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
+                ❌ 送信に失敗しました。再度お試しください
+              </div>
+            )}
+            <button
+              onClick={handleResend}
+              disabled={sending}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 'var(--radius)', border: 'none', background: sending ? 'var(--surface2)' : 'var(--accent)', color: sending ? 'var(--text-muted)' : '#fff', cursor: sending ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, width: '100%', justifyContent: 'center' }}
+            >
+              {sending ? '送信中...' : '📤 高速道路反映済みメールを再送信'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -344,7 +410,7 @@ const COLS = [
   ['高速料金 🛣', '90px'], ['食事代', '76px'], ['ホテル代金', '80px'], ['新幹線代金', '80px'], ['Voucher', '80px'], ['追加立替', '80px'], ['売上金額', '114px'],
 ]
 
-export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpdateReport, onDeleteReport, prices = {} }: Props) {
+export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpdateReport, onDeleteReport, prices = {}, settings }: Props) {
   const [searchParams, setSearchParams] = useSearchParams()
   const [filterYear, setFilterYear] = useState('')
   const [filterMonth, setFilterMonth] = useState('')
@@ -471,7 +537,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         </div>
       </Card>
 
-      {hwReport && <HwPopup report={hwReport} onClose={() => setHwReport(null)} onSavePdf={onSavePdf} />}
+      {hwReport && <HwPopup report={hwReport} onClose={() => setHwReport(null)} onSavePdf={onSavePdf} settings={settings} />}
       {editReport && <EditModal report={editReport} onClose={() => setEditReport(null)} onSave={onUpdateReport} onDelete={onDeleteReport} prices={prices} />}
     </div>
   )
