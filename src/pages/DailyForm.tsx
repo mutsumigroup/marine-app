@@ -115,6 +115,26 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
 
   const DRAFT_KEY = 'marine_daily_draft'
   useEffect(() => {
+    // KYプリフィルを優先チェック
+    const kyRaw = sessionStorage.getItem('ky_prefill')
+    if (kyRaw) {
+      try {
+        const ky = JSON.parse(kyRaw)
+        sessionStorage.removeItem('ky_prefill')
+        localStorage.removeItem(DRAFT_KEY)
+        setF(() => ({
+          ...EMPTY,
+          date: ky.date ?? EMPTY.date,
+          port: ky.port ?? '',
+          ship: ky.ship ?? '',
+          crew: String(ky.crew ?? ''),
+          category: ky.category ?? '',
+          work: ky.work ?? '',
+          billMonth: ky.date ? ky.date.slice(0, 7) : EMPTY.billMonth,
+        }))
+        return
+      } catch { /* ignore */ }
+    }
     try {
       const saved = localStorage.getItem(DRAFT_KEY)
       if (saved) {

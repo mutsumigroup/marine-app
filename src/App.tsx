@@ -10,6 +10,9 @@ import Invoices from './pages/Invoices'
 import Payments from './pages/Payments'
 import Annual from './pages/Annual'
 import SettingsPage from './pages/Settings'
+import KyForm from './pages/KyForm'
+import KyList from './pages/KyList'
+import PortMasterPage from './pages/PortMasterPage'
 import { useState } from 'react'
 
 const PAGE_TITLES: Record<string, string> = {
@@ -21,6 +24,9 @@ const PAGE_TITLES: Record<string, string> = {
   '/payments': '入金管理',
   '/annual': '売上・目標管理',
   '/settings': '設定',
+  '/ky/new': 'KY出発前報告',
+  '/ky': 'KY報告一覧',
+  '/ports': '港マスター',
 }
 
 function MobileHeader({ onMenu }: { onMenu: () => void }) {
@@ -60,6 +66,9 @@ function AppInner() {
             <Route path="/payments" element={<Payments invoices={app.invoices} onPaid={app.markPaid} />} />
             <Route path="/annual" element={<Annual reports={app.reports} invoices={app.invoices} settings={app.settings} />} />
             <Route path="/settings" element={<SettingsPage settings={app.settings} onSave={app.saveSettings} />} />
+            <Route path="/ky/new" element={<KyForm onSubmit={app.submitKyReport} portMasters={app.portMasters} pastReports={app.reports.map(r => ({ port: r.port, ship: r.ship }))} operatorName={app.settings.company_name} />} />
+            <Route path="/ky" element={<KyList kyReports={app.kyReports} onDelete={app.deleteKyReport} />} />
+            <Route path="/ports" element={<PortMasterPage portMasters={app.portMasters} onSave={app.savePortMaster} onDelete={app.deletePortMasterById} />} />
           </Routes>
         </main>
       </div>

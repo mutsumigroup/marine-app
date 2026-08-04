@@ -122,6 +122,31 @@ export default function Settings({ settings, onSave }: Props) {
       </Card>
 
       <Card>
+        <CardTitle>💬 Google Chat通知設定（KY出発前報告）</CardTitle>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.6 }}>
+          KY出発前報告の送信後にGoogle Chatへ自動通知します。<br />
+          Google Chat のスペースで「Webhook URL」を取得して貼り付けてください。
+        </div>
+        <Field label="Google Chat Webhook URL">
+          <Input
+            value={f.gchat_webhook ?? ''}
+            onChange={set('gchat_webhook')}
+            placeholder="https://chat.googleapis.com/v1/spaces/..."
+          />
+        </Field>
+        {f.gchat_webhook && (
+          <div style={{ marginTop: 8, fontSize: 11, color: '#15803D', background: '#D1FAE5', borderRadius: 6, padding: '6px 10px' }}>
+            ✅ Webhook URLが設定されています。KY報告送信時にGoogle Chatへ通知されます。
+          </div>
+        )}
+        {!f.gchat_webhook && (
+          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', background: 'var(--surface2)', borderRadius: 6, padding: '6px 10px' }}>
+            ℹ️ URLを設定するまでGoogle Chat通知はスキップされます。
+          </div>
+        )}
+      </Card>
+
+      <Card>
         <CardTitle>🏠 毎月固定費（請求書に自動追加）</CardTitle>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
           毎月変わらない固定の立替金精算を設定します。請求書に自動で含まれます。

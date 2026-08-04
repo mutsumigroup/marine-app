@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Report, Invoice, Settings, Toast } from '../types'
+import type { Report, Invoice, Settings, Toast, KyReport, PortMaster } from '../types'
 import * as api from '../lib/api'
 import { sendEmail, buildDailyReportEmail, buildInvoiceEmail } from '../lib/email'
 
@@ -25,6 +25,8 @@ export function useAppState() {
   const [reports, setReports] = useState<Report[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
+  const [kyReports, setKyReports] = useState<KyReport[]>([])
+  const [portMasters, setPortMasters] = useState<PortMaster[]>([])
   const [loading, setLoading] = useState(true)
   const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -41,14 +43,18 @@ export function useAppState() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [r, inv, s] = await Promise.all([
+      const [r, inv, s, ky, pm] = await Promise.all([
         api.fetchReports(),
         api.fetchInvoices(),
         api.fetchSettings(),
+        api.fetchKyReports().catch(() => [] as KyReport[]),
+        api.fetchPortMasters().catch(() => [] as PortMaster[]),
       ])
       setReports(r)
       setInvoices(inv)
       setSettings(s)
+      setKyReports(ky)
+      setPortMasters(pm)
     } catch (err) {
       addToast('error', `データの読み込みに失敗しました: ${(err as Error).message}`)
     } finally {
@@ -282,8 +288,74 @@ export function useAppState() {
     }
   }, [reports, addToast])
 
+  // ===================== KY REPORTS =====================
+  const submitKyReport = useCallback(async (
+    data: Omit<KyReport, 'id' | 'created_at' | 'updated_at'>
+  ): Promise<KyReport | null> => {
+    try {
+      const saved = await api.insertKyReport(data)
+      setKyReports(prev => [saved, ...prev])
+      // Google Chat通知
+      if (settings.gchat_webhook) {
+        try {
+          await api.sendGchatNotification(settings.gchat_webhook, saved)
+          addToast('success', 'KY出発前報告を送信しました。Google Chatに通知しました。')
+        } catch {
+          addToast('info', 'KY出発前報告を保存しました。Google Chat通知に失敗しました。')
+        }
+      } else {
+        addToast('success', 'KY出発前報告を保存しました。')
+      }
+      return saved
+    } catch (err) {
+      addToast('error', `KY報告の保存に失敗: ${(err as Error).message}`)
+      return null
+    }
+  }, [settings.gchat_webhook, addToast])
+
+  const deleteKyReport = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      await api.deleteKyReport(id)
+      setKyReports(prev => prev.filter(k => k.id !== id))
+      addToast('success', 'KY報告を削除しました')
+      return true
+    } catch (err) {
+      addToast('error', `削除失敗: ${(err as Error).message}`)
+      return false
+    }
+  }, [addToast])
+
+  // ===================== PORT MASTER =====================
+  const savePortMaster = useCallback(async (pm: Omit<PortMaster, 'created_at' | 'updated_at'>): Promise<boolean> => {
+    try {
+      const saved = await api.upsertPortMaster(pm)
+      setPortMasters(prev => {
+        const exists = prev.find(p => p.id === saved.id)
+        return exists ? prev.map(p => p.id === saved.id ? saved : p) : [...prev, saved]
+      })
+      addToast('success', '港マスターを保存しました')
+      return true
+    } catch (err) {
+      addToast('error', `保存失敗: ${(err as Error).message}`)
+      return false
+    }
+  }, [addToast])
+
+  const deletePortMasterById = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      await api.deletePortMaster(id)
+      setPortMasters(prev => prev.filter(p => p.id !== id))
+      addToast('success', '港マスターを削除しました')
+      return true
+    } catch (err) {
+      addToast('error', `削除失敗: ${(err as Error).message}`)
+      return false
+    }
+  }, [addToast])
+
   return {
     reports, invoices, settings,
+    kyReports, portMasters,
     loading, toasts,
     addToast, removeToast,
     submitReport, saveSettings,
@@ -293,6 +365,10 @@ export function useAppState() {
     deleteReport,
     savePdf,
     updateInvoiceManual,
+    submitKyReport,
+    deleteKyReport,
+    savePortMaster,
+    deletePortMasterById,
     reload: loadAll,
   }
 }

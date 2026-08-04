@@ -27,6 +27,37 @@ export interface Settings {
   client_name: string
   client_email: string
   client_annual_goal: number
+  gchat_webhook?: string
+}
+
+// 港マスター
+export interface PortMaster {
+  id: string
+  name: string
+  notes: string
+  photos: string[]   // base64 or URL
+  pdfs: string[]     // base64 or URL
+  extra: Record<string, unknown>  // 将来拡張用
+  created_at?: string
+  updated_at?: string
+}
+
+// KY出発前報告
+export interface KyReport {
+  id: string
+  date: string
+  port: string
+  ship: string
+  crew: number
+  category: string
+  work: string
+  notes_confirmed: boolean   // 注意事項確認チェック
+  port_notes_snapshot: string // 送信時点の港注意事項スナップショット
+  submitted_at: string
+  operator_name: string
+  report_id?: string         // 紐付いた日報ID（子データ）
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Report {

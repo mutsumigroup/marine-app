@@ -1,5 +1,73 @@
 import { supabase } from './supabase'
-import type { Report, Invoice, Settings } from '../types'
+import type { Report, Invoice, Settings, KyReport, PortMaster } from '../types'
+
+// ===================== PORT MASTER =====================
+
+export async function fetchPortMasters(): Promise<PortMaster[]> {
+  const { data, error } = await supabase.from('port_masters').select('*').order('name')
+  if (error) throw new Error(`港マスターの取得に失敗: ${error.message}`)
+  return (data ?? []) as PortMaster[]
+}
+
+export async function upsertPortMaster(pm: Omit<PortMaster, 'created_at' | 'updated_at'>): Promise<PortMaster> {
+  const { data, error } = await supabase.from('port_masters').upsert(pm, { onConflict: 'id' }).select().single()
+  if (error) throw new Error(`港マスターの保存に失敗: ${error.message}`)
+  return data as PortMaster
+}
+
+export async function deletePortMaster(id: string): Promise<void> {
+  const { error } = await supabase.from('port_masters').delete().eq('id', id)
+  if (error) throw new Error(`港マスターの削除に失敗: ${error.message}`)
+}
+
+// ===================== KY REPORTS =====================
+
+export async function fetchKyReports(): Promise<KyReport[]> {
+  const { data, error } = await supabase.from('ky_reports').select('*').order('date', { ascending: false })
+  if (error) throw new Error(`KY報告の取得に失敗: ${error.message}`)
+  return (data ?? []) as KyReport[]
+}
+
+export async function insertKyReport(ky: Omit<KyReport, 'id' | 'created_at' | 'updated_at'>): Promise<KyReport> {
+  const { data, error } = await supabase.from('ky_reports').insert(ky).select().single()
+  if (error) throw new Error(`KY報告の保存に失敗: ${error.message}`)
+  return data as KyReport
+}
+
+export async function updateKyReport(id: string, updates: Partial<KyReport>): Promise<void> {
+  const { error } = await supabase.from('ky_reports').update(updates).eq('id', id)
+  if (error) throw new Error(`KY報告の更新に失敗: ${error.message}`)
+}
+
+export async function deleteKyReport(id: string): Promise<void> {
+  const { error } = await supabase.from('ky_reports').delete().eq('id', id)
+  if (error) throw new Error(`KY報告の削除に失敗: ${error.message}`)
+}
+
+// Google Chat Webhook通知
+export async function sendGchatNotification(webhookUrl: string, ky: KyReport): Promise<void> {
+  const text = [
+    `🚢 *KY出発前報告が提出されました*`,
+    ``,
+    `👤 担当者：${ky.operator_name}`,
+    `📅 稼働日：${ky.date}`,
+    `🏔 港名：${ky.port}`,
+    `🚢 船名：${ky.ship}`,
+    `👥 船員人数：${ky.crew}名`,
+    `📂 対応区分：${ky.category}`,
+    `📝 業務内容：${ky.work}`,
+    `✅ 注意事項確認：確認済み`,
+    `🕐 送信日時：${ky.submitted_at}`,
+    ky.port_notes_snapshot ? `\n📋 港注意事項：\n${ky.port_notes_snapshot}` : '',
+  ].filter(Boolean).join('\n')
+
+  const res = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+  if (!res.ok) throw new Error(`Google Chat通知に失敗: ${res.status}`)
+}
 
 // ===================== SETTINGS =====================
 
