@@ -4,8 +4,6 @@ import { useIsMobile } from './UI'
 const NAV = [
   { group: 'メイン', items: [
     { path: '/', label: 'ダッシュボード', icon: '⊞' },
-    { path: '/ky/new', label: 'KY出発前報告', icon: '🚦' },
-    { path: '/ky', label: 'KY報告一覧', icon: '📋' },
     { path: '/daily', label: '日報作成', icon: '📝' },
     { path: '/reports', label: '日報一覧', icon: '📋' },
   ]},
@@ -15,7 +13,6 @@ const NAV = [
     { path: '/annual', label: '目標報酬内訳', icon: '🎯' },
   ]},
   { group: '設定', items: [
-    { path: '/ports', label: '港マスター', icon: '⚓️' },
     { path: '/settings', label: '設定', icon: '⚙️' },
   ]},
 ]
