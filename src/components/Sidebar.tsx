@@ -15,7 +15,7 @@ const NAV = [
     { path: '/annual', label: '目標報酬内訳', icon: '🎯' },
   ]},
   { group: '設定', items: [
-    { path: '/ports', label: '港マスター', icon: '🏔' },
+    { path: '/ports', label: '港マスター', icon: '⚓️' },
     { path: '/settings', label: '設定', icon: '⚙️' },
   ]},
 ]
