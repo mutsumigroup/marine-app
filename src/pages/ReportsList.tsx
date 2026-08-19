@@ -435,8 +435,18 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
                   style={{ width: 100, padding: '6px 8px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--accent)', fontSize: 13, textAlign: 'right' }}
                   placeholder="金額"
                 />
-              </div>
-            ))}
+              <button
+                onClick={() => setF(prev => ({ ...prev, extra_expenses: (prev.extra_expenses ?? []).filter((_, j) => j !== i) }))}
+                style={{ width: 28, height: 28, borderRadius: '50%', border: 'none', background: '#FEE2E2', color: '#DC2626', cursor: 'pointer', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                title="削除"
+              >✕</button>
+            </div>
+          ))}
+          {(f.extra_expenses ?? []).length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              合計: <strong style={{ color: 'var(--accent)', marginLeft: 6 }}>¥{(f.extra_expenses ?? []).reduce((s, e) => s + e.amount, 0).toLocaleString()}</strong>
+            </div>
+          )}
         </div>
         <Divider />
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 10 }}>売上</div>
