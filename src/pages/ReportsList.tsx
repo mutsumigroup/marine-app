@@ -462,9 +462,11 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
 
 
 // 業務内容ポップアップ
-function ExtraExpenseCell({ items }: { items: {label: string; amount: number}[] }) {
+function ExtraExpenseCell({ items, otherExp = 0 }: { items: {label: string; amount: number}[]; otherExp?: number }) {
   const [show, setShow] = React.useState(false)
-  const total = items.reduce((sum, e) => sum + e.amount, 0)
+  const allItems = otherExp > 0 ? [{ label: 'その他立替', amount: otherExp }, ...items] : items
+  const total = allItems.reduce((sum, e) => sum + e.amount, 0)
+  if (total === 0) return <span style={{ color: 'var(--text-light)' }}>—</span>
   return (
     <>
       <div onClick={(e) => { e.stopPropagation(); setShow(true) }}
@@ -476,8 +478,8 @@ function ExtraExpenseCell({ items }: { items: {label: string; amount: number}[] 
           onClick={() => setShow(false)}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', maxWidth: 300, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,.2)' }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 10 }}>追加立替項目</div>
-            {items.map((item, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none', fontSize: 13 }}>
+            {allItems.map((item, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < allItems.length - 1 ? '1px solid var(--border)' : 'none', fontSize: 13 }}>
                 <span style={{ color: 'var(--text)' }}>{item.label}</span>
                 <span style={{ color: 'var(--accent)', fontWeight: 600 }}>¥{item.amount.toLocaleString()}</span>
               </div>
@@ -656,14 +658,11 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                     <td style={{ ...TD, fontSize: 11 }}>{r.meal > 0 ? `¥${r.meal.toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.hotel_fee > 0 ? `¥${r.hotel_fee.toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.shinkansen_fee > 0 ? `¥${r.shinkansen_fee.toLocaleString()}` : '—'}</td>
-                    <td style={{ ...TD, fontSize: 11 }}>{(r.other_exp ?? 0) > 0 ? `¥${(r.other_exp ?? 0).toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 10, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
                       {r.voucher ? (() => { const parts = r.voucher.split('|||'); const links = parts.filter(p => p.startsWith('http') || p.startsWith('data:')); const texts = parts.filter(p => !p.startsWith('http') && !p.startsWith('data:')); return <>{links.map((url, i) => <button key={i} onClick={() => { if(url.startsWith('data:')){const a=url.split(',');const m=a[0].match(/:(.*?);/)?.[1]??'application/pdf';const b=atob(a[1]);const n=b.length;const u=new Uint8Array(n);for(let j=0;j<n;j++)u[j]=b.charCodeAt(j);window.open(URL.createObjectURL(new Blob([u],{type:m})),'_blank')}else{window.open(url,'_blank')}}} style={{ color: 'var(--accent)', textDecoration: 'underline', fontSize: 10, display: 'block', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>🔗 PDF{links.length > 1 ? i+1 : ''}</button>)}{texts.length > 0 && <span style={{ color: 'var(--text-light)', fontSize: 10 }}>{texts.join(', ')}</span>}</> })() : <span style={{ color: 'var(--text-light)' }}>—</span>}
                     </td>
                 <td style={{ ...TD, fontSize: 11 }} onClick={(e) => e.stopPropagation()}>
-                  {r.extra_expenses && r.extra_expenses.length > 0
-                    ? <ExtraExpenseCell items={r.extra_expenses} />
-                    : <span style={{ color: 'var(--text-light)' }}>—</span>}
+                  <ExtraExpenseCell items={r.extra_expenses ?? []} otherExp={r.other_exp ?? 0} />
                 </td>
                     <td style={{ ...TD, background: 'var(--accent-bg)' }} onClick={e => e.stopPropagation()}>
                       {r.amount > 0 ? <strong style={{ color: 'var(--accent)', fontSize: 12 }}>¥{r.amount.toLocaleString()}</strong> : <span style={{ color: 'var(--text-light)', fontSize: 11 }}>未入力</span>}
