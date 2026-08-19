@@ -159,7 +159,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
   const handleCategoryChange = (v: string) => setF(prev => ({ ...prev, category: v, amount: autoCalc ? String(calcAmount(v, parseInt(prev.crew) || 0)) : prev.amount }))
   const handleCrewChange = (v: string) => setF(prev => ({ ...prev, crew: v, amount: autoCalc ? String(calcAmount(prev.category, parseInt(v) || 0)) : prev.amount }))
   const extraTotal = extraItems.reduce((s, e) => s + e.amount, 0)
-  const totalExp = (parseInt(f.parkFee) || 0) + (parseInt(f.hwFee) || 0) + (parseInt(f.meal) || 0) + (parseInt(f.hotelFee) || 0) + (parseInt(f.shinkansenFee) || 0) + (parseInt(f.otherExp) || 0) + extraTotal
+  const totalExp = (parseInt(f.parkFee) || 0) + (parseInt(f.hwFee) || 0) + (parseInt(f.meal) || 0) + (parseInt(f.hotelFee) || 0) + (parseInt(f.shinkansenFee) || 0) + extraTotal
   const portList = [...new Set(pastReports.map(r => r.port).filter(Boolean))].sort()
   const shipList = [...new Set(pastReports.map(r => r.ship).filter(Boolean))].sort()
 
@@ -291,7 +291,6 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
                   <Field label="食事代（円）"><input type="number" value={f.meal} onChange={e => set('meal')(e.target.value)} placeholder="0" style={inputSt} /></Field>
           <Field label="ホテル代金（円）"><input type="number" value={f.hotelFee} onChange={e => set('hotelFee')(e.target.value)} placeholder="0" style={inputSt} /></Field>
           <Field label="新幹線代金（円）"><input type="number" value={f.shinkansenFee} onChange={e => set('shinkansenFee')(e.target.value)} placeholder="0" style={inputSt} /></Field>
-                  <Field label="その他立替（円）"><input type="number" value={f.otherExp} onChange={e => set('otherExp')(e.target.value)} placeholder="0" style={inputSt} /></Field>
                 </div>
                 <ExtraItemsSection items={extraItems} onAdd={addExtraItem} onRemove={removeExtraItem} onLabelChange={setExtraLabel} onAmountChange={setExtraAmount} inputSt={inputSt} isMobile={isMobile} />
                 {totalExp > 0 && (
