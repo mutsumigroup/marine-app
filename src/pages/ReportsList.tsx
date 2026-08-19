@@ -544,7 +544,7 @@ function CatBadge({ cat }: { cat: string }) {
 const COLS = [
   ['稼働日', '82px'], ['港名', '80px'], ['船名', '120px'], ['人数', '48px'],
   ['対応区分', '92px'], ['業務内容', '320px'], ['駐車場', '82px'],
-  ['高速料金 🛣', '90px'], ['食事代', '76px'], ['ホテル代金', '80px'], ['新幹線代金', '80px'], ['その他立替', '80px'], ['VOUCHER', '80px'], ['追加立替', '80px'], ['売上金額', '114px'],
+  ['高速料金 🛣', '90px'], ['食事代', '76px'], ['ホテル代金', '80px'], ['新幹線代金', '80px'], ['VOUCHER', '80px'], ['追加立替', '80px'], ['売上金額', '114px'],
 ]
 
 export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpdateReport, onDeleteReport, prices = {}, settings }: Props) {
@@ -592,7 +592,6 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const totalMeal = filtered.reduce((s, r) => s + r.meal, 0)
   const totalHotel = filtered.reduce((s, r) => s + (r.hotel_fee ?? 0), 0)
   const totalShinkansen = filtered.reduce((s, r) => s + (r.shinkansen_fee ?? 0), 0)
-  const totalOtherExp = filtered.reduce((s, r) => s + (r.other_exp ?? 0), 0)
   const zeroCount = filtered.filter(r => r.amount === 0).length
 
   return (
@@ -625,7 +624,6 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>食事代: <strong>¥{totalMeal.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>ホテル代金: <strong>¥{totalHotel.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>新幹線代金: <strong>¥{totalShinkansen.toLocaleString()}</strong></div>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>その他立替: <strong>¥{totalOtherExp.toLocaleString()}</strong></div>
         {zeroCount > 0 && <div style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, color: 'var(--warning)' }}>⚠ 売上未入力: <strong>{zeroCount}件</strong></div>}
       </div>
 
