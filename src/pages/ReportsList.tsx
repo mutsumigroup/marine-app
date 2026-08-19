@@ -400,7 +400,6 @@ function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Repo
           <Field label="食事代（円）"><Input type="number" value={String(f.meal)} onChange={setNum('meal')} /></Field>
           <Field label="ホテル代金（円）"><Input type="number" value={String(f.hotel_fee ?? 0)} onChange={setNum('hotel_fee')} /></Field>
           <Field label="新幹線代金（円）"><Input type="number" value={String(f.shinkansen_fee ?? 0)} onChange={setNum('shinkansen_fee')} /></Field>
-          <Field label="その他立替（円）"><Input type="number" value={String(f.other_exp)} onChange={setNum('other_exp')} /></Field>
         </Grid>
         <div style={{ marginTop: 8, marginBottom: 4 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
