@@ -263,7 +263,18 @@ function HwPopup({ report, onClose, onSavePdf, settings, onUpdateReport }: { rep
 }
 
 function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Report; onClose: () => void; onSave: (id: string, updates: Partial<Report>) => Promise<boolean>; onDelete: (id: string) => Promise<boolean>; prices: Record<string, { ship: number; crew: number }> }) {
-  const [f, setF] = useState({ ...report })
+  // other_expが残っている場合はextra_expensesの先頭に「その他立替」として移行
+  const initialExtraExpenses = (() => {
+    const existing = report.extra_expenses ?? []
+    if ((report.other_exp ?? 0) > 0) {
+      const alreadyMigrated = existing.some(e => e.label === 'その他立替' && e.amount === report.other_exp)
+      if (!alreadyMigrated) {
+        return [{ label: 'その他立替', amount: report.other_exp ?? 0 }, ...existing]
+      }
+    }
+    return existing
+  })()
+  const [f, setF] = useState({ ...report, extra_expenses: initialExtraExpenses })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
