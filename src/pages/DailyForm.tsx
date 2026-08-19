@@ -399,7 +399,6 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
           <Field label="食事代（円）"><Input type="number" value={f.meal} onChange={set('meal')} placeholder="0" min="0" /></Field>
           <Field label="ホテル代金（円）"><Input type="number" value={f.hotelFee} onChange={set('hotelFee')} placeholder="0" min="0" /></Field>
           <Field label="新幹線代金（円）"><Input type="number" value={f.shinkansenFee} onChange={set('shinkansenFee')} placeholder="0" min="0" /></Field>
-          <Field label="その他立替（円）"><Input type="number" value={f.otherExp} onChange={set('otherExp')} placeholder="0" min="0" /></Field>
         </div>
         <ExtraItemsSection items={extraItems} onAdd={addExtraItem} onRemove={removeExtraItem} onLabelChange={setExtraLabel} onAmountChange={setExtraAmount} inputSt={inputSt} isMobile={isMobile} />
         {totalExp > 0 && <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>立替合計: <strong style={{ color: 'var(--text)' }}>¥{totalExp.toLocaleString()}</strong></div>}
