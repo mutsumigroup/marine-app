@@ -124,19 +124,15 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
       { label: 'その他立替', amount: othTotal,         _type: 'business' as const },
       ...extraExp.map(e => ({ ...e, _type: 'business' as const })),
     ]
-    // その他立替金（設定の固定費）
-    const fixedItems = fixedExp.map(e => ({ label: e.label, amount: e.amount, _type: 'fixed' as const }))
 
-    // 保存済みの手動追加項目（業務でも固定でもない）を保持
-    const manualItems = inv.expense_items
-      ? inv.expense_items
-          .filter(e => {
-            const isFixed = fixedExp.some(f => f.label === e.label)
-            const isBusiness = ['駐車場料金','高速料金','食事代','ホテル代金','新幹線代金','その他立替'].includes(e.label)
-            return !isFixed && !isBusiness
-          })
-          .map(e => ({ ...e, _type: 'business' as const }))
-      : []
+    // expense_itemsが保存済みの場合はそれを優先（手動編集・削除を反映）
+    if (inv.expense_items && inv.expense_items.length > 0) {
+      return inv.expense_items.map(e => ({ ...e, _type: (e._type ?? 'business') as 'business' | 'fixed' }))
+    }
+
+    // 初回（未保存）は固定費を含めて生成
+    const fixedItems = fixedExp.map(e => ({ label: e.label, amount: e.amount, _type: 'fixed' as const }))
+    const manualItems: { label: string; amount: number; _type: 'business' | 'fixed' }[] = []
 
     return [...businessItems, ...manualItems, ...fixedItems].filter(e => e.amount > 0)
   }
