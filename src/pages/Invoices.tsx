@@ -142,7 +142,8 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
 
-  const subtotal = rows.reduce((s, r) => s + r.count * r.shipP + r.crew * r.crewP, 0)
+  // 業務小計は日報のamount合計を使用（日報一覧の売上と一致させる）
+  const subtotal = monthReports.reduce((s, r) => s + (r.amount ?? 0), 0)
   const tax = Math.round(subtotal * 0.1)
   const bizTotal = subtotal + tax
   const expenses = expItems.reduce((s, e) => s + e.amount, 0)
