@@ -8,7 +8,6 @@ import ReportsList from './pages/ReportsList'
 import Sales from './pages/Sales'
 import Invoices from './pages/Invoices'
 import Payments from './pages/Payments'
-import Annual from './pages/Annual'
 import SettingsPage from './pages/Settings'
 import { useState } from 'react'
 
@@ -19,7 +18,6 @@ const PAGE_TITLES: Record<string, string> = {
   '/sales': '売上管理',
   '/invoices': '請求書管理',
   '/payments': '入金管理',
-  '/annual': '売上・目標管理',
   '/settings': '設定',
 }
 
@@ -58,7 +56,6 @@ function AppInner() {
             <Route path="/sales" element={<Sales reports={app.reports} />} />
             <Route path="/invoices" element={<Invoices invoices={app.invoices} reports={app.reports} settings={app.settings} onSend={app.sendInvoice} onPaid={app.markPaid} onRevert={app.revertInvoice} onUpdateInvoice={app.updateInvoiceManual} />} />
             <Route path="/payments" element={<Payments invoices={app.invoices} onPaid={app.markPaid} />} />
-            <Route path="/annual" element={<Annual reports={app.reports} invoices={app.invoices} settings={app.settings} />} />
             <Route path="/settings" element={<SettingsPage settings={app.settings} onSave={app.saveSettings} />} />
           </Routes>
         </main>

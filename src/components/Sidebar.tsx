@@ -10,7 +10,6 @@ const NAV = [
   { group: '売上・請求', items: [
     { path: '/invoices', label: '請求書管理', icon: '🧾' },
     { path: '/payments', label: '入金管理', icon: '💴' },
-    { path: '/annual', label: '目標報酬内訳', icon: '🎯' },
   ]},
   { group: '設定', items: [
     { path: '/settings', label: '設定', icon: '⚙️' },
