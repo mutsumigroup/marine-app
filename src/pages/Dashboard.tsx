@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Btn, StatGrid, StatCard, Card, CardTitle, BarChart, ProgressBar, PageHeader } from '../components/UI'
 import type { Report, Invoice, Settings } from '../types'
 
+const MONTHLY_GOAL = 400000
+
 interface Props { reports: Report[]; invoices: Invoice[]; settings: Settings; reload: () => void }
 
 export default function Dashboard({ reports, invoices, settings, reload }: Props) {
@@ -24,6 +26,36 @@ export default function Dashboard({ reports, invoices, settings, reload }: Props
 
   const recent = [...reports].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6)
 
+  // ===================== 累計追跡（契約開始から通算） =====================
+  const allMonths = [...new Set(reports.map(r => r.bill_month).filter(Boolean))].sort()
+  const startMonth = allMonths[0] ?? ym
+
+  const getMonthsBetween = (from: string, to: string) => {
+    const result: string[] = []
+    let [y, m] = from.split('-').map(Number)
+    const [ey, em] = to.split('-').map(Number)
+    while (y < ey || (y === ey && m <= em)) {
+      result.push(`${y}-${String(m).padStart(2, '0')}`)
+      m++; if (m > 12) { m = 1; y++ }
+    }
+    return result
+  }
+
+  const allPeriodMonths = getMonthsBetween(startMonth, ym)
+  const totalMonths = allPeriodMonths.length
+  const totalSales = reports
+    .filter(r => r.bill_month && r.bill_month >= startMonth && r.bill_month <= ym)
+    .reduce((s, r) => s + r.amount, 0)
+  const totalGoal = totalMonths * MONTHLY_GOAL
+  const totalDiff = totalSales - totalGoal
+  const isAhead = totalDiff >= 0
+  const achieveRate = totalGoal > 0 ? Math.min(100, Math.round(totalSales / totalGoal * 100)) : 0
+
+  const maxBarVal = Math.max(
+    ...allPeriodMonths.map(m => reports.filter(r => r.bill_month === m).reduce((s, r) => s + r.amount, 0)),
+    MONTHLY_GOAL * 1.2
+  )
+
   return (
     <div style={{ padding: '20px 22px' }}>
       <PageHeader title="ダッシュボード" sub={now.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}>
@@ -39,6 +71,143 @@ export default function Dashboard({ reports, invoices, settings, reload }: Props
         <StatCard label="未請求件数" value={`${uninv}件`} color="warning" />
         <StatCard label="入金待ち" value={`¥${waitAmt.toLocaleString()}`} color="danger" />
       </StatGrid>
+
+      {/* 累計売上追跡 */}
+      <div style={{ background: '#ffffff', border: '0.5px solid #E5E5E5', borderRadius: 12, padding: '20px 22px', marginBottom: 14 }}>
+
+        {/* ヘッダー */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#222' }}>累計売上追跡</div>
+            <div style={{ fontSize: 11, color: '#777', marginTop: 2 }}>
+              {startMonth} 〜 {ym}（{totalMonths}ヶ月目）· 月次目標 ¥40万
+            </div>
+          </div>
+          <div style={{
+            fontSize: 11, fontWeight: 500, padding: '5px 14px', borderRadius: 20,
+            background: isAhead ? '#D1FAE5' : '#FEE2E2',
+            color: isAhead ? '#065F46' : '#991B1B',
+            border: `0.5px solid ${isAhead ? '#6EE7B7' : '#FCA5A5'}`
+          }}>
+            {isAhead ? `✅ ¥${totalDiff.toLocaleString()} 超過` : `⚠ ¥${Math.abs(totalDiff).toLocaleString()} 不足`}
+          </div>
+        </div>
+
+        {/* 3枚メトリクス */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
+          <div style={{ background: '#F8F8F8', borderRadius: 8, padding: '14px 16px', textAlign: 'center', border: '0.5px solid #E5E5E5' }}>
+            <div style={{ fontSize: 11, color: '#777', marginBottom: 5 }}>累計目標</div>
+            <div style={{ fontSize: 20, fontWeight: 500, color: '#222' }}>¥{totalGoal.toLocaleString()}</div>
+            <div style={{ fontSize: 10, color: '#999', marginTop: 3 }}>{totalMonths}ヶ月 × ¥400,000</div>
+          </div>
+          <div style={{ background: '#F8F8F8', borderRadius: 8, padding: '14px 16px', textAlign: 'center', border: '0.5px solid #E5E5E5' }}>
+            <div style={{ fontSize: 11, color: '#777', marginBottom: 5 }}>累計売上実績</div>
+            <div style={{ fontSize: 20, fontWeight: 500, color: '#185FA5' }}>¥{totalSales.toLocaleString()}</div>
+            <div style={{ fontSize: 10, color: '#999', marginTop: 3 }}>達成率 {achieveRate}%</div>
+          </div>
+          <div style={{
+            background: isAhead ? '#F0FDF4' : '#FEF2F2', borderRadius: 8, padding: '14px 16px', textAlign: 'center',
+            border: `0.5px solid ${isAhead ? '#6EE7B7' : '#FECACA'}`
+          }}>
+            <div style={{ fontSize: 11, color: isAhead ? '#065F46' : '#991B1B', marginBottom: 5 }}>
+              {isAhead ? '累計超過額' : '累計不足額'}
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 500, color: isAhead ? '#059669' : '#DC2626' }}>
+              {isAhead ? '+' : '-'}¥{Math.abs(totalDiff).toLocaleString()}
+            </div>
+            <div style={{ fontSize: 10, color: isAhead ? '#065F46' : '#B91C1C', marginTop: 3 }}>
+              {isAhead ? '翌月以降の余裕分' : '翌月以降で巻き返し'}
+            </div>
+          </div>
+        </div>
+
+        {/* 月別棒グラフ */}
+        <div style={{ position: 'relative', overflowX: 'auto' }}>
+          <div style={{ minWidth: Math.max(500, allPeriodMonths.length * 48) }}>
+            {/* 目標ライン */}
+            <div style={{
+              position: 'absolute',
+              bottom: 40,
+              left: 0, right: 0,
+              borderTop: '2.5px dashed #eda100',
+              zIndex: 2, pointerEvents: 'none'
+            }}>
+              <span style={{ position: 'absolute', right: 4, top: -16, fontSize: 9, color: '#854F0B', background: '#ffffff', padding: '0 3px' }}>
+                目標 ¥40万
+              </span>
+            </div>
+
+            {/* バー */}
+            <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 130, paddingBottom: 0 }}>
+              {allPeriodMonths.map(month => {
+                const sales = reports.filter(r => r.bill_month === month).reduce((s, r) => s + r.amount, 0)
+                const barH = Math.round((sales / maxBarVal) * 120)
+                const isOver = sales >= MONTHLY_GOAL
+                const label = month.slice(2).replace('-', '/')
+                return (
+                  <div key={month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: 130 }}>
+                    <div
+                      title={`${month}: ¥${sales.toLocaleString()}`}
+                      style={{
+                        width: '75%', height: Math.max(barH, 2),
+                        background: isOver ? '#1baf7a' : '#3987e5',
+                        borderRadius: '3px 3px 0 0',
+                      }}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* 月ラベル */}
+            <div style={{ display: 'flex', gap: 4, marginTop: 5 }}>
+              {allPeriodMonths.map(month => {
+                const sales = reports.filter(r => r.bill_month === month).reduce((s, r) => s + r.amount, 0)
+                const isOver = sales >= MONTHLY_GOAL
+                const label = month.slice(2).replace('-', '/')
+                return (
+                  <div key={month} style={{ flex: 1, textAlign: 'center' }}>
+                    <div style={{ fontSize: 9, color: '#999' }}>{label}</div>
+                    <div style={{ fontSize: 9, fontWeight: 500, color: isOver ? '#0F6E56' : '#185FA5' }}>
+                      {sales > 0 ? `${Math.round(sales / 10000)}万` : '—'}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* 凡例 */}
+        <div style={{ display: 'flex', gap: 20, justifyContent: 'center', fontSize: 11, color: '#777', marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: '#1baf7a', display: 'inline-block' }} />目標達成月（¥40万以上）
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: '#3987e5', display: 'inline-block' }} />未達月（¥40万未満）
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ display: 'inline-block', width: 18, borderTop: '2.5px dashed #eda100', verticalAlign: 'middle', marginRight: 2 }} />月次目標ライン
+          </div>
+        </div>
+
+        {/* 累計進捗バー */}
+        <div style={{ marginTop: 16, paddingTop: 14, borderTop: '0.5px solid #E5E5E5' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 6 }}>
+            <span style={{ color: '#777' }}>累計達成率</span>
+            <span style={{ fontWeight: 500, color: isAhead ? '#059669' : '#DC2626' }}>
+              {achieveRate}% ／ {isAhead ? `¥${totalDiff.toLocaleString()} 超過中` : `あと ¥${Math.abs(totalDiff).toLocaleString()} の巻き返しが必要`}
+            </span>
+          </div>
+          <div style={{ height: 10, background: '#F0F0F0', borderRadius: 5, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${achieveRate}%`, background: isAhead ? '#1baf7a' : '#3987e5', borderRadius: 5, transition: 'width .5s' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#999', marginTop: 4 }}>
+            <span>¥{totalSales.toLocaleString()}</span>
+            <span>目標 ¥{totalGoal.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: 14 }}>
         <Card>
