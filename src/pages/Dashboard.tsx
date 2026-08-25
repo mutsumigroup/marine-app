@@ -84,7 +84,7 @@ export default function Dashboard({ reports, invoices, settings, reload, onUpdat
           <div>
             <div style={{ fontSize: 14, fontWeight: 500, color: '#222' }}>累計売上追跡</div>
             <div style={{ fontSize: 11, color: '#777', marginTop: 2 }}>
-              {startMonth} 〜 {ym}（{totalMonths}ヶ月目）· 月次目標 ¥40万
+              {allPeriodMonths[0]} 〜 {ym}（{totalMonths}ヶ月目）· 月次目標 ¥40万
             </div>
           </div>
           <div style={{
