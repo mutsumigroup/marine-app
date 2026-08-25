@@ -50,7 +50,7 @@ function AppInner() {
         {isMobile && <MobileHeader onMenu={() => setSidebarOpen(true)} />}
         <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: isMobile ? 52 : 0 }}>
           <Routes>
-            <Route path="/" element={<Dashboard reports={app.reports} invoices={app.invoices} settings={app.settings} reload={app.reload} />} />
+            <Route path="/" element={<Dashboard reports={app.reports} invoices={app.invoices} settings={app.settings} reload={app.reload} onUpdateReport={app.updateReport} onDeleteReport={app.deleteReport} />} />
             <Route path="/daily" element={<DailyForm onSubmit={app.submitReport} pastReports={app.reports.map(r => ({ port: r.port, ship: r.ship }))} prices={app.settings.prices} />} />
             <Route path="/reports" element={<ReportsList reports={app.reports} onUpdateAmount={app.updateAmount} onSavePdf={app.savePdf} onUpdateReport={app.updateReport} onDeleteReport={app.deleteReport} prices={app.settings.prices} settings={app.settings} />} />
             <Route path="/sales" element={<Sales reports={app.reports} />} />

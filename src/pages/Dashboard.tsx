@@ -1,13 +1,16 @@
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { EditModal } from './ReportsList'
 import { Btn, StatGrid, StatCard, Card, CardTitle, BarChart, ProgressBar, PageHeader } from '../components/UI'
 import type { Report, Invoice, Settings } from '../types'
 
 const MONTHLY_GOAL = 400000
 
-interface Props { reports: Report[]; invoices: Invoice[]; settings: Settings; reload: () => void }
+interface Props { reports: Report[]; invoices: Invoice[]; settings: Settings; reload: () => void; onUpdateReport: (id: string, updates: Partial<Report>) => Promise<boolean>; onDeleteReport: (id: string) => Promise<boolean> }
 
-export default function Dashboard({ reports, invoices, settings, reload }: Props) {
+export default function Dashboard({ reports, invoices, settings, reload, onUpdateReport, onDeleteReport }: Props) {
   const navigate = useNavigate()
+  const [editReport, setEditReport] = useState<Report | null>(null)
   const now = new Date()
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const yr = String(now.getFullYear())
@@ -245,6 +248,7 @@ export default function Dashboard({ reports, invoices, settings, reload }: Props
 
       <Card style={{ marginTop: 14 }}>
         <CardTitle>🕐 最近の日報</CardTitle>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '4px 0 10px' }}>💡 行をクリックすると編集できます</div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
@@ -266,8 +270,8 @@ export default function Dashboard({ reports, invoices, settings, reload }: Props
                   }
                   const c = catColors[r.category]
                   return (
-                    <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface2)' }}
+                    <tr key={r.id} onClick={() => setEditReport(r)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
                       <td style={{ padding: '7px 8px' }}>{r.date}</td>
                       <td style={{ padding: '7px 8px', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.port}</td>
@@ -302,6 +306,8 @@ export default function Dashboard({ reports, invoices, settings, reload }: Props
           </table>
         </div>
       </Card>
+      {editReport && <EditModal report={editReport} onClose={() => { setEditReport(null); reload() }} onSave={onUpdateReport} onDelete={onDeleteReport} prices={settings.prices} />}
+      {editReport && <EditModal report={editReport} onClose={() => { setEditReport(null); reload() }} onSave={onUpdateReport} onDelete={onDeleteReport} prices={settings.prices} />}
     </div>
   )
 }
