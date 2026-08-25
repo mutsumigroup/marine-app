@@ -36,6 +36,53 @@ export async function sendInvoiceEmail(params: {
   }, { publicKey: PUBLIC_KEY })
 }
 
+export const DEFAULT_DAILY_TEMPLATE = `【日報】{date} {ship}
+
+■ 基本情報
+稼働日：{date}
+港名：{port}
+船名：{ship}
+船員人数：{crew}名
+対応区分：{category}
+業務内容：{work}
+請求対象月：{bill_month}
+
+■ 費用
+売上金額：¥{amount}
+駐車場料金：¥{park_fee}
+高速料金：¥{hw_fee}
+食事代：¥{meal}
+ホテル代金：¥{hotel_fee}
+新幹線代金：¥{shinkansen_fee}
+立替合計：¥{expenses}
+
+{voucher_line}{notes_line}
+■ 日報一覧を確認する
+{annual_url}
+
+---
+マリン業務管理システム`
+
+export const DEFAULT_INVOICE_TEMPLATE = `{client_name} 御中
+
+いつもお世話になっております。
+{billing_month}分の請求書をお送りします。
+
+■ 請求書番号：{invoice_id}
+■ 請求月：{billing_month}
+■ 業務請求金額（税抜）：¥{subtotal}
+■ 消費税（10%）：¥{tax}
+■ 立替金精算：¥{expenses}
+■ 最終請求金額（税込）：¥{total}
+
+■ 請求書の確認はこちら：
+{invoice_url}
+
+お手数ですが、ご確認のうえお振込みくださいますようお願いいたします。
+
+---
+マリン業務管理システム`
+
 export function buildDailyReportEmail(report: {
   date: string
   port: string
@@ -53,35 +100,28 @@ export function buildDailyReportEmail(report: {
   voucher: string
   bill_month: string
   notes: string
-}, annualUrl: string): string {
-  return `【日報】${report.date} ${report.ship}
-
-■ 基本情報
-稼働日：${report.date}
-港名：${report.port}
-船名：${report.ship}
-船員人数：${report.crew}名
-対応区分：${report.category}
-業務内容：${report.work || '—'}
-請求対象月：${report.bill_month}
-
-■ 費用
-売上金額：¥${report.amount.toLocaleString()}
-駐車場料金：¥${report.park_fee.toLocaleString()}
-高速料金：¥${report.hw_fee.toLocaleString()}
-食事代：¥${report.meal.toLocaleString()}
-ホテル代金：¥${report.hotel_fee.toLocaleString()}
-新幹線代金：¥${report.shinkansen_fee.toLocaleString()}
-立替合計：¥${report.expenses.toLocaleString()}
-
-${report.voucher && !report.voucher.startsWith("data:") ? `Voucher：${report.voucher}` : ""}
-${report.notes ? `備考：${report.notes}` : ''}
-
-■ 日報一覧を確認する
-${annualUrl}
-
----
-マリン業務管理システム`
+}, annualUrl: string, template?: string): string {
+  const tpl = template || DEFAULT_DAILY_TEMPLATE
+  return tpl
+    .replace(/{date}/g, report.date)
+    .replace(/{port}/g, report.port)
+    .replace(/{ship}/g, report.ship)
+    .replace(/{crew}/g, String(report.crew))
+    .replace(/{category}/g, report.category)
+    .replace(/{work}/g, report.work || '—')
+    .replace(/{bill_month}/g, report.bill_month)
+    .replace(/{amount}/g, report.amount.toLocaleString())
+    .replace(/{park_fee}/g, report.park_fee.toLocaleString())
+    .replace(/{hw_fee}/g, report.hw_fee.toLocaleString())
+    .replace(/{meal}/g, report.meal.toLocaleString())
+    .replace(/{hotel_fee}/g, report.hotel_fee.toLocaleString())
+    .replace(/{shinkansen_fee}/g, report.shinkansen_fee.toLocaleString())
+    .replace(/{expenses}/g, report.expenses.toLocaleString())
+    .replace(/{voucher_line}/g, (report.voucher && !report.voucher.startsWith('data:')) ? `Voucher：${report.voucher}
+` : '')
+    .replace(/{notes_line}/g, report.notes ? `備考：${report.notes}
+` : '')
+    .replace(/{annual_url}/g, annualUrl)
 }
 
 export function buildInvoiceEmail(invoice: {
@@ -91,25 +131,16 @@ export function buildInvoiceEmail(invoice: {
   tax: number
   expenses: number
   total: number
-}, clientName: string): string {
+}, clientName: string, template?: string): string {
   const invoiceUrl = 'https://mutsumigroup.github.io/marine-app/#/invoices'
-  return `${clientName} 御中
-
-いつもお世話になっております。
-${invoice.billing_month}分の請求書をお送りします。
-
-■ 請求書番号：${invoice.id}
-■ 請求月：${invoice.billing_month}
-■ 業務請求金額（税抜）：¥${invoice.subtotal.toLocaleString()}
-■ 消費税（10%）：¥${invoice.tax.toLocaleString()}
-■ 立替金精算：¥${invoice.expenses.toLocaleString()}
-■ 最終請求金額（税込）：¥${invoice.total.toLocaleString()}
-
-■ 請求書の確認はこちら：
-${invoiceUrl}
-
-お手数ですが、ご確認のうえお振込みくださいますようお願いいたします。
-
----
-マリン業務管理システム`
+  const tpl = template || DEFAULT_INVOICE_TEMPLATE
+  return tpl
+    .replace(/{client_name}/g, clientName)
+    .replace(/{billing_month}/g, invoice.billing_month)
+    .replace(/{invoice_id}/g, invoice.id)
+    .replace(/{subtotal}/g, invoice.subtotal.toLocaleString())
+    .replace(/{tax}/g, invoice.tax.toLocaleString())
+    .replace(/{expenses}/g, invoice.expenses.toLocaleString())
+    .replace(/{total}/g, invoice.total.toLocaleString())
+    .replace(/{invoice_url}/g, invoiceUrl)
 }

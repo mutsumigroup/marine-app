@@ -160,7 +160,7 @@ function HwPopup({ report, onClose, onSavePdf, settings, onUpdateReport }: { rep
         voucher: report.voucher ?? '',
         bill_month: report.bill_month,
         notes: report.notes ?? '',
-      }, annualUrl)
+      }, annualUrl, settings?.daily_report_template)
       const hwDetailUrl = `https://mutsumigroup.github.io/marine-app/#/reports?month=${report.bill_month}`
       const hwFrom = hw.from1 || hw.to1 ? `行き：${hw.from1 || '—'} → ${hw.to1 || '—'}` : ''
       const hwReturn = hw.from2 || hw.to2 ? `帰り：${hw.from2 || '—'} → ${hw.to2 || '—'}` : ''

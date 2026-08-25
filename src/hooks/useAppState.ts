@@ -100,7 +100,7 @@ export function useAppState() {
             voucher: reportData.voucher ?? '',
             bill_month: reportData.bill_month,
             notes: reportData.notes ?? '',
-          }, annualUrl)
+          }, annualUrl, settings.daily_report_template)
           await sendEmail({
             to_email: settings.daily_mail,
             subject: `【日報】${reportData.date} ${reportData.ship}`,
@@ -147,7 +147,7 @@ export function useAppState() {
       if (settings.client_email || settings.inv_mail) {
         try {
           const toEmail = settings.inv_mail || settings.client_email
-          const message = buildInvoiceEmail(inv, settings.client_name)
+          const message = buildInvoiceEmail(inv, settings.client_name, settings.invoice_template)
           await sendEmail({
             to_email: toEmail,
             subject: `【請求書】${inv.billing_month}分 ${settings.client_name}`,

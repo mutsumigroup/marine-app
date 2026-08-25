@@ -28,6 +28,8 @@ export interface Settings {
   client_email: string
   client_annual_goal: number
   gchat_webhook?: string
+  daily_report_template?: string
+  invoice_template?: string
 }
 
 // 港マスター

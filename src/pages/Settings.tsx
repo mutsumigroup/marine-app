@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardTitle, Field, Input, Grid, Divider, Btn, PageHeader } from '../components/UI'
 import { CATEGORIES } from '../types'
 import type { Settings as SettingsType } from '../types'
+import { DEFAULT_DAILY_TEMPLATE, DEFAULT_INVOICE_TEMPLATE } from '../lib/email'
 
 interface Props { settings: SettingsType; onSave: (s: SettingsType) => Promise<boolean> }
 
@@ -119,6 +120,41 @@ export default function Settings({ settings, onSave }: Props) {
           <Field label="日報送信先メール"><Input type="email" value={f.daily_mail} onChange={set('daily_mail')} /></Field>
           <Field label="請求書送信先メール"><Input type="email" value={f.inv_mail} onChange={set('inv_mail')} /></Field>
         </Grid>
+        <Divider />
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)' }}>📝 日報メール文面テンプレート</div>
+            <button onClick={() => setF(prev => ({ ...prev, daily_report_template: DEFAULT_DAILY_TEMPLATE }))}
+              style={{ fontSize: 11, padding: '3px 10px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+              デフォルトに戻す
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.7, background: 'var(--surface2)', padding: '8px 12px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+            使えるプレースホルダー：<code>{'{date}'}</code> 日付 / <code>{'{port}'}</code> 港名 / <code>{'{ship}'}</code> 船名 / <code>{'{crew}'}</code> 人数 / <code>{'{category}'}</code> 区分 / <code>{'{work}'}</code> 業務内容 / <code>{'{bill_month}'}</code> 請求月 / <code>{'{amount}'}</code> 売上 / <code>{'{park_fee}'}</code> 駐車場 / <code>{'{hw_fee}'}</code> 高速 / <code>{'{meal}'}</code> 食事 / <code>{'{hotel_fee}'}</code> ホテル / <code>{'{shinkansen_fee}'}</code> 新幹線 / <code>{'{expenses}'}</code> 立替合計 / <code>{'{notes_line}'}</code> 備考行 / <code>{'{annual_url}'}</code> 日報URL
+          </div>
+          <textarea
+            value={f.daily_report_template ?? DEFAULT_DAILY_TEMPLATE}
+            onChange={e => setF(prev => ({ ...prev, daily_report_template: e.target.value }))}
+            style={{ width: '100%', minHeight: 280, padding: '10px 12px', fontSize: 12, fontFamily: 'monospace', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', resize: 'vertical', lineHeight: 1.7, boxSizing: 'border-box' }}
+          />
+        </div>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)' }}>📝 請求書メール文面テンプレート</div>
+            <button onClick={() => setF(prev => ({ ...prev, invoice_template: DEFAULT_INVOICE_TEMPLATE }))}
+              style={{ fontSize: 11, padding: '3px 10px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+              デフォルトに戻す
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.7, background: 'var(--surface2)', padding: '8px 12px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+            使えるプレースホルダー：<code>{'{client_name}'}</code> 取引先名 / <code>{'{billing_month}'}</code> 請求月 / <code>{'{invoice_id}'}</code> 請求書番号 / <code>{'{subtotal}'}</code> 税抜金額 / <code>{'{tax}'}</code> 消費税 / <code>{'{expenses}'}</code> 立替金 / <code>{'{total}'}</code> 合計 / <code>{'{invoice_url}'}</code> 請求書URL
+          </div>
+          <textarea
+            value={f.invoice_template ?? DEFAULT_INVOICE_TEMPLATE}
+            onChange={e => setF(prev => ({ ...prev, invoice_template: e.target.value }))}
+            style={{ width: '100%', minHeight: 240, padding: '10px 12px', fontSize: 12, fontFamily: 'monospace', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', resize: 'vertical', lineHeight: 1.7, boxSizing: 'border-box' }}
+          />
+        </div>
       </Card>
 
       <Card>
