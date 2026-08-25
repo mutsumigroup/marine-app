@@ -122,27 +122,27 @@ export default function Dashboard({ reports, invoices, settings, reload }: Props
         </div>
 
         {/* 月別棒グラフ */}
-        <div style={{ position: 'relative', overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto' }}>
           <div style={{ minWidth: Math.max(500, allPeriodMonths.length * 48) }}>
-            {(() => {
-              const goalLineH = Math.round((MONTHLY_GOAL / maxBarVal) * 120)
-              return (
-                <div style={{
-                  position: 'absolute',
-                  bottom: goalLineH,
-                  left: 0, right: 0,
-                  borderTop: '2.5px dashed #eda100',
-                  zIndex: 2, pointerEvents: 'none'
-                }}>
-                  <span style={{ position: 'absolute', right: 4, top: -16, fontSize: 9, color: '#854F0B', background: '#ffffff', padding: '0 3px' }}>
-                    目標 ¥40万
-                  </span>
-                </div>
-              )
-            })()}
 
             {/* バー */}
-            <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 130, paddingBottom: 0 }}>
+            <div style={{ position: 'relative', display: 'flex', gap: 4, alignItems: 'flex-end', height: 130, paddingBottom: 0 }}>
+              {(() => {
+                const goalLineH = Math.round((MONTHLY_GOAL / maxBarVal) * 120)
+                return (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: goalLineH,
+                    left: 0, right: 0,
+                    borderTop: '2.5px dashed #eda100',
+                    zIndex: 2, pointerEvents: 'none'
+                  }}>
+                    <span style={{ position: 'absolute', right: 4, top: -16, fontSize: 9, color: '#854F0B', background: '#ffffff', padding: '0 3px' }}>
+                      目標 ¥40万
+                    </span>
+                  </div>
+                )
+              })()}
               {allPeriodMonths.map(month => {
                 const sales = reports.filter(r => r.bill_month === month).reduce((s, r) => s + r.amount, 0)
                 const barH = Math.round((sales / maxBarVal) * 120)
