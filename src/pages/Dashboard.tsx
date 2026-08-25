@@ -290,9 +290,20 @@ export default function Dashboard({ reports, invoices, settings, reload, onUpdat
                       <td style={{ padding: '7px 8px', fontSize: 11 }}>{r.meal > 0 ? `¥${r.meal.toLocaleString()}` : '—'}</td>
                       <td style={{ padding: '7px 8px', fontSize: 10, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {r.voucher
-                          ? r.voucher.startsWith('http') || r.voucher.startsWith('data:')
-                            ? <a href={r.voucher} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline', fontSize: 10 }}>🔗 開く</a>
-                            : <span style={{ color: 'var(--text-light)' }}>{r.voucher}</span>
+                          ? (() => {
+                              const parts = r.voucher.split('|||')
+                              const links = parts.filter(p => p.startsWith('http') || p.startsWith('data:'))
+                              const texts = parts.filter(p => !p.startsWith('http') && !p.startsWith('data:'))
+                              return <>
+                                {links.map((url, i) => (
+                                  <button key={i} onClick={e => { e.stopPropagation(); if(url.startsWith('data:')){const a=url.split(',');const m=a[0].match(/:(.*?);/)?.[1]??'application/pdf';const b=atob(a[1]);const n=b.length;const u=new Uint8Array(n);for(let j=0;j<n;j++)u[j]=b.charCodeAt(j);window.open(URL.createObjectURL(new Blob([u],{type:m})),'_blank')}else{window.open(url,'_blank')}}}
+                                    style={{ color: 'var(--accent)', textDecoration: 'underline', fontSize: 10, display: 'block', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                                    🔗 PDF{links.length > 1 ? i+1 : ''}
+                                  </button>
+                                ))}
+                                {texts.length > 0 && <span style={{ color: 'var(--text-light)', fontSize: 10 }}>{texts.join(', ')}</span>}
+                              </>
+                            })()
                           : <span style={{ color: 'var(--text-light)' }}>—</span>
                         }
                       </td>
