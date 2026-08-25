@@ -52,7 +52,7 @@ export default function Dashboard({ reports, invoices, settings, reload }: Props
   const achieveRate = totalGoal > 0 ? Math.min(100, Math.round(totalSales / totalGoal * 100)) : 0
 
   const maxBarVal = Math.max(
-    ...allPeriodMonths.map(m => reports.filter(r => r.bill_month === m).reduce((s, r) => s + r.amount, 0)),
+    ...allPeriodMonths.slice(1).map(m => reports.filter(r => r.bill_month === m).reduce((s, r) => s + r.amount, 0)),
     MONTHLY_GOAL * 1.2
   )
 
