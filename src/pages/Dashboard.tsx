@@ -48,7 +48,7 @@ export default function Dashboard({ reports, invoices, settings, reload, onUpdat
   const allPeriodMonths = allPeriodMonthsRaw.length > 1 ? allPeriodMonthsRaw.slice(1) : allPeriodMonthsRaw
   const totalMonths = allPeriodMonths.length
   const totalSales = reports
-    .filter(r => r.bill_month && r.bill_month >= startMonth && r.bill_month <= ym)
+    .filter(r => r.bill_month && r.bill_month >= allPeriodMonths[0] && r.bill_month <= ym)
     .reduce((s, r) => s + r.amount, 0)
   const totalGoal = totalMonths * MONTHLY_GOAL
   const totalDiff = totalSales - totalGoal
