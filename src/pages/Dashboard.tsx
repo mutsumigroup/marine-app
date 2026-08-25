@@ -44,7 +44,8 @@ export default function Dashboard({ reports, invoices, settings, reload, onUpdat
     return result
   }
 
-  const allPeriodMonths = getMonthsBetween(startMonth, ym)
+  const allPeriodMonthsRaw = getMonthsBetween(startMonth, ym)
+  const allPeriodMonths = allPeriodMonthsRaw.length > 1 ? allPeriodMonthsRaw.slice(1) : allPeriodMonthsRaw
   const totalMonths = allPeriodMonths.length
   const totalSales = reports
     .filter(r => r.bill_month && r.bill_month >= startMonth && r.bill_month <= ym)
@@ -55,7 +56,7 @@ export default function Dashboard({ reports, invoices, settings, reload, onUpdat
   const achieveRate = totalGoal > 0 ? Math.min(100, Math.round(totalSales / totalGoal * 100)) : 0
 
   const maxBarVal = Math.max(
-    ...allPeriodMonths.slice(1).map(m => reports.filter(r => r.bill_month === m).reduce((s, r) => s + r.amount, 0)),
+    ...allPeriodMonths.map(m => reports.filter(r => r.bill_month === m).reduce((s, r) => s + r.amount, 0)),
     MONTHLY_GOAL * 1.2
   )
 
