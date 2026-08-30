@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Btn, PageHeader } from '../components/UI'
 import type { Invoice, Report, Settings } from '../types'
@@ -140,6 +140,25 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   const [rows, setRows] = useState(initRows)
   const [expItems, setExpItems] = useState(initExp)
   const [saving, setSaving] = useState(false)
+  const [pdfGenerating, setPdfGenerating] = useState(false)
+  const sheetRef = useRef<HTMLDivElement>(null)
+
+  const handleDownloadPdf = async () => {
+    if (!sheetRef.current) return
+    setPdfGenerating(true)
+    try {
+      const html2canvas = (await import('html2canvas')).default
+      const jsPDF = (await import('jspdf')).jsPDF
+      const canvas = await html2canvas(sheetRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      pdf.save(`請求書_${inv.billing_month}_${inv.id}.pdf`)
+    } catch (e) { console.error('PDF生成エラー:', e) }
+    finally { setPdfGenerating(false) }
+  }
   const [dirty, setDirty] = useState(false)
 
   // 業務小計は日報のamount合計を使用（日報一覧の売上と一致させる）
@@ -205,7 +224,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#999' }}>✕</button>
           </div>
         </div>
-        <div style={{ padding: '24px 28px' }}>
+        <div ref={sheetRef} style={{ padding: '24px 28px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <div>
               <div style={{ fontSize: 22, fontWeight: 500, letterSpacing: '0.15em', color: '#1a1a1a' }}>請　求　書</div>
@@ -347,6 +366,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', background: '#f7f7f5', borderTop: '0.5px solid #ddd' }}>
+          <Btn onClick={handleDownloadPdf} disabled={pdfGenerating}>{pdfGenerating ? '生成中...' : '📄 PDFダウンロード'}</Btn>
           <Btn onClick={onClose}>閉じる</Btn>
           {dirty && <Btn variant="primary" disabled={saving} onClick={handleSave}>{saving ? '保存中...' : '💾 保存'}</Btn>}
           {['未請求', '作成済'].includes(inv.status) && (
