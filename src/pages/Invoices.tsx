@@ -417,7 +417,15 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                   <div style={{ fontSize: 14, fontWeight: 600, minWidth: 70 }}>{inv.billing_month}</div>
                   <StatusBadge status={inv.status} />
-                  <div style={{ marginLeft: 'auto', fontSize: 16, fontWeight: 600 }}>¥{inv.total.toLocaleString()}</div>
+                  <div style={{ marginLeft: 'auto', fontSize: 16, fontWeight: 600 }}>
+                    {(() => {
+                      const liveSubtotal = mr.reduce((s, r) => s + (r.amount ?? 0), 0)
+                      const liveTax = Math.round(liveSubtotal * 0.1)
+                      const liveExpenses = inv.expenses
+                      const liveTotal = liveSubtotal + liveTax + liveExpenses
+                      return `¥${liveTotal.toLocaleString()}`
+                    })()}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, flexWrap: 'wrap' }}>
                   <span>業務 <strong style={{color:'var(--text)'}}>¥{inv.subtotal.toLocaleString()}</strong></span>
