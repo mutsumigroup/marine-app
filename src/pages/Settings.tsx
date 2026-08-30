@@ -97,21 +97,54 @@ export default function Settings({ settings, onSave }: Props) {
 
       <Card>
         <CardTitle>💴 対応区分 単価設定</CardTitle>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {CATEGORIES.map(cat => (
-            <div key={cat} style={{ background: 'var(--surface2)', padding: 10, borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, color: 'var(--navy)' }}>{cat}</div>
-              <Grid cols={2}>
-                <Field label="船単価（円）">
-                  <Input type="number" value={f.prices[cat]?.ship ?? 10000} onChange={v => setPrice(cat, 'ship', v)} />
-                </Field>
-                <Field label="船員単価（円）">
-                  <Input type="number" value={f.prices[cat]?.crew ?? 1000} onChange={v => setPrice(cat, 'crew', v)} />
-                </Field>
-              </Grid>
-            </div>
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          {[...CATEGORIES, ...(f.custom_categories ?? [])].map((cat, idx) => {
+            const isCustom = idx >= CATEGORIES.length
+            return (
+              <div key={cat + idx} style={{ background: 'var(--surface2)', padding: 10, borderRadius: 'var(--radius)', border: '1px solid var(--border)', position: 'relative' }}>
+                {isCustom && (
+                  <button
+                    onClick={() => setF(prev => ({ ...prev, custom_categories: (prev.custom_categories ?? []).filter((_, j) => j !== idx - CATEGORIES.length) }))}
+                    style={{ position: 'absolute', top: 6, right: 8, background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: 16, lineHeight: 1, padding: 0 }}
+                    title="削除">×</button>
+                )}
+                {isCustom ? (
+                  <input
+                    value={cat}
+                    onChange={e => {
+                      const newName = e.target.value
+                      const ci = idx - CATEGORIES.length
+                      setF(prev => {
+                        const customs = [...(prev.custom_categories ?? [])]
+                        const oldName = customs[ci]
+                        customs[ci] = newName
+                        const newPrices = { ...prev.prices }
+                        newPrices[newName] = newPrices[oldName] ?? { ship: 10000, crew: 1000 }
+                        if (newName !== oldName) delete newPrices[oldName]
+                        return { ...prev, custom_categories: customs, prices: newPrices }
+                      })
+                    }}
+                    style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, color: 'var(--navy)', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', width: '80%', outline: 'none', padding: '2px 0', display: 'block' }}
+                    placeholder="区分名を入力"
+                  />
+                ) : (
+                  <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, color: 'var(--navy)' }}>{cat}</div>
+                )}
+                <Grid cols={2}>
+                  <Field label="船単価（円）">
+                    <Input type="number" value={f.prices[cat]?.ship ?? 10000} onChange={v => setPrice(cat, 'ship', v)} />
+                  </Field>
+                  <Field label="船員単価（円）">
+                    <Input type="number" value={f.prices[cat]?.crew ?? 1000} onChange={v => setPrice(cat, 'crew', v)} />
+                  </Field>
+                </Grid>
+              </div>
+            )
+          })}
         </div>
+        <Btn onClick={() => setF(prev => ({ ...prev, custom_categories: [...(prev.custom_categories ?? []), `カスタム区分${((prev.custom_categories ?? []).length + 1)}`] }))}>
+          ＋ 対応区分を追加
+        </Btn>
       </Card>
 
       <Card>
