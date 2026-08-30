@@ -110,9 +110,10 @@ export default function Settings({ settings, onSave }: Props) {
                 )}
                 {isCustom ? (
                   <input
-                    value={cat}
-                    onChange={e => {
-                      const newName = e.target.value
+                    defaultValue={cat}
+                    onBlur={e => {
+                      const newName = e.target.value.trim()
+                      if (!newName) return
                       const ci = idx - CATEGORIES.length
                       setF(prev => {
                         const customs = [...(prev.custom_categories ?? [])]
