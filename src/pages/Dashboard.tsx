@@ -318,8 +318,8 @@ export default function Dashboard({ reports, invoices, settings, reload, onUpdat
           </table>
         </div>
       </Card>
-      {editReport && <EditModal report={editReport} onClose={() => { setEditReport(null); reload() }} onSave={onUpdateReport} onDelete={onDeleteReport} prices={settings.prices} />}
-      {editReport && <EditModal report={editReport} onClose={() => { setEditReport(null); reload() }} onSave={onUpdateReport} onDelete={onDeleteReport} prices={settings.prices} />}
+      {editReport && <EditModal report={editReport} onClose={() => { setEditReport(null); reload() }} onSave={onUpdateReport} onDelete={onDeleteReport} prices={settings.prices} settings={settings} />}
+      {editReport && <EditModal report={editReport} onClose={() => { setEditReport(null); reload() }} onSave={onUpdateReport} onDelete={onDeleteReport} prices={settings.prices} settings={settings} />}
     </div>
   )
 }

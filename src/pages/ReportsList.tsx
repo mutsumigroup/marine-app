@@ -262,7 +262,7 @@ function HwPopup({ report, onClose, onSavePdf, settings, onUpdateReport }: { rep
   )
 }
 
-export function EditModal({ report, onClose, onSave, onDelete, prices }: { report: Report; onClose: () => void; onSave: (id: string, updates: Partial<Report>) => Promise<boolean>; onDelete: (id: string) => Promise<boolean>; prices: Record<string, { ship: number; crew: number }> }) {
+export function EditModal({ report, onClose, onSave, onDelete, prices, settings }: { report: Report; onClose: () => void; onSave: (id: string, updates: Partial<Report>) => Promise<boolean>; onDelete: (id: string) => Promise<boolean>; prices: Record<string, { ship: number; crew: number }>; settings?: import('../types').Settings }) {
   const [f, setF] = useState({ ...report })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -315,6 +315,26 @@ export function EditModal({ report, onClose, onSave, onDelete, prices }: { repor
   const handleCategoryChange = (v: string) => { setF(prev => { const newAmount = autoCalc ? calcAmount(v, Number(prev.crew)) : prev.amount; return { ...prev, category: v, amount: newAmount } }) }
   const handleCrewChange = (v: string) => { setF(prev => { const crew = parseInt(v) || 0; const newAmount = autoCalc ? calcAmount(prev.category, crew) : prev.amount; return { ...prev, crew, amount: newAmount } }) }
   const handleDelete = async () => { setDeleting(true); const ok = await onDelete(report.id); setDeleting(false); if (ok) onClose() }
+  const [resending, setResending] = React.useState(false)
+  const [resendResult, setResendResult] = React.useState<'success'|'error'|null>(null)
+  const handleResendEdit = async () => {
+    if (!settings?.daily_mail) { setResendResult('error'); return }
+    setResending(true); setResendResult(null)
+    try {
+      const annualUrl = `https://mutsumigroup.github.io/marine-app/#/reports?month=${report.bill_month}`
+      const message = buildDailyReportEmail({
+        date: report.date, port: report.port, ship: report.ship, crew: report.crew,
+        category: report.category, work: report.work ?? '', amount: report.amount,
+        park_fee: report.park_fee, hw_fee: report.hw_fee, meal: report.meal,
+        hotel_fee: report.hotel_fee ?? 0, shinkansen_fee: report.shinkansen_fee ?? 0,
+        expenses: report.expenses, voucher: report.voucher ?? '',
+        bill_month: report.bill_month, notes: report.notes ?? '',
+      }, annualUrl, settings?.daily_report_template)
+      await sendEmail({ to_email: settings.daily_mail, subject: `【日報】${report.date} ${report.ship}`, message })
+      setResendResult('success')
+    } catch { setResendResult('error') }
+    finally { setResending(false) }
+  }
   const handleSave = async () => { setSaving(true); const exp = (parseInt(String(f.park_fee)) || 0) + (parseInt(String(f.hw_fee)) || 0) + (parseInt(String(f.meal)) || 0) + (parseInt(String(f.hotel_fee ?? 0)) || 0) + (parseInt(String(f.shinkansen_fee ?? 0)) || 0) + (f.extra_expenses ?? []).reduce((s, e) => s + e.amount, 0); const ok = await onSave(report.id, { ...f, other_exp: 0, expenses: exp }); setSaving(false); if (ok) onClose() }
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
@@ -460,7 +480,10 @@ export function EditModal({ report, onClose, onSave, onDelete, prices }: { repor
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {resendResult === 'success' && <span style={{ fontSize: 11, color: '#16a34a' }}>✓ 送信しました</span>}
+            {resendResult === 'error' && <span style={{ fontSize: 11, color: '#dc2626' }}>送信失敗</span>}
+            <Btn onClick={handleResendEdit} disabled={resending}>{resending ? '送信中...' : '📤 メール再送信'}</Btn>
             <Btn onClick={onClose}>閉じる</Btn>
             <Btn variant="primary" onClick={handleSave} disabled={saving}>{saving ? '保存中...' : '✓ 保存する'}</Btn>
           </div>
@@ -685,7 +708,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       </Card>
 
       {hwReport && <HwPopup report={hwReport} onClose={() => setHwReport(null)} onSavePdf={onSavePdf} settings={settings} onUpdateReport={onUpdateReport} />}
-      {editReport && <EditModal report={editReport} onClose={() => setEditReport(null)} onSave={onUpdateReport} onDelete={onDeleteReport} prices={prices} />}
+      {editReport && <EditModal report={editReport} onClose={() => setEditReport(null)} onSave={onUpdateReport} onDelete={onDeleteReport} prices={prices} settings={settings} />}
     </div>
   )
 }
