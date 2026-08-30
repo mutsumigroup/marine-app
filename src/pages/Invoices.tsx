@@ -168,6 +168,10 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     setExpItems(prev => [...prev, { label: '新しい項目', amount: 0, _type: 'business' as const }])
     setDirty(true)
   }
+  const addFixedItem = () => {
+    setExpItems(prev => [...prev, { label: '新しい項目', amount: 0, _type: 'fixed' as const }])
+    setDirty(true)
+  }
 
   const removeExpItem = useCallback((i: number) => {
     setExpItems(prev => prev.filter((_, idx) => idx !== i))
@@ -289,11 +293,17 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                   </tr>
                 ))}
                 {/* その他立替金 */}
-                {expItems.some(e => (e as any)._type === 'fixed') && (
-                  <tr>
-                    <td colSpan={3} style={{ padding: '8px 8px 4px', fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase', borderBottom: '0.5px solid #ddd' }}>その他立替金</td>
-                  </tr>
-                )}
+                <tr>
+                  <td colSpan={3} style={{ padding: '8px 8px 4px', borderBottom: '0.5px solid #ddd' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase' }}>その他立替金</span>
+                      <button onClick={addFixedItem}
+                        style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
+                        ＋ 項目追加
+                      </button>
+                    </div>
+                  </td>
+                </tr>
                 {expItems.map((e, i) => (e as any)._type === 'fixed' && (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
                     <td style={tdS}>
