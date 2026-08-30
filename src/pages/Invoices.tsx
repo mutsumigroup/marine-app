@@ -146,18 +146,42 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   const handleDownloadPdf = async () => {
     if (!sheetRef.current) return
     setPdfGenerating(true)
+    const noPrintEls = sheetRef.current.querySelectorAll('.no-print')
+    noPrintEls.forEach((el: any) => { el._prevDisplay = el.style.display; el.style.display = 'none' })
+    const inlineSpans = sheetRef.current.querySelectorAll('span[title="クリックして編集"]')
+    inlineSpans.forEach((el: any) => { el._prevBorder = el.style.borderBottom; el.style.borderBottom = 'none'; el.style.cursor = 'default' })
     try {
       const html2canvas = (await import('html2canvas')).default
       const jsPDF = (await import('jspdf')).jsPDF
-      const canvas = await html2canvas(sheetRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+      const el = sheetRef.current
+      const canvas = await html2canvas(el, {
+        scale: 2, useCORS: true, backgroundColor: '#ffffff',
+        width: el.scrollWidth, height: el.scrollHeight,
+        windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
+      })
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-      pdf.save(`請求書_${inv.billing_month}_${inv.id}.pdf`)
+      const pageW = pdf.internal.pageSize.getWidth()
+      const pageH = pdf.internal.pageSize.getHeight()
+      const imgH = (canvas.height * pageW) / canvas.width
+      // 余白付きで1ページに収める
+      const margin = 8
+      const availW = pageW - margin * 2
+      const availH = pageH - margin * 2
+      const scaledH = (canvas.height * availW) / canvas.width
+      if (scaledH <= availH) {
+        pdf.addImage(imgData, 'PNG', margin, margin, availW, scaledH)
+      } else {
+        const ratio = availH / scaledH
+        pdf.addImage(imgData, 'PNG', margin + (availW - availW * ratio) / 2, margin, availW * ratio, availH)
+      }
+      pdf.save(`請求書_${inv.billing_month}.pdf`)
     } catch (e) { console.error('PDF生成エラー:', e) }
-    finally { setPdfGenerating(false) }
+    finally {
+      noPrintEls.forEach((el: any) => { el.style.display = el._prevDisplay ?? '' })
+      inlineSpans.forEach((el: any) => { el.style.borderBottom = el._prevBorder ?? ''; el.style.cursor = 'text' })
+      setPdfGenerating(false)
+    }
   }
   const [dirty, setDirty] = useState(false)
 
@@ -253,7 +277,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
           </div>
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: '#888', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 4 }}>業務明細</div>
-            <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>件数・船員数をクリックして編集できます</div>
+            <div className="no-print" style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>件数・船員数をクリックして編集できます</div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #ddd' }}>
@@ -296,10 +320,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
             <div className="no-print" style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>項目名・金額をクリックして編集、×で削除できます</div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
-                {/* 業務立替金 */}
-                <tr>
-                  <td colSpan={3} style={{ padding: '8px 8px 4px', fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase', borderBottom: '0.5px solid #ddd' }}>業務立替金</td>
-                </tr>
+
                 {expItems.map((e, i) => (e as any)._type !== 'fixed' && (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
                     <td style={tdS}>
@@ -316,7 +337,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                   </tr>
                 ))}
                 {/* その他立替金 */}
-                <tr>
+                <tr className="no-print">
                   <td colSpan={3} style={{ padding: '8px 8px 4px', borderBottom: '0.5px solid #ddd' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase' }}>その他立替金</span>
@@ -355,12 +376,14 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
               <span>最終請求金額</span><span>¥{total.toLocaleString()}</span>
             </div>
           </div>
-          <div style={{ fontSize: 11, color: '#555', lineHeight: 1.8, borderTop: '0.5px solid #ddd', paddingTop: 10 }}>
-            <div style={{ fontWeight: 600, marginBottom: 2 }}>お振込先</div>
-            <div>{settings.bank}</div><div>{settings.account}</div>
+          <div style={{ fontSize: 11, color: '#333', lineHeight: 2, borderTop: '1.5px solid #333', paddingTop: 12, marginTop: 16 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6, color: '#1a1a1a', letterSpacing: '.05em' }}>【お振込先】</div>
+            {settings.bank ? <div>{settings.bank}</div> : null}
+            {settings.account ? <div>{settings.account}</div> : null}
+            {!settings.bank && !settings.account && <div style={{ color: '#aaa' }}>（設定画面で振込先を登録してください）</div>}
           </div>
           {dirty && (
-            <div style={{ marginTop: 14, padding: '8px 12px', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 6, fontSize: 12, color: '#92400e' }}>
+            <div className="no-print" style={{ marginTop: 14, padding: '8px 12px', background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 6, fontSize: 12, color: '#92400e' }}>
               ✏️ 金額が変更されています。「保存」を押してSupabaseに反映してください。
             </div>
           )}
