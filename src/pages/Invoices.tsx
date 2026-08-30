@@ -186,7 +186,11 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   }
 
   const today = new Date().toLocaleDateString('ja-JP')
-  const due = new Date(Date.now() + (settings.pay_days || 30) * 86400000).toLocaleDateString('ja-JP')
+  const due = (() => {
+    const [y, m] = inv.billing_month.split('-').map(Number)
+    const dueDate = new Date(y, m + 1, 0)
+    return dueDate.toLocaleDateString('ja-JP')
+  })()
   const tdS = { padding: '7px 8px', fontSize: 12 } as React.CSSProperties
   const thS = { padding: '6px 8px', fontWeight: 500, fontSize: 11, color: '#666', borderBottom: '0.5px solid #ccc', textAlign: 'left' } as React.CSSProperties
 
