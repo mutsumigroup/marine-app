@@ -30,6 +30,7 @@ export interface Settings {
   gchat_webhook?: string
   daily_report_template?: string
   invoice_template?: string
+  custom_categories?: string[]
 }
 
 // 港マスター

@@ -7,6 +7,7 @@ interface Props {
   onSubmit: (data: Omit<Report, 'id' | 'created_at' | 'updated_at'>) => Promise<boolean>
   pastReports?: { port: string; ship: string }[]
   prices?: Record<string, { ship: number; crew: number }>
+  customCategories?: string[]
 }
 
 interface ExtraItem { label: string; amount: number }
@@ -100,7 +101,7 @@ const EMPTY = {
   shinkansenFee: '', otherExp: '', vouchers: [] as string[], billMonth: new Date().toISOString().slice(0, 7), notes: '',
 }
 
-export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: Props) {
+export default function DailyForm({ onSubmit, pastReports = [], prices = {}, customCategories = [] }: Props) {
   const [f, setF] = useState(EMPTY)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -247,7 +248,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
                 <Field label="対応区分 *">
                   <select value={f.category} onChange={e => handleCategoryChange(e.target.value)} style={{ ...inputSt, cursor: 'pointer' }}>
                     <option value="">選択してください</option>
-                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                    {[...CATEGORIES, ...customCategories].map(c => <option key={c}>{c}</option>)}
                   </select>
                 </Field>
                 <Field label="業務内容"><input value={f.work} onChange={e => set('work')(e.target.value)} placeholder="業務の概要" style={inputSt} /></Field>
@@ -359,7 +360,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {} }: P
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 10 }}>
           <Field label="船員人数"><Input type="number" value={f.crew} onChange={handleCrewChange} placeholder="5" min="0" /></Field>
-          <Field label="対応区分" required><Select value={f.category} onChange={handleCategoryChange}><option value="">選択してください</option>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</Select></Field>
+          <Field label="対応区分" required><Select value={f.category} onChange={handleCategoryChange}><option value="">選択してください</option>{[...CATEGORIES, ...customCategories].map(c => <option key={c}>{c}</option>)}</Select></Field>
           <Field label="業務内容"><Input value={f.work} onChange={set('work')} placeholder="業務の概要" /></Field>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
