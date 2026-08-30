@@ -421,7 +421,9 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
                     {(() => {
                       const liveSubtotal = mr.reduce((s, r) => s + (r.amount ?? 0), 0)
                       const liveTax = Math.round(liveSubtotal * 0.1)
-                      const liveExpenses = inv.expenses
+                      const liveExpenses = inv.expense_items && inv.expense_items.length > 0
+                        ? inv.expense_items.reduce((s: number, e: {amount: number}) => s + e.amount, 0)
+                        : inv.expenses
                       const liveTotal = liveSubtotal + liveTax + liveExpenses
                       return `¥${liveTotal.toLocaleString()}`
                     })()}
