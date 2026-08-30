@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useCallback, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Btn, PageHeader } from '../components/UI'
 import type { Invoice, Report, Settings } from '../types'
 
@@ -362,7 +362,16 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
 
 export default function Invoices({ invoices, reports, settings, onSend, onPaid, onRevert, onUpdateInvoice }: Props) {
   const [filter, setFilter] = useState('')
-  const [previewId, setPreviewId] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [previewId, setPreviewId] = useState<string | null>(() => searchParams.get('id'))
+
+  useEffect(() => {
+    const id = searchParams.get('id')
+    if (id) {
+      setPreviewId(id)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams])
   const [processing, setProcessing] = useState<string | null>(null)
 
   const filtered = filter ? invoices.filter(i => i.status === filter) : invoices

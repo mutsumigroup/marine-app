@@ -132,7 +132,7 @@ export function buildInvoiceEmail(invoice: {
   expenses: number
   total: number
 }, clientName: string, template?: string): string {
-  const invoiceUrl = 'https://mutsumigroup.github.io/marine-app/#/invoices'
+  const invoiceUrl = `https://mutsumigroup.github.io/marine-app/#/invoices?id=${invoice.id}`
   const tpl = template || DEFAULT_INVOICE_TEMPLATE
   return tpl
     .replace(/{client_name}/g, clientName)
