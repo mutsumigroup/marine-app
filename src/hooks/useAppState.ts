@@ -147,7 +147,14 @@ export function useAppState() {
       if (settings.client_email || settings.inv_mail) {
         try {
           const toEmail = settings.inv_mail || settings.client_email
-          const message = buildInvoiceEmail(inv, settings.client_name, settings.invoice_template)
+          const liveExpenses = inv.expense_items && inv.expense_items.length > 0
+            ? inv.expense_items.reduce((s: number, e: {amount: number}) => s + e.amount, 0)
+            : inv.expenses
+          const liveSubtotal = inv.subtotal
+          const liveTax = inv.tax
+          const liveTotal = liveSubtotal + liveTax + liveExpenses
+          const invForEmail = { ...inv, expenses: liveExpenses, total: liveTotal }
+          const message = buildInvoiceEmail(invForEmail, settings.client_name, settings.invoice_template)
           await sendEmail({
             to_email: toEmail,
             subject: `【請求書】${inv.billing_month}分 ${settings.client_name}`,
