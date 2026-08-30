@@ -288,12 +288,12 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <div style={{ fontSize: 10, fontWeight: 600, color: '#888', letterSpacing: '.5px', textTransform: 'uppercase' }}>業務立替金</div>
-              <button onClick={addExpItem}
+              <button onClick={addExpItem} className="no-print"
                 style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
                 ＋ 項目追加
               </button>
             </div>
-            <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>項目名・金額をクリックして編集、×で削除できます</div>
+            <div className="no-print" style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>項目名・金額をクリックして編集、×で削除できます</div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 {/* 業務立替金 */}
@@ -311,7 +311,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                     <td style={{ padding: '7px 4px', textAlign: 'center', width: 24 }}>
                       <button onClick={() => removeExpItem(i)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: 14, lineHeight: 1, padding: 0 }}
-                        title="削除">×</button>
+                        className="no-print" title="削除">×</button>
                     </td>
                   </tr>
                 ))}
@@ -320,7 +320,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                   <td colSpan={3} style={{ padding: '8px 8px 4px', borderBottom: '0.5px solid #ddd' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase' }}>その他立替金</span>
-                      <button onClick={addFixedItem}
+                      <button onClick={addFixedItem} className="no-print"
                         style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
                         ＋ 項目追加
                       </button>
@@ -338,7 +338,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                     <td style={{ padding: '7px 4px', textAlign: 'center', width: 24 }}>
                       <button onClick={() => removeExpItem(i)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: 14, lineHeight: 1, padding: 0 }}
-                        title="削除">×</button>
+                        className="no-print" title="削除">×</button>
                     </td>
                   </tr>
                 ))}
