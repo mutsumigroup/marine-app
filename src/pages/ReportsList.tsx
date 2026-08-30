@@ -161,7 +161,7 @@ function HwPopup({ report, onClose, onSavePdf, settings, onUpdateReport }: { rep
         bill_month: report.bill_month,
         notes: report.notes ?? '',
       }, annualUrl, settings?.daily_report_template)
-      const hwDetailUrl = `https://mutsumigroup.github.io/marine-app/#/reports?month=${report.bill_month}`
+      const hwDetailUrl = `https://mutsumigroup.github.io/marine-app/#/reports?month=${report.bill_month}&hw=${report.id}`
       const hwFrom = hw.from1 || hw.to1 ? `行き：${hw.from1 || '—'} → ${hw.to1 || '—'}` : ''
       const hwReturn = hw.from2 || hw.to2 ? `帰り：${hw.from2 || '—'} → ${hw.to2 || '—'}` : ''
       const hwDetail = [`■ 高速道路明細（反映済み）`, `高速料金合計：¥${hw.fee.toLocaleString()}`, hwFrom, hwReturn].filter(Boolean).join('\n')
@@ -601,6 +601,17 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const backMonth = searchParams.get('month')
   const [hwReport, setHwReport] = useState<Report | null>(null)
   const [editReport, setEditReport] = useState<Report | null>(null)
+
+  React.useEffect(() => {
+    const hwId = searchParams.get('hw')
+    if (hwId && reports.length > 0) {
+      const target = reports.find(r => r.id === hwId)
+      if (target) {
+        setHwReport(target)
+        setSearchParams(prev => { const p = new URLSearchParams(prev); p.delete('hw'); return p }, { replace: true })
+      }
+    }
+  }, [searchParams, reports])
 
   // URLの ?month= パラメータを初期値として使用
   useEffect(() => {
