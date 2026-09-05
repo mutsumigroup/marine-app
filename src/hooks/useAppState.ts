@@ -101,6 +101,7 @@ export function useAppState() {
         hotel_fee: reportData.hotel_fee ?? 0,
         shinkansen_fee: reportData.shinkansen_fee ?? 0,
             expenses: reportData.expenses,
+            extra_expenses: reportData.extra_expenses ?? [],
             voucher: reportData.voucher ?? '',
             bill_month: reportData.bill_month,
             notes: reportData.notes ?? '',

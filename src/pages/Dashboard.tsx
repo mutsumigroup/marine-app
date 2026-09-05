@@ -4,7 +4,6 @@ import { EditModal } from './ReportsList'
 import { Btn, StatGrid, StatCard, Card, CardTitle, BarChart, ProgressBar, PageHeader } from '../components/UI'
 import type { Report, Invoice, Settings } from '../types'
 
-const MONTHLY_GOAL = 400000
 
 interface Props { reports: Report[]; invoices: Invoice[]; settings: Settings; reload: () => void; onUpdateReport: (id: string, updates: Partial<Report>) => Promise<boolean>; onDeleteReport: (id: string) => Promise<boolean> }
 
@@ -18,6 +17,7 @@ export default function Dashboard({ reports, invoices, settings, reload, onUpdat
   const mSales = reports.filter(r => r.bill_month === ym).reduce((s, r) => s + r.amount, 0)
   const ySales = reports.filter(r => r.bill_month?.startsWith(yr)).reduce((s, r) => s + r.amount, 0)
   const goal = settings.client_annual_goal
+  const MONTHLY_GOAL = goal > 0 ? Math.round(goal / 12) : 400000
   const rate = goal > 0 ? Math.round(ySales / goal * 100) : 0
   const uninv = reports.filter(r => !r.invoiced).length
   const waitAmt = invoices.filter(i => ['送信済', '入金待ち'].includes(i.status)).reduce((s, i) => s + i.total, 0)
