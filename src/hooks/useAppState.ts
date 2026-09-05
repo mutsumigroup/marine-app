@@ -43,18 +43,22 @@ export function useAppState() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [r, inv, s, ky, pm] = await Promise.all([
+      const [r, inv, s] = await Promise.all([
         api.fetchReports(),
         api.fetchInvoices(),
         api.fetchSettings(),
-        api.fetchKyReports().catch(() => [] as KyReport[]),
-        api.fetchPortMasters().catch(() => [] as PortMaster[]),
       ])
       setReports(r)
       setInvoices(inv)
       setSettings(s)
-      setKyReports(ky)
-      setPortMasters(pm)
+      setLoading(false)
+      Promise.all([
+        api.fetchKyReports().catch(() => [] as KyReport[]),
+        api.fetchPortMasters().catch(() => [] as PortMaster[]),
+      ]).then(([ky, pm]) => {
+        setKyReports(ky)
+        setPortMasters(pm)
+      })
     } catch (err) {
       addToast('error', `データの読み込みに失敗しました: ${(err as Error).message}`)
     } finally {

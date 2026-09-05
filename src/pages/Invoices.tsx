@@ -148,17 +148,32 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     setPdfGenerating(true)
     const noPrintEls = sheetRef.current.querySelectorAll('.no-print')
     noPrintEls.forEach((el: any) => { el._prevDisplay = el.style.display; el.style.display = 'none' })
+    // 対応区分リンクを黒・下線なしに
+    const catTds = Array.from(sheetRef.current.querySelectorAll('td')) as HTMLElement[]
+    const linkTds = catTds.filter(td => td.style.textDecoration !== '' || td.style.color.includes('accent'))
+    linkTds.forEach(td => { (td as any)._pc = td.style.color; (td as any)._ptd = td.style.textDecoration; td.style.color = '#222'; td.style.textDecoration = 'none'; td.style.cursor = 'default' })
     const inlineSpans = sheetRef.current.querySelectorAll('span[title="クリックして編集"]')
     inlineSpans.forEach((el: any) => { el._prevBorder = el.style.borderBottom; el.style.borderBottom = 'none'; el.style.cursor = 'default' })
     try {
       const html2canvas = (await import('html2canvas')).default
       const jsPDF = (await import('jspdf')).jsPDF
       const el = sheetRef.current
+      // 幅を680pxに固定してPC/スマホで統一
+      const prevWidth = el.style.width
+      const prevMaxWidth = el.style.maxWidth
+      const prevMinWidth = el.style.minWidth
+      el.style.width = '680px'
+      el.style.maxWidth = '680px'
+      el.style.minWidth = '680px'
+      await new Promise(r => setTimeout(r, 150))
       const canvas = await html2canvas(el, {
         scale: 2, useCORS: true, backgroundColor: '#ffffff',
-        width: el.scrollWidth, height: el.scrollHeight,
-        windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
+        width: 680, height: el.scrollHeight,
+        windowWidth: 680, windowHeight: el.scrollHeight,
       })
+      el.style.width = prevWidth
+      el.style.maxWidth = prevMaxWidth
+      el.style.minWidth = prevMinWidth
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       const pageW = pdf.internal.pageSize.getWidth()
@@ -179,6 +194,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     } catch (e) { console.error('PDF生成エラー:', e) }
     finally {
       noPrintEls.forEach((el: any) => { el.style.display = el._prevDisplay ?? '' })
+    linkTds.forEach(td => { td.style.color = (td as any)._pc ?? ''; td.style.textDecoration = (td as any)._ptd ?? ''; td.style.cursor = 'pointer' })
       inlineSpans.forEach((el: any) => { el.style.borderBottom = el._prevBorder ?? ''; el.style.cursor = 'text' })
       setPdfGenerating(false)
     }
@@ -311,7 +327,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
           </div>
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#888', letterSpacing: '.5px', textTransform: 'uppercase' }}>業務立替金</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase', padding: '7px 8px' }}>業務立替金</div>
               <button onClick={addExpItem} className="no-print"
                 style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
                 ＋ 項目追加
@@ -336,18 +352,34 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                     </td>
                   </tr>
                 ))}
-                {/* その他立替金 */}
-                <tr className="no-print">
-                  <td colSpan={3} style={{ padding: '8px 8px 4px', borderBottom: '0.5px solid #ddd' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase' }}>その他立替金</span>
-                      <button onClick={addFixedItem} className="no-print"
-                        style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
-                        ＋ 項目追加
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                {/* その他立替金ヘッダー：fixed項目がある場合のみ表示 */}
+                {expItems.some((e: any) => e._type === 'fixed') && (
+                  <tr>
+                    <td colSpan={3} style={{ padding: '7px 8px', borderBottom: '0.5px solid #ddd' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase', padding: '7px 8px', display: 'block' }}>その他立替金</span>
+                        <button onClick={addFixedItem} className="no-print"
+                          style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
+                          ＋ 項目追加
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {/* fixed項目がない場合は追加ボタンのみno-printで表示 */}
+                {!expItems.some((e: any) => e._type === 'fixed') && (
+                  <tr className="no-print">
+                    <td colSpan={3} style={{ padding: '7px 8px', borderBottom: '0.5px solid #ddd' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.5px', textTransform: 'uppercase', padding: '7px 8px', display: 'block' }}>その他立替金</span>
+                        <button onClick={addFixedItem}
+                          style={{ fontSize: 11, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontWeight: 600 }}>
+                          ＋ 項目追加
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
                 {expItems.map((e, i) => (e as any)._type === 'fixed' && (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
                     <td style={tdS}>
