@@ -49,12 +49,7 @@ export const DEFAULT_DAILY_TEMPLATE = `【日報】{date} {ship}
 
 ■ 費用
 売上金額：¥{amount}
-駐車場料金：¥{park_fee}
-高速料金：¥{hw_fee}
-食事代：¥{meal}
-ホテル代金：¥{hotel_fee}
-新幹線代金：¥{shinkansen_fee}
-立替合計：¥{expenses}
+{expense_lines}立替合計：¥{expenses}
 
 {voucher_line}{notes_line}
 ■ 日報一覧を確認する
@@ -97,11 +92,26 @@ export function buildDailyReportEmail(report: {
   hotel_fee: number
   shinkansen_fee: number
   expenses: number
+  extra_expenses?: { label: string; amount: number }[]
   voucher: string
   bill_month: string
   notes: string
 }, annualUrl: string, template?: string): string {
   const tpl = template || DEFAULT_DAILY_TEMPLATE
+  const expenseLines: string[] = []
+  if (report.park_fee > 0) expenseLines.push(`駐車場料金：¥${report.park_fee.toLocaleString()}`)
+  if (report.hw_fee > 0)   expenseLines.push(`高速料金：¥${report.hw_fee.toLocaleString()}`)
+  if (report.meal > 0)     expenseLines.push(`食事代：¥${report.meal.toLocaleString()}`)
+  if (report.hotel_fee > 0) expenseLines.push(`ホテル代金：¥${report.hotel_fee.toLocaleString()}`)
+  if (report.shinkansen_fee > 0) expenseLines.push(`新幹線代金：¥${report.shinkansen_fee.toLocaleString()}`)
+  if (report.extra_expenses && report.extra_expenses.length > 0) {
+    report.extra_expenses.forEach(e => {
+      if (e.label || e.amount > 0) {
+        expenseLines.push(`${e.label || 'その他'}：¥${e.amount.toLocaleString()}`)
+      }
+    })
+  }
+  const expenseLinesStr = expenseLines.length > 0 ? expenseLines.join('\n') + '\n' : ''
   return tpl
     .replace(/{date}/g, report.date)
     .replace(/{port}/g, report.port)
@@ -111,6 +121,7 @@ export function buildDailyReportEmail(report: {
     .replace(/{work}/g, report.work || '—')
     .replace(/{bill_month}/g, report.bill_month)
     .replace(/{amount}/g, report.amount.toLocaleString())
+    .replace(/{expense_lines}/g, expenseLinesStr)
     .replace(/{park_fee}/g, report.park_fee.toLocaleString())
     .replace(/{hw_fee}/g, report.hw_fee.toLocaleString())
     .replace(/{meal}/g, report.meal.toLocaleString())
