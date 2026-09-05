@@ -100,7 +100,7 @@ export function useAppState() {
             meal: reportData.meal,
         hotel_fee: reportData.hotel_fee ?? 0,
         shinkansen_fee: reportData.shinkansen_fee ?? 0,
-            expenses: reportData.expenses,
+            expenses: (reportData.park_fee || 0) + (reportData.hw_fee || 0) + (reportData.meal || 0) + (reportData.hotel_fee ?? 0) + (reportData.shinkansen_fee ?? 0) + (reportData.extra_expenses ?? []).reduce((s: number, e: {amount: number}) => s + e.amount, 0),
             extra_expenses: reportData.extra_expenses ?? [],
             voucher: reportData.voucher ?? '',
             bill_month: reportData.bill_month,

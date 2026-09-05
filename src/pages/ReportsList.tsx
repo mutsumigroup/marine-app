@@ -156,7 +156,7 @@ function HwPopup({ report, onClose, onSavePdf, settings, onUpdateReport }: { rep
         meal: report.meal,
         hotel_fee: report.hotel_fee ?? 0,
         shinkansen_fee: report.shinkansen_fee ?? 0,
-        expenses: report.expenses,
+        expenses: (report.park_fee || 0) + hw.fee + (report.meal || 0) + (report.hotel_fee ?? 0) + (report.shinkansen_fee ?? 0) + (report.extra_expenses ?? []).reduce((s: number, e: {amount: number}) => s + e.amount, 0),
         extra_expenses: report.extra_expenses ?? [],
         voucher: report.voucher ?? '',
         bill_month: report.bill_month,
@@ -328,7 +328,8 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
         category: report.category, work: report.work ?? '', amount: report.amount,
         park_fee: report.park_fee, hw_fee: report.hw_fee, meal: report.meal,
         hotel_fee: report.hotel_fee ?? 0, shinkansen_fee: report.shinkansen_fee ?? 0,
-        expenses: report.expenses, extra_expenses: report.extra_expenses ?? [],
+        expenses: (report.park_fee || 0) + (report.hw_fee || 0) + (report.meal || 0) + (report.hotel_fee ?? 0) + (report.shinkansen_fee ?? 0) + (report.extra_expenses ?? []).reduce((s: number, e: {amount: number}) => s + e.amount, 0),
+        extra_expenses: report.extra_expenses ?? [],
         voucher: report.voucher ?? '',
         bill_month: report.bill_month, notes: report.notes ?? '',
       }, annualUrl, settings?.daily_report_template)
