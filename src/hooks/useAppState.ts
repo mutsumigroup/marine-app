@@ -122,7 +122,7 @@ export function useAppState() {
       addToast('error', `保存失敗: ${(err as Error).message}`)
       return false
     }
-  }, [reports, settings.daily_mail, addToast])
+  }, [reports, settings, addToast])
 
   const saveSettings = useCallback(async (newSettings: Settings): Promise<boolean> => {
     try {
@@ -176,7 +176,7 @@ export function useAppState() {
       addToast('error', `送信失敗: ${(err as Error).message}`)
       return false
     }
-  }, [invoices, reports, settings.client_email, addToast])
+  }, [invoices, reports, settings, addToast])
 
   const revertInvoice = useCallback(async (id: string, status: Invoice['status']): Promise<boolean> => {
     const inv = invoices.find(i => i.id === id)
