@@ -12,6 +12,7 @@ import Annual from './pages/Annual'
 import SettingsPage from './pages/Settings'
 import KyForm from './pages/KyForm'
 import TransportForm from './pages/TransportForm'
+import DailyMenu from './pages/DailyMenu'
 import TransportList from './pages/TransportList'
 import KyList from './pages/KyList'
 import PortMasterPage from './pages/PortMasterPage'
@@ -20,6 +21,7 @@ import { useState } from 'react'
 const PAGE_TITLES: Record<string, string> = {
   '/': 'ダッシュボード',
   '/daily': '日報作成',
+  '/daily/ship': '船泊日報作成',
   '/reports': '日報一覧',
   '/sales': '売上管理',
   '/invoices': '請求書管理',
@@ -63,7 +65,8 @@ function AppInner() {
         <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: isMobile ? 52 : 0 }}>
           <Routes>
             <Route path="/" element={<Dashboard reports={app.reports} invoices={app.invoices} settings={app.settings} reload={app.reload} onUpdateReport={app.updateReport} onDeleteReport={app.deleteReport} />} />
-            <Route path="/daily" element={<DailyForm onSubmit={app.submitReport} pastReports={app.reports.map(r => ({ port: r.port, ship: r.ship }))} prices={app.settings.prices} />} />
+            <Route path="/daily" element={<DailyMenu />} />
+            <Route path="/daily/ship" element={<DailyForm onSubmit={app.submitReport} pastReports={app.reports.map(r => ({ port: r.port, ship: r.ship }))} prices={app.settings.prices} />} />
             <Route path="/reports" element={<ReportsList reports={app.reports} onUpdateAmount={app.updateAmount} onSavePdf={app.savePdf} onUpdateReport={app.updateReport} onDeleteReport={app.deleteReport} prices={app.settings.prices} settings={app.settings} />} />
             <Route path="/sales" element={<Sales reports={app.reports} />} />
             <Route path="/invoices" element={<Invoices invoices={app.invoices} reports={app.reports} settings={app.settings} onSend={app.sendInvoice} onPaid={app.markPaid} onRevert={app.revertInvoice} onUpdateInvoice={app.updateInvoiceManual} />} />
