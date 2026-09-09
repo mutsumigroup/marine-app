@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import TransportList from './TransportList'
 import { useSearchParams } from 'react-router-dom'
 import { Card, Select, PageHeader, Btn, Field, Input, Grid, Divider, useIsMobile } from '../components/UI'
 import { CATEGORIES } from '../types'
@@ -587,6 +588,7 @@ const COLS = [
 
 export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpdateReport, onDeleteReport, prices = {}, settings }: Props) {
   const [searchParams, setSearchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState<'ship' | 'transport'>('ship')
   const [filterYear, setFilterYear] = useState('')
   const [filterMonth, setFilterMonth] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
@@ -645,6 +647,15 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
 
   return (
     <div style={{ padding: '16px 18px' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
+        {(['ship', 'transport'] as const).map(key => (
+          <button key={key} onClick={() => setActiveTab(key)}
+            style={{ padding: '10px 20px', fontSize: 13, fontWeight: activeTab === key ? 600 : 400, color: activeTab === key ? 'var(--text)' : 'var(--text-muted)', background: 'none', border: 'none', borderBottom: activeTab === key ? '2px solid var(--text)' : '2px solid transparent', cursor: 'pointer', marginBottom: -1 }}>
+            {key === 'ship' ? '🚢 船泊日報' : '🚗 送迎日報'}
+          </button>
+        ))}
+      </div>
+      {activeTab === 'transport' ? <TransportList /> : <div>
       <PageHeader title="日報一覧" sub={filterMonth ? `${filterMonth} の日報` : '行をクリック→編集 / 高速料金をクリック→詳細'}>
         <Select value={filterYear} onChange={v => { setFilterYear(v); setFilterMonth('') }}>
           <option value="">すべての年</option>
@@ -723,6 +734,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
 
       {hwReport && <HwPopup report={hwReport} onClose={() => setHwReport(null)} onSavePdf={onSavePdf} settings={settings} onUpdateReport={onUpdateReport} />}
       {editReport && <EditModal report={editReport} onClose={() => setEditReport(null)} onSave={onUpdateReport} onDelete={onDeleteReport} prices={prices} settings={settings} />}
+      </div>}
     </div>
   )
 }
