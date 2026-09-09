@@ -4,8 +4,12 @@ import { useIsMobile } from './UI'
 const NAV = [
   { group: 'メイン', items: [
     { path: '/', label: 'ダッシュボード', icon: '⊞' },
-    { path: '/daily', label: '日報作成', icon: '📝' },
-    { path: '/reports', label: '日報一覧', icon: '📋' },
+  ]},
+  { group: '日報作成', items: [
+    { path: '/daily', label: '船泊日報作成', icon: '🚢' },
+    { path: '/transport/new', label: '送迎日報作成', icon: '🚗' },
+    { path: '/reports', label: '船泊日報一覧', icon: '📋' },
+    { path: '/transport', label: '送迎日報一覧', icon: '🗒️' },
   ]},
   { group: '売上・請求', items: [
     { path: '/invoices', label: '請求書管理', icon: '🧾' },

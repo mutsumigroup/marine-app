@@ -8,7 +8,13 @@ import ReportsList from './pages/ReportsList'
 import Sales from './pages/Sales'
 import Invoices from './pages/Invoices'
 import Payments from './pages/Payments'
+import Annual from './pages/Annual'
 import SettingsPage from './pages/Settings'
+import KyForm from './pages/KyForm'
+import TransportForm from './pages/TransportForm'
+import TransportList from './pages/TransportList'
+import KyList from './pages/KyList'
+import PortMasterPage from './pages/PortMasterPage'
 import { useState } from 'react'
 
 const PAGE_TITLES: Record<string, string> = {
@@ -18,7 +24,13 @@ const PAGE_TITLES: Record<string, string> = {
   '/sales': '売上管理',
   '/invoices': '請求書管理',
   '/payments': '入金管理',
+  '/annual': '売上・目標管理',
   '/settings': '設定',
+  '/ky/new': 'KY出発前報告',
+  '/transport/new': '送迎日報作成',
+  '/transport': '送迎日報一覧',
+  '/ky': 'KY報告一覧',
+  '/ports': '港マスター',
 }
 
 function MobileHeader({ onMenu }: { onMenu: () => void }) {
@@ -50,13 +62,19 @@ function AppInner() {
         {isMobile && <MobileHeader onMenu={() => setSidebarOpen(true)} />}
         <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: isMobile ? 52 : 0 }}>
           <Routes>
-            <Route path="/" element={<Dashboard reports={app.reports} invoices={app.invoices} settings={app.settings} reload={app.reload} onUpdateReport={app.updateReport} onDeleteReport={app.deleteReport} />} />
-            <Route path="/daily" element={<DailyForm onSubmit={app.submitReport} pastReports={app.reports.map(r => ({ port: r.port, ship: r.ship }))} prices={app.settings.prices} customCategories={app.settings.custom_categories ?? []} />} />
+            <Route path="/" element={<Dashboard reports={app.reports} invoices={app.invoices} settings={app.settings} reload={app.reload} />} />
+            <Route path="/daily" element={<DailyForm onSubmit={app.submitReport} pastReports={app.reports.map(r => ({ port: r.port, ship: r.ship }))} prices={app.settings.prices} />} />
             <Route path="/reports" element={<ReportsList reports={app.reports} onUpdateAmount={app.updateAmount} onSavePdf={app.savePdf} onUpdateReport={app.updateReport} onDeleteReport={app.deleteReport} prices={app.settings.prices} settings={app.settings} />} />
             <Route path="/sales" element={<Sales reports={app.reports} />} />
             <Route path="/invoices" element={<Invoices invoices={app.invoices} reports={app.reports} settings={app.settings} onSend={app.sendInvoice} onPaid={app.markPaid} onRevert={app.revertInvoice} onUpdateInvoice={app.updateInvoiceManual} />} />
             <Route path="/payments" element={<Payments invoices={app.invoices} onPaid={app.markPaid} />} />
+            <Route path="/annual" element={<Annual reports={app.reports} invoices={app.invoices} settings={app.settings} />} />
             <Route path="/settings" element={<SettingsPage settings={app.settings} onSave={app.saveSettings} />} />
+            <Route path="/transport/new" element={<TransportForm settings={app.settings} />} />
+            <Route path="/transport" element={<TransportList />} />
+            <Route path="/ky/new" element={<KyForm onSubmit={app.submitKyReport} portMasters={app.portMasters} pastReports={app.reports.map(r => ({ port: r.port, ship: r.ship }))} operatorName={app.settings.company_name} />} />
+            <Route path="/ky" element={<KyList kyReports={app.kyReports} onDelete={app.deleteKyReport} />} />
+            <Route path="/ports" element={<PortMasterPage portMasters={app.portMasters} onSave={app.savePortMaster} onDelete={app.deletePortMasterById} />} />
           </Routes>
         </main>
       </div>
