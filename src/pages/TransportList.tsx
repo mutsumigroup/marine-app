@@ -20,6 +20,7 @@ function SentBadge({ sent }: { sent: boolean }) {
 export default function TransportList() {
   const [reports, setReports] = useState<TransportReport[]>([])
   const [loading, setLoading] = useState(true)
+  const [filterYear, setFilterYear] = useState('')
   const [filterMonth, setFilterMonth] = useState('')
 
   useEffect(() => {
@@ -35,8 +36,9 @@ export default function TransportList() {
     load()
   }, [])
 
-  const months = [...new Set(reports.map(r => r.bill_month))].sort().reverse()
-  const filtered = filterMonth ? reports.filter(r => r.bill_month === filterMonth) : reports
+  const years = [...new Set(reports.map(r => r.bill_month?.slice(0, 4)))].filter(Boolean).sort().reverse()
+  const months = [...new Set(reports.filter(r => !filterYear || r.bill_month?.startsWith(filterYear)).map(r => r.bill_month))].sort().reverse()
+  const filtered = reports.filter(r => (!filterYear || r.bill_month?.startsWith(filterYear)) && (!filterMonth || r.bill_month === filterMonth))
 
   const totalFare   = filtered.reduce((s, r) => s + (r.fare ?? 0), 0)
   const totalTenko  = filtered.reduce((s, r) => s + (r.tenko_fee ?? 0), 0)
@@ -48,6 +50,10 @@ export default function TransportList() {
 
       {/* フィルター */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Select value={filterYear} onChange={v => { setFilterYear(v); setFilterMonth('') }}>
+          <option value="">すべての年</option>
+          {years.map(y => <option key={y} value={y}>{y}年</option>)}
+        </Select>
         <Select value={filterMonth} onChange={setFilterMonth}>
           <option value="">すべての月</option>
           {months.map(m => <option key={m} value={m}>{m}</option>)}
