@@ -4,10 +4,10 @@ import { FARE_TABLE, FROM_AREAS, getToAreas, getFare, TENKO_OPTIONS } from '../l
 import type { TransportReport } from '../types/transport'
 import { supabase } from '../lib/supabase'
 import { sendEmail } from '../lib/email'
-import type { Settings } from '../types'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface Props {
-  settings: Settings
+  settings: any
   onSuccess?: () => void
 }
 
@@ -153,10 +153,10 @@ export default function TransportForm({ settings, onSuccess }: Props) {
             </Select>
           </Field>
           <Field label="到着エリア（点呼のみの場合は選択不要）">
-            <Select value={f.toArea} onChange={set('toArea')} disabled={!f.fromArea}>
+            <select value={f.toArea} onChange={e => set('toArea')(e.target.value)} disabled={!f.fromArea} style={{ padding: '8px 10px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', opacity: !f.fromArea ? 0.5 : 1 }}>
               <option value="">-- {f.fromArea ? '選択してください' : '出発エリアを先に選択'} --</option>
               {toAreas.map(a => <option key={a} value={a}>{a}</option>)}
-            </Select>
+            </select>
           </Field>
         </div>
       </Card>
