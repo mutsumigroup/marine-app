@@ -437,6 +437,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
 }
 
 export default function Invoices({ invoices, reports, settings, onSend, onPaid, onRevert, onUpdateInvoice }: Props) {
+  const [activeTab, setActiveTab] = useState<'ship' | 'transport'>('ship')
   const [filter, setFilter] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const [previewId, setPreviewId] = useState<string | null>(() => searchParams.get('id'))
@@ -470,12 +471,9 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
   const paidAmt   = invoices.filter(i => i.status === '入金済').reduce((s, i) => s + i.total, 0)
   const unpaidCnt = invoices.filter(i => i.status === '未請求').length
 
-  const [activeTab, setActiveTab] = useState<'ship' | 'transport'>('ship')
-
   return (
     <div style={{ padding: '20px 22px', maxWidth: 900 }}>
       <PageHeader title="請求書管理" sub="月次請求書の作成・送信・管理（Supabase）" />
-      {/* タブ切り替え */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
         {([['ship', '🚢 船泊請求書'], ['transport', '🚗 送迎請求書']] as const).map(([key, label]) => (
           <button key={key} onClick={() => setActiveTab(key)}
@@ -484,7 +482,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
           </button>
         ))}
       </div>
-      {activeTab === 'transport' ? <TransportInvoices /> : (
+      {activeTab === 'transport' ? <TransportInvoices /> : <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         {[
           { label: '請求総額',   value: `¥${totalAmt.toLocaleString()}`,  color: '#1a1a1a' },
@@ -546,7 +544,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
         }
       </div>
       {previewInv && <InvoiceSheet key={previewInv.id} inv={previewInv} reports={reports} settings={settings} onClose={() => setPreviewId(null)} onSend={handleSend} onUpdateInvoice={onUpdateInvoice} processing={processing===previewInv.id} />}
+    </div>}
     </div>
-      )}
   )
 }
