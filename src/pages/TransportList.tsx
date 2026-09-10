@@ -288,10 +288,10 @@ export default function TransportList({ dailyMail = '' }: { dailyMail?: string }
           💡 行をクリックすると編集できます
         </div>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
-                {[['稼働日','90px'],['出発エリア','120px'],['到着エリア','120px'],['乗客','60px'],['旅客運送報酬','100px'],['点呼手当','130px'],['高速代等（立替）','110px'],['合計手当','90px'],['状態','70px']].map(([h,w]) => (
+                {[['稼働日','80px'],['出発エリア','100px'],['到着エリア','100px'],['乗客','50px'],['旅客運送報酬','90px'],['点呼手当','110px'],['高速代等（立替）','90px'],['合計手当','80px'],['状態','60px']].map(([h,w]) => (
                   <th key={h} style={{ padding: '7px 10px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textAlign: 'left', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '.3px', width: w, minWidth: w }}>{h}</th>
                 ))}
               </tr>
