@@ -3,6 +3,8 @@ import { Card, CardTitle, Field, Input, Grid, Divider, Btn, PageHeader } from '.
 import { CATEGORIES } from '../types'
 import type { Settings as SettingsType } from '../types'
 import { DEFAULT_DAILY_TEMPLATE, DEFAULT_INVOICE_TEMPLATE } from '../lib/email'
+import { supabase } from '../lib/supabase'
+import { FARE_TABLE } from '../lib/fareTable'
 
 interface Props { settings: SettingsType; onSave: (s: SettingsType) => Promise<boolean> }
 
@@ -10,7 +12,44 @@ export default function Settings({ settings, onSave }: Props) {
   const [f, setF] = useState<SettingsType>(settings)
   const [saving, setSaving] = useState(false)
 
+  // 送迎エリア管理
+  interface TransportArea { from: string; to: string; fare: number }
+  const [areas, setAreas] = useState<TransportArea[]>([])
+  const [savingAreas, setSavingAreas] = useState(false)
+  const [areaMsg, setAreaMsg] = useState('')
+
   useEffect(() => { setF(settings) }, [settings])
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from('transport_fare_settings').select('*').order('from_area')
+      if (data && data.length > 0) {
+        setAreas(data.map((d: any) => ({ from: d.from_area, to: d.to_area, fare: d.fare })))
+      } else {
+        const defaults: TransportArea[] = []
+        Object.entries(FARE_TABLE).forEach(([from, tos]) => {
+          Object.entries(tos).forEach(([to, fare]) => defaults.push({ from, to, fare }))
+        })
+        setAreas(defaults)
+      }
+    }
+    load()
+  }, [])
+
+  const addArea = () => setAreas(prev => [...prev, { from: '', to: '', fare: 0 }])
+  const updateArea = (idx: number, field: keyof TransportArea, val: string | number) =>
+    setAreas(prev => { const list = [...prev]; list[idx] = { ...list[idx], [field]: field === 'fare' ? (parseInt(val as string) || 0) : val }; return list })
+  const removeArea = (idx: number) => setAreas(prev => prev.filter((_, i) => i !== idx))
+  const saveAreas = async () => {
+    setSavingAreas(true); setAreaMsg('')
+    try {
+      await supabase.from('transport_fare_settings').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+      const inserts = areas.filter(a => a.from && a.to).map(a => ({ from_area: a.from, to_area: a.to, fare: a.fare }))
+      if (inserts.length > 0) { const { error } = await supabase.from('transport_fare_settings').insert(inserts); if (error) throw error }
+      setAreaMsg('success')
+    } catch { setAreaMsg('error') }
+    setSavingAreas(false)
+  }
 
   const set = (key: keyof SettingsType) => (v: string | number) =>
     setF(prev => ({ ...prev, [key]: v }))
@@ -146,6 +185,63 @@ export default function Settings({ settings, onSave }: Props) {
         <Btn onClick={() => setF(prev => ({ ...prev, custom_categories: [...(prev.custom_categories ?? []), `カスタム区分${((prev.custom_categories ?? []).length + 1)}`] }))}>
           ＋ 対応区分を追加
         </Btn>
+      </Card>
+
+      {/* 送迎エリア管理 */}
+      <Card>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div>
+            <CardTitle>🚗 送迎エリア・料金管理</CardTitle>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>出発・到着エリアと旅客運送報酬を設定します。送迎日報作成のプルダウンに反映されます。</div>
+          </div>
+          <Btn onClick={addArea}>＋ エリアを追加</Btn>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: 'var(--surface2)' }}>
+                <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '30%' }}>出発エリア</th>
+                <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '30%' }}>到着エリア</th>
+                <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '25%' }}>旅客運送報酬（円）</th>
+                <th style={{ padding: '8px 10px', textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '15%' }}>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {areas.map((area, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface2)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = ''}>
+                  <td style={{ padding: '6px 8px' }}>
+                    <input value={area.from} onChange={e => updateArea(idx, 'from', e.target.value)} placeholder="例: 羽田空港"
+                      style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, background: 'var(--surface)', color: 'var(--text)' }}
+                      list="from-area-list" />
+                  </td>
+                  <td style={{ padding: '6px 8px' }}>
+                    <input value={area.to} onChange={e => updateArea(idx, 'to', e.target.value)} placeholder="例: 横浜港"
+                      style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, background: 'var(--surface)', color: 'var(--text)' }} />
+                  </td>
+                  <td style={{ padding: '6px 8px' }}>
+                    <input type="number" value={area.fare} onChange={e => updateArea(idx, 'fare', e.target.value)}
+                      style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, textAlign: 'right', background: 'var(--surface)', color: 'var(--text)' }} />
+                  </td>
+                  <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                    <button onClick={() => removeArea(idx)}
+                      style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '4px 8px', cursor: 'pointer', color: 'var(--danger)', fontSize: 13 }}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <datalist id="from-area-list">{[...new Set(areas.map(a => a.from))].filter(Boolean).map(f => <option key={f} value={f} />)}</datalist>
+        </div>
+        <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{areas.length}件のエリア設定</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {areaMsg === 'success' && <span style={{ fontSize: 12, color: 'var(--success)' }}>✅ 保存しました</span>}
+            {areaMsg === 'error' && <span style={{ fontSize: 12, color: 'var(--danger)' }}>❌ 保存に失敗しました</span>}
+            <Btn variant="success" onClick={saveAreas} disabled={savingAreas}>{savingAreas ? '保存中...' : '✓ エリア設定を保存'}</Btn>
+          </div>
+        </div>
       </Card>
 
       <Card>
