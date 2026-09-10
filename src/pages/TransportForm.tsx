@@ -87,7 +87,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
             ? `ルート：${f.fromArea} → ${f.toArea}`
             : '運行：点呼のみ',
           f.fromArea && f.toArea
-            ? `旅客運送手当：¥${(fare ?? 0).toLocaleString()}`
+            ? `旅客運送報酬：¥${(fare ?? 0).toLocaleString()}`
             : '',
           `点呼手当：${tenkoOpt?.label ?? 'なし'}${tenkoFee > 0 ? `（¥${tenkoFee.toLocaleString()}）` : ''}`,
           `高速代等（立替）：¥${tollFee.toLocaleString()} ※別途実費精算`,
@@ -174,7 +174,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
         transition: 'all 0.2s',
       }}>
         <div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>旅客運送手当（自動計算）</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>旅客運送報酬（自動計算）</div>
           <div style={{ fontSize: 13, color: fare !== null ? 'var(--success)' : 'var(--text-muted)' }}>
             {f.fromArea && f.toArea
               ? `${f.fromArea}  →  ${f.toArea}`
@@ -229,7 +229,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px', fontSize: 12, color: 'var(--text)', lineHeight: 1.9 }}>
             稼働日：{f.date}<br />
             {f.fromArea && f.toArea
-              ? <><span>出発エリア：{f.fromArea}</span><br /><span>到着エリア：{f.toArea}</span><br /><span>旅客運送手当：{fare !== null ? `¥${fare.toLocaleString()}` : '別途協議'}</span><br /></>
+              ? <><span>出発エリア：{f.fromArea}</span><br /><span>到着エリア：{f.toArea}</span><br /><span>旅客運送報酬：{fare !== null ? `¥${fare.toLocaleString()}` : '別途協議'}</span><br /></>
               : <><span>運行：点呼のみ</span><br /></>
             }
             点呼手当：{tenkoOpt?.label ?? 'なし'}{tenkoFee > 0 ? `（¥${tenkoFee.toLocaleString()}）` : ''}<br />
