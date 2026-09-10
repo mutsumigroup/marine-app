@@ -17,6 +17,8 @@ export default function Settings({ settings, onSave }: Props) {
   const [areas, setAreas] = useState<TransportArea[]>([])
   const [savingAreas, setSavingAreas] = useState(false)
   const [areaMsg, setAreaMsg] = useState('')
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
   useEffect(() => { setF(settings) }, [settings])
 
@@ -40,6 +42,10 @@ export default function Settings({ settings, onSave }: Props) {
   const updateArea = (idx: number, field: keyof TransportArea, val: string | number) =>
     setAreas(prev => { const list = [...prev]; list[idx] = { ...list[idx], [field]: field === 'fare' ? (parseInt(val as string) || 0) : val }; return list })
   const removeArea = (idx: number) => setAreas(prev => prev.filter((_, i) => i !== idx))
+  const moveArea = (from: number, to: number) => setAreas(prev => {
+    const list = [...prev]; const [item] = list.splice(from, 1); list.splice(to, 0, item); return list
+  })
+
   const saveAreas = async () => {
     setSavingAreas(true); setAreaMsg('')
     try {
@@ -192,25 +198,38 @@ export default function Settings({ settings, onSave }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div>
             <CardTitle>🚗 送迎エリア・料金管理</CardTitle>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>出発・到着エリアと旅客運送報酬を設定します。送迎日報作成のプルダウンに反映されます。</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              出発・到着エリアと旅客運送報酬を設定します。☰ をドラッグして並び替えできます。
+            </div>
           </div>
-          <button onClick={addArea} style={{ padding: "8px 16px", borderRadius: "var(--radius)", fontSize: 13, fontWeight: 500, cursor: "pointer", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }}>＋ エリアを追加</button>
+          <button onClick={addArea} style={{ padding: '8px 14px', borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}>＋ エリアを追加</button>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
-                <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '30%' }}>出発エリア</th>
-                <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '30%' }}>到着エリア</th>
-                <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '25%' }}>旅客運送報酬（円）</th>
-                <th style={{ padding: '8px 10px', textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '15%' }}>操作</th>
+                <th style={{ padding: '8px 6px', width: 28, borderBottom: '1px solid var(--border)' }}></th>
+                <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '28%' }}>出発エリア</th>
+                <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '28%' }}>到着エリア</th>
+                <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '24%' }}>旅客運送報酬（円）</th>
+                <th style={{ padding: '8px 10px', textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '12%' }}>操作</th>
               </tr>
             </thead>
             <tbody>
               {areas.map((area, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface2)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = ''}>
+                <tr key={idx}
+                  draggable
+                  onDragStart={() => setDragIdx(idx)}
+                  onDragOver={e => { e.preventDefault(); setDragOverIdx(idx) }}
+                  onDrop={() => { if (dragIdx !== null && dragIdx !== idx) moveArea(dragIdx, idx); setDragIdx(null); setDragOverIdx(null) }}
+                  onDragEnd={() => { setDragIdx(null); setDragOverIdx(null) }}
+                  style={{
+                    borderBottom: '1px solid var(--border)',
+                    background: dragOverIdx === idx ? 'var(--accent-bg)' : dragIdx === idx ? 'var(--surface2)' : '',
+                    opacity: dragIdx === idx ? 0.5 : 1,
+                    transition: 'background 0.1s',
+                  }}>
+                  <td style={{ padding: '6px', textAlign: 'center', cursor: 'grab', color: 'var(--text-muted)', fontSize: 16 }}>☰</td>
                   <td style={{ padding: '6px 8px' }}>
                     <input value={area.from} onChange={e => updateArea(idx, 'from', e.target.value)} placeholder="例: 羽田空港"
                       style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, background: 'var(--surface)', color: 'var(--text)' }}
@@ -225,8 +244,14 @@ export default function Settings({ settings, onSave }: Props) {
                       style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, textAlign: 'right', background: 'var(--surface)', color: 'var(--text)' }} />
                   </td>
                   <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                    <button onClick={() => removeArea(idx)}
-                      style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '4px 8px', cursor: 'pointer', color: 'var(--danger)', fontSize: 13 }}>🗑</button>
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                      <button onClick={() => idx > 0 && moveArea(idx, idx - 1)}
+                        style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '2px 6px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11 }} title="上へ">▲</button>
+                      <button onClick={() => idx < areas.length - 1 && moveArea(idx, idx + 1)}
+                        style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '2px 6px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11 }} title="下へ">▼</button>
+                      <button onClick={() => removeArea(idx)}
+                        style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '2px 6px', cursor: 'pointer', color: 'var(--danger)', fontSize: 11 }}>🗑</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -235,11 +260,14 @@ export default function Settings({ settings, onSave }: Props) {
           <datalist id="from-area-list">{[...new Set(areas.map(a => a.from))].filter(Boolean).map(f => <option key={f} value={f} />)}</datalist>
         </div>
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{areas.length}件のエリア設定</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{areas.length}件 ／ ☰ ドラッグまたは ▲▼ で並び替え</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {areaMsg === 'success' && <span style={{ fontSize: 12, color: 'var(--success)' }}>✅ 保存しました</span>}
             {areaMsg === 'error' && <span style={{ fontSize: 12, color: 'var(--danger)' }}>❌ 保存に失敗しました</span>}
-            <button onClick={saveAreas} disabled={savingAreas} style={{ padding: "8px 16px", borderRadius: "var(--radius)", fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none", background: "var(--success)", color: "#fff" }}>{savingAreas ? "保存中..." : "✓ エリア設定を保存"}</button>
+            <button onClick={saveAreas} disabled={savingAreas}
+              style={{ padding: '8px 16px', borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none', background: 'var(--success)', color: '#fff' }}>
+              {savingAreas ? '保存中...' : '✓ エリア設定を保存'}
+            </button>
           </div>
         </div>
       </Card>
