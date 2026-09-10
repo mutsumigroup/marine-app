@@ -194,7 +194,7 @@ export default function Settings({ settings, onSave }: Props) {
             <CardTitle>🚗 送迎エリア・料金管理</CardTitle>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>出発・到着エリアと旅客運送報酬を設定します。送迎日報作成のプルダウンに反映されます。</div>
           </div>
-          <Btn onClick={addArea}>＋ エリアを追加</Btn>
+          <button onClick={addArea} style={{ padding: "8px 16px", borderRadius: "var(--radius)", fontSize: 13, fontWeight: 500, cursor: "pointer", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }}>＋ エリアを追加</button>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -239,7 +239,7 @@ export default function Settings({ settings, onSave }: Props) {
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {areaMsg === 'success' && <span style={{ fontSize: 12, color: 'var(--success)' }}>✅ 保存しました</span>}
             {areaMsg === 'error' && <span style={{ fontSize: 12, color: 'var(--danger)' }}>❌ 保存に失敗しました</span>}
-            <Btn variant="success" onClick={saveAreas} disabled={savingAreas}>{savingAreas ? '保存中...' : '✓ エリア設定を保存'}</Btn>
+            <button onClick={saveAreas} disabled={savingAreas} style={{ padding: "8px 16px", borderRadius: "var(--radius)", fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none", background: "var(--success)", color: "#fff" }}>{savingAreas ? "保存中..." : "✓ エリア設定を保存"}</button>
           </div>
         </div>
       </Card>
