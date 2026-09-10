@@ -291,8 +291,8 @@ export default function TransportList({ dailyMail = '' }: { dailyMail?: string }
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
-                {['稼働日', '出発エリア', '到着エリア', '乗客', '旅客運送報酬', '点呼手当', '高速代等（立替）', '合計手当', '状態'].map(h => (
-                  <th key={h} style={{ padding: '7px 10px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textAlign: 'left', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '.3px' }}>{h}</th>
+                {[['稼働日','90px'],['出発エリア','120px'],['到着エリア','120px'],['乗客','60px'],['旅客運送報酬','100px'],['点呼手当','130px'],['高速代等（立替）','110px'],['合計手当','90px'],['状態','70px']].map(([h,w]) => (
+                  <th key={h} style={{ padding: '7px 10px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textAlign: 'left', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '.3px', width: w, minWidth: w }}>{h}</th>
                 ))}
               </tr>
             </thead>
