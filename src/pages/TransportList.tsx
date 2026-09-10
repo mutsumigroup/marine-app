@@ -76,6 +76,17 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail }: {
   const handleSendEmail = async () => {
     setSending(true)
     setSendResult('')
+    // dailyMailが未設定の場合はsupabaseから取得
+    let toEmail = dailyMail
+    if (!toEmail) {
+      const { data: s } = await supabase.from('settings').select('daily_mail').limit(1).single()
+      toEmail = s?.daily_mail ?? ''
+    }
+    if (!toEmail) {
+      alert('送信先メールアドレスが設定されていません。設定画面で「日報送信先メール」を設定してください。')
+      setSending(false)
+      return
+    }
     try {
       const lines = [
         '【送迎日報】',
@@ -88,7 +99,7 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail }: {
         f.notes ? `備考：${f.notes}` : '',
       ].filter(Boolean).join('\n')
       await sendEmail({
-        to_email: dailyMail,
+        to_email: toEmail,
         subject: `【送迎日報】${f.date}${f.fromArea && f.toArea ? ` ${f.fromArea}→${f.toArea}` : ' 点呼のみ'}`,
         message: lines,
       })
@@ -195,12 +206,10 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail }: {
           </button>
           <div style={{ display: 'flex', gap: 8 }}>
             <button style={btn('secondary')} onClick={onClose}>キャンセル</button>
-            {dailyMail && (
-              <button style={{...btn('secondary'), color: sending ? '#aaa' : '#16a34a', borderColor: '#16a34a'}}
-                onClick={handleSendEmail} disabled={sending}>
-                {sending ? '送信中...' : sendResult === 'success' ? '✅ 送信済' : sendResult === 'error' ? '❌ 失敗' : '📤 メール送信'}
-              </button>
-            )}
+            <button style={{...btn('secondary'), color: sending ? '#aaa' : '#16a34a', border: '1px solid #16a34a'}}
+              onClick={handleSendEmail} disabled={sending}>
+              {sending ? '送信中...' : sendResult === 'success' ? '✅ 送信済' : sendResult === 'error' ? '❌ 失敗' : '📤 メール送信'}
+            </button>
             <button style={btn('primary')} onClick={handleSave} disabled={saving}>{saving ? '保存中...' : '💾 保存'}</button>
           </div>
         </div>
