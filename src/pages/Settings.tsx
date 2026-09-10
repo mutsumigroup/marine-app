@@ -2,52 +2,15 @@ import { useState, useEffect } from 'react'
 import { Card, CardTitle, Field, Input, Grid, Divider, Btn, PageHeader } from '../components/UI'
 import { CATEGORIES } from '../types'
 import type { Settings as SettingsType } from '../types'
-import { supabase } from '../lib/supabase'
-import { FARE_TABLE } from '../lib/fareTable'
+import { DEFAULT_DAILY_TEMPLATE, DEFAULT_INVOICE_TEMPLATE } from '../lib/email'
 
 interface Props { settings: SettingsType; onSave: (s: SettingsType) => Promise<boolean> }
-
-// 送迎エリア管理の型
-interface TransportArea {
-  from: string
-  to: string
-  fare: number
-}
 
 export default function Settings({ settings, onSave }: Props) {
   const [f, setF] = useState<SettingsType>(settings)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'general' | 'transport'>('general')
-
-  // 送迎エリア管理
-  const [areas, setAreas] = useState<TransportArea[]>([])
-  const [savingAreas, setSavingAreas] = useState(false)
-  const [areaMsg, setAreaMsg] = useState('')
 
   useEffect(() => { setF(settings) }, [settings])
-
-  // 料金テーブルをareas形式に変換して初期ロード
-  useEffect(() => {
-    const loadAreas = async () => {
-      const { data } = await supabase
-        .from('transport_fare_settings')
-        .select('*')
-        .order('from_area')
-      if (data && data.length > 0) {
-        setAreas(data.map((d: any) => ({ from: d.from_area, to: d.to_area, fare: d.fare })))
-      } else {
-        // 初回：fareTable.tsのデータをデフォルトとして展開
-        const defaults: TransportArea[] = []
-        Object.entries(FARE_TABLE).forEach(([from, tos]) => {
-          Object.entries(tos).forEach(([to, fare]) => {
-            defaults.push({ from, to, fare })
-          })
-        })
-        setAreas(defaults)
-      }
-    }
-    loadAreas()
-  }, [])
 
   const set = (key: keyof SettingsType) => (v: string | number) =>
     setF(prev => ({ ...prev, [key]: v }))
@@ -58,14 +21,36 @@ export default function Settings({ settings, onSave }: Props) {
       prices: { ...prev.prices, [cat]: { ...(prev.prices[cat] ?? { ship: 0, crew: 0 }), [field]: parseInt(val) || 0 } }
     }))
 
+  // 固定費：追加
   const addFixedExpense = () =>
-    setF(prev => ({ ...prev, fixed_expenses: [...(prev.fixed_expenses ?? []), { label: '', amount: 0 }] }))
+    setF(prev => ({
+      ...prev,
+      fixed_expenses: [...(prev.fixed_expenses ?? []), { label: '', amount: 0 }]
+    }))
+
+  // 固定費：ラベル変更
   const setFixedLabel = (idx: number, label: string) =>
-    setF(prev => { const list = [...(prev.fixed_expenses ?? [])]; list[idx] = { ...list[idx], label }; return { ...prev, fixed_expenses: list } })
+    setF(prev => {
+      const list = [...(prev.fixed_expenses ?? [])]
+      list[idx] = { ...list[idx], label }
+      return { ...prev, fixed_expenses: list }
+    })
+
+  // 固定費：金額変更
   const setFixedAmount = (idx: number, val: string) =>
-    setF(prev => { const list = [...(prev.fixed_expenses ?? [])]; list[idx] = { ...list[idx], amount: parseInt(val) || 0 }; return { ...prev, fixed_expenses: list } })
+    setF(prev => {
+      const list = [...(prev.fixed_expenses ?? [])]
+      list[idx] = { ...list[idx], amount: parseInt(val) || 0 }
+      return { ...prev, fixed_expenses: list }
+    })
+
+  // 固定費：削除
   const removeFixedExpense = (idx: number) =>
-    setF(prev => ({ ...prev, fixed_expenses: (prev.fixed_expenses ?? []).filter((_, i) => i !== idx) }))
+    setF(prev => ({
+      ...prev,
+      fixed_expenses: (prev.fixed_expenses ?? []).filter((_, i) => i !== idx)
+    }))
+
   const totalFixed = (f.fixed_expenses ?? []).reduce((sum, e) => sum + (e.amount || 0), 0)
 
   const handleSave = async () => {
@@ -74,89 +59,78 @@ export default function Settings({ settings, onSave }: Props) {
     setSaving(false)
   }
 
-  // 送迎エリアの操作
-  const addArea = () => setAreas(prev => [...prev, { from: '', to: '', fare: 0 }])
-  const updateArea = (idx: number, field: keyof TransportArea, val: string | number) =>
-    setAreas(prev => { const list = [...prev]; list[idx] = { ...list[idx], [field]: field === 'fare' ? (parseInt(val as string) || 0) : val }; return list })
-  const removeArea = (idx: number) => setAreas(prev => prev.filter((_, i) => i !== idx))
-
-  const saveAreas = async () => {
-    setSavingAreas(true)
-    setAreaMsg('')
-    try {
-      // 全削除して再挿入
-      await supabase.from('transport_fare_settings').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-      const inserts = areas.filter(a => a.from && a.to).map(a => ({
-        from_area: a.from, to_area: a.to, fare: a.fare
-      }))
-      if (inserts.length > 0) {
-        const { error } = await supabase.from('transport_fare_settings').insert(inserts)
-        if (error) throw error
-      }
-      setAreaMsg('success')
-    } catch {
-      setAreaMsg('error')
-    }
-    setSavingAreas(false)
-  }
-
-  // 出発地一覧（ユニーク）
-  const fromList = [...new Set(areas.map(a => a.from))].filter(Boolean).sort()
-
   return (
     <div style={{ padding: '20px 22px' }}>
       <PageHeader title="設定" sub="変更はSupabaseへ保存されます" />
 
-      {/* タブ */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-        {([['general', '⚙️ 一般設定'], ['transport', '🚗 送迎エリア管理']] as const).map(([key, label]) => (
-          <button key={key} onClick={() => setActiveTab(key)}
-            style={{ padding: '10px 20px', fontSize: 13, fontWeight: activeTab === key ? 600 : 400, color: activeTab === key ? 'var(--text)' : 'var(--text-muted)', background: 'none', border: 'none', borderBottom: activeTab === key ? '2px solid var(--navy)' : '2px solid transparent', cursor: 'pointer', marginBottom: -1 }}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <Card>
+        <CardTitle>🏢 自社情報（請求書に表示）</CardTitle>
+        <Grid cols={2} style={{ marginBottom: 10 }}>
+          <Field label="会社名"><Input value={f.company_name} onChange={set('company_name')} /></Field>
+          <Field label="住所"><Input value={f.address} onChange={set('address')} /></Field>
+        </Grid>
+        <Grid cols={2} style={{ marginBottom: 10 }}>
+          <Field label="電話番号"><Input value={f.tel} onChange={set('tel')} /></Field>
+          <Field label="メールアドレス"><Input type="email" value={f.email} onChange={set('email')} /></Field>
+        </Grid>
+        <Grid cols={2}>
+          <Field label="インボイス登録番号"><Input value={f.invoice_no} onChange={set('invoice_no')} placeholder="T1234567890123" /></Field>
+          <Field label="支払期限（請求日から何日後）"><Input type="number" value={f.pay_days} onChange={v => set('pay_days')(parseInt(v) || 30)} /></Field>
+        </Grid>
+        <Divider />
+        <Grid cols={2}>
+          <Field label="振込先銀行・支店"><Input value={f.bank} onChange={set('bank')} /></Field>
+          <Field label="口座番号・名義"><Input value={f.account} onChange={set('account')} /></Field>
+        </Grid>
+      </Card>
 
-      {/* 一般設定タブ */}
-      {activeTab === 'general' && <>
-        <Card>
-          <CardTitle>🏢 自社情報（請求書に表示）</CardTitle>
-          <Grid cols={2} style={{ marginBottom: 10 }}>
-            <Field label="会社名"><Input value={f.company_name} onChange={set('company_name')} /></Field>
-            <Field label="住所"><Input value={f.address} onChange={set('address')} /></Field>
-          </Grid>
-          <Grid cols={2} style={{ marginBottom: 10 }}>
-            <Field label="電話番号"><Input value={f.tel} onChange={set('tel')} /></Field>
-            <Field label="メールアドレス"><Input type="email" value={f.email} onChange={set('email')} /></Field>
-          </Grid>
-          <Grid cols={2}>
-            <Field label="インボイス登録番号"><Input value={f.invoice_no} onChange={set('invoice_no')} placeholder="T1234567890123" /></Field>
-            <Field label="支払期限（請求日から何日後）"><Input type="number" value={f.pay_days} onChange={v => set('pay_days')(parseInt(v) || 30)} /></Field>
-          </Grid>
-          <Divider />
-          <Grid cols={2}>
-            <Field label="振込先銀行・支店"><Input value={f.bank} onChange={set('bank')} /></Field>
-            <Field label="口座番号・名義"><Input value={f.account} onChange={set('account')} /></Field>
-          </Grid>
-        </Card>
+      <Card>
+        <CardTitle>🏷 取引先（1社）</CardTitle>
+        <Grid cols={3}>
+          <Field label="取引先名"><Input value={f.client_name} onChange={set('client_name')} /></Field>
+          <Field label="メールアドレス"><Input type="email" value={f.client_email} onChange={set('client_email')} /></Field>
+          <Field label="年間目標額（円）">
+            <Input type="number" value={f.client_annual_goal} onChange={v => set('client_annual_goal')(parseInt(v) || 0)} />
+          </Field>
+        </Grid>
+      </Card>
 
-        <Card>
-          <CardTitle>🏷 取引先（1社）</CardTitle>
-          <Grid cols={3}>
-            <Field label="取引先名"><Input value={f.client_name} onChange={set('client_name')} /></Field>
-            <Field label="メールアドレス"><Input type="email" value={f.client_email} onChange={set('client_email')} /></Field>
-            <Field label="年間目標額（円）">
-              <Input type="number" value={f.client_annual_goal} onChange={v => set('client_annual_goal')(parseInt(v) || 0)} />
-            </Field>
-          </Grid>
-        </Card>
-
-        <Card>
-          <CardTitle>💴 対応区分 単価設定</CardTitle>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {CATEGORIES.map(cat => (
-              <div key={cat} style={{ background: 'var(--surface2)', padding: 10, borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, color: 'var(--navy)' }}>{cat}</div>
+      <Card>
+        <CardTitle>💴 対応区分 単価設定</CardTitle>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          {[...CATEGORIES, ...(f.custom_categories ?? [])].map((cat, idx) => {
+            const isCustom = idx >= CATEGORIES.length
+            return (
+              <div key={cat + idx} style={{ background: 'var(--surface2)', padding: 10, borderRadius: 'var(--radius)', border: '1px solid var(--border)', position: 'relative' }}>
+                {isCustom && (
+                  <button
+                    onClick={() => setF(prev => ({ ...prev, custom_categories: (prev.custom_categories ?? []).filter((_, j) => j !== idx - CATEGORIES.length) }))}
+                    style={{ position: 'absolute', top: 6, right: 8, background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: 16, lineHeight: 1, padding: 0 }}
+                    title="削除">×</button>
+                )}
+                {isCustom ? (
+                  <input
+                    defaultValue={cat}
+                    onBlur={e => {
+                      const newName = e.target.value.trim()
+                      if (!newName) return
+                      const ci = idx - CATEGORIES.length
+                      setF(prev => {
+                        const customs = [...(prev.custom_categories ?? [])]
+                        const oldName = customs[ci]
+                        customs[ci] = newName
+                        const newPrices = { ...prev.prices }
+                        newPrices[newName] = newPrices[oldName] ?? { ship: 10000, crew: 1000 }
+                        if (newName !== oldName) delete newPrices[oldName]
+                        return { ...prev, custom_categories: customs, prices: newPrices }
+                      })
+                    }}
+                    style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, color: 'var(--navy)', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', width: '80%', outline: 'none', padding: '2px 0', display: 'block' }}
+                    placeholder="区分名を入力"
+                  />
+                ) : (
+                  <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 8, color: 'var(--navy)' }}>{cat}</div>
+                )}
                 <Grid cols={2}>
                   <Field label="船単価（円）">
                     <Input type="number" value={f.prices[cat]?.ship ?? 10000} onChange={v => setPrice(cat, 'ship', v)} />
@@ -166,143 +140,162 @@ export default function Settings({ settings, onSave }: Props) {
                   </Field>
                 </Grid>
               </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <CardTitle>📧 メール設定</CardTitle>
-          <Grid cols={2}>
-            <Field label="日報送信先メール"><Input type="email" value={f.daily_mail} onChange={set('daily_mail')} /></Field>
-            <Field label="請求書送信先メール"><Input type="email" value={f.inv_mail} onChange={set('inv_mail')} /></Field>
-          </Grid>
-        </Card>
-
-        <Card>
-          <CardTitle>💬 Google Chat通知設定（KY出発前報告）</CardTitle>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.6 }}>
-            KY出発前報告の送信後にGoogle Chatへ自動通知します。<br />
-            Google Chat のスペースで「Webhook URL」を取得して貼り付けてください。
-          </div>
-          <Field label="Google Chat Webhook URL">
-            <Input value={f.gchat_webhook ?? ''} onChange={set('gchat_webhook')} placeholder="https://chat.googleapis.com/v1/spaces/..." />
-          </Field>
-          {f.gchat_webhook ? (
-            <div style={{ marginTop: 8, fontSize: 11, color: '#15803D', background: '#D1FAE5', borderRadius: 6, padding: '6px 10px' }}>✅ Webhook URLが設定されています。</div>
-          ) : (
-            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', background: 'var(--surface2)', borderRadius: 6, padding: '6px 10px' }}>ℹ️ URLを設定するまでGoogle Chat通知はスキップされます。</div>
-          )}
-        </Card>
-
-        <Card>
-          <CardTitle>🏠 毎月固定費（請求書に自動追加）</CardTitle>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>毎月変わらない固定の立替金精算を設定します。請求書に自動で含まれます。</div>
-          {(f.fixed_expenses ?? []).map((expense, idx) => (
-            <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10, alignItems: 'flex-end', marginBottom: 10, background: 'var(--surface2)', padding: 12, borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-              <Field label="項目名"><Input value={expense.label} onChange={v => setFixedLabel(idx, v as string)} placeholder="例: 自宅駐車場、通信費など" /></Field>
-              <Field label="月額（円）"><Input type="number" value={expense.amount} onChange={v => setFixedAmount(idx, v as string)} /></Field>
-              <button onClick={() => removeFixedExpense(idx)} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '6px 10px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, marginBottom: 2 }} title="削除">🗑</button>
-            </div>
-          ))}
-          <button onClick={addFixedExpense} style={{ width: '100%', padding: '10px', border: '2px dashed var(--border)', borderRadius: 'var(--radius)', background: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>＋ 固定費を追加</button>
-          {(f.fixed_expenses ?? []).length > 0 && (
-            <div style={{ padding: '10px 14px', background: 'var(--accent-bg)', borderRadius: 'var(--radius)', border: '1px solid var(--accent-border)', fontSize: 12, color: 'var(--accent)' }}>合計: ¥{totalFixed.toLocaleString()} / 月</div>
-          )}
-        </Card>
-
-        <div style={{ textAlign: 'right', marginTop: 4 }}>
-          <Btn variant="success" onClick={handleSave} disabled={saving}>{saving ? '保存中...' : '✓ 設定を保存（Supabase）'}</Btn>
+            )
+          })}
         </div>
-      </>}
+        <Btn onClick={() => setF(prev => ({ ...prev, custom_categories: [...(prev.custom_categories ?? []), `カスタム区分${((prev.custom_categories ?? []).length + 1)}`] }))}>
+          ＋ 対応区分を追加
+        </Btn>
+      </Card>
 
-      {/* 送迎エリア管理タブ */}
-      {activeTab === 'transport' && <>
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div>
-              <CardTitle>🚗 送迎エリア・料金管理</CardTitle>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                出発エリア・到着エリア・旅客運送報酬を設定します。送迎日報作成のプルダウンに反映されます。
-              </div>
-            </div>
-            <Btn onClick={addArea}>＋ エリアを追加</Btn>
+      <Card>
+        <CardTitle>📧 メール設定</CardTitle>
+        <Grid cols={2}>
+          <Field label="日報送信先メール"><Input type="email" value={f.daily_mail} onChange={set('daily_mail')} /></Field>
+          <Field label="請求書送信先メール"><Input type="email" value={f.inv_mail} onChange={set('inv_mail')} /></Field>
+        </Grid>
+        <Divider />
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)' }}>📝 日報メール文面テンプレート</div>
+            <button onClick={() => setF(prev => ({ ...prev, daily_report_template: DEFAULT_DAILY_TEMPLATE }))}
+              style={{ fontSize: 11, padding: '3px 10px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+              デフォルトに戻す
+            </button>
           </div>
-
-          {/* 出発地でグループ表示 */}
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: 'var(--surface2)' }}>
-                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '30%' }}>出発エリア</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '30%' }}>到着エリア</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '25%' }}>旅客運送報酬（円）</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border)', width: '15%' }}>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {areas.map((area, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface2)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = ''}>
-                    <td style={{ padding: '6px 8px' }}>
-                      <input
-                        value={area.from}
-                        onChange={e => updateArea(idx, 'from', e.target.value)}
-                        placeholder="例: 羽田空港"
-                        style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, background: 'var(--surface)', color: 'var(--text)' }}
-                        list="from-list"
-                      />
-                    </td>
-                    <td style={{ padding: '6px 8px' }}>
-                      <input
-                        value={area.to}
-                        onChange={e => updateArea(idx, 'to', e.target.value)}
-                        placeholder="例: 横浜港"
-                        style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, background: 'var(--surface)', color: 'var(--text)' }}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 8px' }}>
-                      <input
-                        type="number"
-                        value={area.fare}
-                        onChange={e => updateArea(idx, 'fare', e.target.value)}
-                        style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, textAlign: 'right', background: 'var(--surface)', color: 'var(--text)' }}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                      <button onClick={() => removeArea(idx)}
-                        style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '4px 8px', cursor: 'pointer', color: 'var(--danger)', fontSize: 13 }}>
-                        🗑
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {/* 出発地サジェスト */}
-            <datalist id="from-list">
-              {fromList.map(f => <option key={f} value={f} />)}
-            </datalist>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.7, background: 'var(--surface2)', padding: '8px 12px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+            使えるプレースホルダー：<code>{'{date}'}</code> 日付 / <code>{'{port}'}</code> 港名 / <code>{'{ship}'}</code> 船名 / <code>{'{crew}'}</code> 人数 / <code>{'{category}'}</code> 区分 / <code>{'{work}'}</code> 業務内容 / <code>{'{bill_month}'}</code> 請求月 / <code>{'{amount}'}</code> 売上 / <code>{'{park_fee}'}</code> 駐車場 / <code>{'{hw_fee}'}</code> 高速 / <code>{'{meal}'}</code> 食事 / <code>{'{hotel_fee}'}</code> ホテル / <code>{'{shinkansen_fee}'}</code> 新幹線 / <code>{'{expenses}'}</code> 立替合計 / <code>{'{notes_line}'}</code> 備考行 / <code>{'{annual_url}'}</code> 日報URL
           </div>
-
-          <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {areas.length}件のエリア設定
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {areaMsg === 'success' && <span style={{ fontSize: 12, color: 'var(--success)' }}>✅ 保存しました</span>}
-              {areaMsg === 'error' && <span style={{ fontSize: 12, color: 'var(--danger)' }}>❌ 保存に失敗しました</span>}
-              <Btn variant="success" onClick={saveAreas} disabled={savingAreas}>
-                {savingAreas ? '保存中...' : '✓ エリア設定を保存'}
-              </Btn>
-            </div>
-          </div>
-        </Card>
-
-        <div style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 12, color: 'var(--warning)' }}>
-          ⚠️ 保存後、送迎日報作成画面の出発・到着エリアのプルダウンに反映されます。記載のない区間は「都度協議」となります。
+          <textarea
+            value={f.daily_report_template ?? DEFAULT_DAILY_TEMPLATE}
+            onChange={e => setF(prev => ({ ...prev, daily_report_template: e.target.value }))}
+            style={{ width: '100%', minHeight: 280, padding: '10px 12px', fontSize: 12, fontFamily: 'monospace', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', resize: 'vertical', lineHeight: 1.7, boxSizing: 'border-box' }}
+          />
         </div>
-      </>}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)' }}>📝 請求書メール文面テンプレート</div>
+            <button onClick={() => setF(prev => ({ ...prev, invoice_template: DEFAULT_INVOICE_TEMPLATE }))}
+              style={{ fontSize: 11, padding: '3px 10px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+              デフォルトに戻す
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.7, background: 'var(--surface2)', padding: '8px 12px', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+            使えるプレースホルダー：<code>{'{client_name}'}</code> 取引先名 / <code>{'{billing_month}'}</code> 請求月 / <code>{'{invoice_id}'}</code> 請求書番号 / <code>{'{subtotal}'}</code> 税抜金額 / <code>{'{tax}'}</code> 消費税 / <code>{'{expenses}'}</code> 立替金 / <code>{'{total}'}</code> 合計 / <code>{'{invoice_url}'}</code> 請求書URL
+          </div>
+          <textarea
+            value={f.invoice_template ?? DEFAULT_INVOICE_TEMPLATE}
+            onChange={e => setF(prev => ({ ...prev, invoice_template: e.target.value }))}
+            style={{ width: '100%', minHeight: 240, padding: '10px 12px', fontSize: 12, fontFamily: 'monospace', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', resize: 'vertical', lineHeight: 1.7, boxSizing: 'border-box' }}
+          />
+        </div>
+      </Card>
+
+      <Card>
+        <CardTitle>💬 Google Chat通知設定（KY出発前報告）</CardTitle>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.6 }}>
+          KY出発前報告の送信後にGoogle Chatへ自動通知します。<br />
+          Google Chat のスペースで「Webhook URL」を取得して貼り付けてください。
+        </div>
+        <Field label="Google Chat Webhook URL">
+          <Input
+            value={f.gchat_webhook ?? ''}
+            onChange={set('gchat_webhook')}
+            placeholder="https://chat.googleapis.com/v1/spaces/..."
+          />
+        </Field>
+        {f.gchat_webhook && (
+          <div style={{ marginTop: 8, fontSize: 11, color: '#15803D', background: '#D1FAE5', borderRadius: 6, padding: '6px 10px' }}>
+            ✅ Webhook URLが設定されています。KY報告送信時にGoogle Chatへ通知されます。
+          </div>
+        )}
+        {!f.gchat_webhook && (
+          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', background: 'var(--surface2)', borderRadius: 6, padding: '6px 10px' }}>
+            ℹ️ URLを設定するまでGoogle Chat通知はスキップされます。
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <CardTitle>🏠 毎月固定費（請求書に自動追加）</CardTitle>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
+          毎月変わらない固定の立替金精算を設定します。請求書に自動で含まれます。
+        </div>
+
+        {(f.fixed_expenses ?? []).map((expense, idx) => (
+          <div key={idx} style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr auto',
+            gap: 10,
+            alignItems: 'flex-end',
+            marginBottom: 10,
+            background: 'var(--surface2)',
+            padding: 12,
+            borderRadius: 'var(--radius)',
+            border: '1px solid var(--border)'
+          }}>
+            <Field label="項目名">
+              <Input
+                value={expense.label}
+                onChange={v => setFixedLabel(idx, v as string)}
+                placeholder="例: 自宅駐車場、通信費など"
+              />
+            </Field>
+            <Field label="月額（円）">
+              <Input
+                type="number"
+                value={expense.amount}
+                onChange={v => setFixedAmount(idx, v as string)}
+              />
+            </Field>
+            <button
+              onClick={() => removeFixedExpense(idx)}
+              style={{
+                background: 'none',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                padding: '6px 10px',
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                fontSize: 16,
+                marginBottom: 2,
+              }}
+              title="削除"
+            >
+              🗑
+            </button>
+          </div>
+        ))}
+
+        <button
+          onClick={addFixedExpense}
+          style={{
+            width: '100%',
+            padding: '10px',
+            border: '2px dashed var(--border)',
+            borderRadius: 'var(--radius)',
+            background: 'none',
+            cursor: 'pointer',
+            color: 'var(--text-muted)',
+            fontSize: 13,
+            marginBottom: 12,
+          }}
+        >
+          ＋ 固定費を追加
+        </button>
+
+        {(f.fixed_expenses ?? []).length > 0 && (
+          <div style={{ padding: '10px 14px', background: 'var(--accent-bg)', borderRadius: 'var(--radius)', border: '1px solid var(--accent-border)', fontSize: 12, color: 'var(--accent)' }}>
+            合計: ¥{totalFixed.toLocaleString()} / 月
+          </div>
+        )}
+      </Card>
+
+      <div style={{ textAlign: 'right', marginTop: 4 }}>
+        <Btn variant="success" onClick={handleSave} disabled={saving}>
+          {saving ? '保存中...' : '✓ 設定を保存（Supabase）'}
+        </Btn>
+      </div>
     </div>
   )
 }
