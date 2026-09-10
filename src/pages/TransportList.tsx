@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, PageHeader, Select } from '../components/UI'
 import { supabase } from '../lib/supabase'
 import type { TransportReport } from '../types/transport'
+import { FARE_TABLE, FROM_AREAS, getToAreas, getFare, TENKO_OPTIONS } from '../lib/fareTable'
 
 // ステータスバッジ
 function SentBadge({ sent }: { sent: boolean }) {
@@ -17,11 +18,167 @@ function SentBadge({ sent }: { sent: boolean }) {
   )
 }
 
+// 編集モーダル
+function EditModal({ report, onClose, onSave, onDelete }: {
+  report: TransportReport
+  onClose: () => void
+  onSave: (updated: TransportReport) => void
+  onDelete: (id: string) => void
+}) {
+  const [f, setF] = useState({
+    date: report.date,
+    fromArea: report.from_area,
+    toArea: report.to_area,
+    tenkoIdx: TENKO_OPTIONS.findIndex(o => o.value === report.tenko_fee && o.label === report.tenko_label) ?? 0,
+    toll: String(report.toll_fee || ''),
+    passengers: report.passengers,
+    notes: report.notes,
+    billMonth: report.bill_month,
+  })
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const set = (key: string) => (v: string | number) => setF(prev => ({ ...prev, [key]: v }))
+
+  const toAreas = getToAreas(f.fromArea)
+  const fare = getFare(f.fromArea, f.toArea)
+  const tenkoOpt = TENKO_OPTIONS[f.tenkoIdx] ?? TENKO_OPTIONS[0]
+  const tenkoFee = tenkoOpt.value
+  const tollFee = parseInt(f.toll) || 0
+  const total = (fare ?? 0) + tenkoFee
+
+  const handleSave = async () => {
+    setSaving(true)
+    const updated: TransportReport = {
+      ...report,
+      date: f.date,
+      from_area: f.fromArea,
+      to_area: f.toArea,
+      fare: fare ?? 0,
+      tenko_label: tenkoOpt.label,
+      tenko_fee: tenkoFee,
+      toll_fee: tollFee,
+      passengers: f.passengers,
+      notes: f.notes,
+      total,
+      bill_month: f.billMonth,
+    }
+    const { error } = await supabase.from('transport_reports').update(updated).eq('id', report.id)
+    if (!error) onSave(updated)
+    setSaving(false)
+  }
+
+  const handleDelete = async () => {
+    if (!confirmDelete) { setConfirmDelete(true); return }
+    setDeleting(true)
+    await supabase.from('transport_reports').delete().eq('id', report.id)
+    onDelete(report.id)
+    setDeleting(false)
+  }
+
+  const overlay: React.CSSProperties = {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  }
+  const modal: React.CSSProperties = {
+    background: 'var(--surface)', borderRadius: 12, width: '90%', maxWidth: 560,
+    maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+  }
+  const header: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '16px 20px', borderBottom: '1px solid var(--border)',
+  }
+  const body: React.CSSProperties = { padding: '16px 20px' }
+  const footer: React.CSSProperties = {
+    display: 'flex', gap: 8, padding: '12px 20px',
+    borderTop: '1px solid var(--border)', justifyContent: 'space-between',
+  }
+  const row: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }
+  const fld: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 }
+  const lbl: React.CSSProperties = { fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }
+  const inp: React.CSSProperties = { padding: '7px 10px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', fontSize: 13, background: 'var(--surface2)', color: 'var(--text)', width: '100%', appearance: 'none' as const }
+  const btn = (variant: 'primary' | 'secondary' | 'danger'): React.CSSProperties => ({
+    padding: '8px 16px', borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500,
+    cursor: 'pointer', border: 'none',
+    background: variant === 'primary' ? 'var(--navy)' : variant === 'danger' ? 'var(--danger)' : 'var(--surface2)',
+    color: variant === 'secondary' ? 'var(--text)' : '#fff',
+  })
+
+  return (
+    <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={modal}>
+        <div style={header}>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>🚗 送迎日報 編集</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+        </div>
+        <div style={body}>
+          <div style={row}>
+            <div style={fld}><div style={lbl}>稼働日</div><input type="date" style={inp} value={f.date} onChange={e => set('date')(e.target.value)} /></div>
+            <div style={fld}><div style={lbl}>乗客人数</div>
+              <select style={inp} value={f.passengers} onChange={e => set('passengers')(e.target.value)}>
+                <option value="—（点呼のみ）">—（点呼のみ）</option>
+                <option value="1名">1名</option><option value="2名">2名</option>
+                <option value="3名">3名</option><option value="4名">4名</option>
+                <option value="5名以上">5名以上</option>
+              </select>
+            </div>
+          </div>
+          <div style={row}>
+            <div style={fld}><div style={lbl}>出発エリア</div>
+              <select style={inp} value={f.fromArea} onChange={e => setF(p => ({ ...p, fromArea: e.target.value, toArea: '' }))}>
+                <option value="">-- 選択 --</option>
+                {FROM_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+            <div style={fld}><div style={lbl}>到着エリア</div>
+              <select style={inp} value={f.toArea} onChange={e => set('toArea')(e.target.value)} disabled={!f.fromArea}>
+                <option value="">-- 選択 --</option>
+                {toAreas.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+          </div>
+          {/* 旅客運送報酬表示 */}
+          <div style={{ background: fare !== null ? 'var(--success-bg)' : 'var(--surface2)', border: `1px solid ${fare !== null ? 'var(--success)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>旅客運送報酬（自動計算）<br /><span style={{ fontSize: 13, color: fare !== null ? 'var(--success)' : 'var(--text-muted)' }}>{f.fromArea && f.toArea ? `${f.fromArea} → ${f.toArea}` : '—'}</span></div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: fare !== null ? 'var(--success)' : 'var(--text-muted)' }}>{fare !== null ? `¥${fare.toLocaleString()}` : '¥ —'}</div>
+          </div>
+          <div style={row}>
+            <div style={fld}><div style={lbl}>点呼手当</div>
+              <select style={inp} value={String(f.tenkoIdx)} onChange={e => set('tenkoIdx')(parseInt(e.target.value))}>
+                {TENKO_OPTIONS.map((o, i) => <option key={i} value={i}>{o.label}{o.value > 0 ? ` ¥${o.value.toLocaleString()}` : ''}</option>)}
+              </select>
+            </div>
+            <div style={fld}><div style={lbl}>高速代・駐車場（立替）</div><input type="number" style={inp} value={f.toll} onChange={e => set('toll')(e.target.value)} placeholder="0" /></div>
+          </div>
+          <div style={{ ...fld, marginBottom: 10 }}><div style={lbl}>備考</div><input style={inp} value={f.notes} onChange={e => set('notes')(e.target.value)} /></div>
+          <div style={{ ...fld, marginBottom: 10 }}><div style={lbl}>請求対象月</div><input type="month" style={inp} value={f.billMonth} onChange={e => set('billMonth')(e.target.value)} /></div>
+          {/* 合計 */}
+          <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius)', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>合計手当</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--navy)' }}>¥{total.toLocaleString()}</div>
+          </div>
+        </div>
+        <div style={footer}>
+          <button style={btn('danger')} onClick={handleDelete} disabled={deleting}>
+            {confirmDelete ? '本当に削除する' : '🗑 削除'}
+          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={btn('secondary')} onClick={onClose}>キャンセル</button>
+            <button style={btn('primary')} onClick={handleSave} disabled={saving}>{saving ? '保存中...' : '💾 保存'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function TransportList() {
   const [reports, setReports] = useState<TransportReport[]>([])
   const [loading, setLoading] = useState(true)
   const [filterYear, setFilterYear] = useState('')
   const [filterMonth, setFilterMonth] = useState('')
+  const [editReport, setEditReport] = useState<TransportReport | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -44,11 +201,19 @@ export default function TransportList() {
   const totalTenko  = filtered.reduce((s, r) => s + (r.tenko_fee ?? 0), 0)
   const totalAmount = filtered.reduce((s, r) => s + (r.total ?? 0), 0)
 
+  const handleSave = (updated: TransportReport) => {
+    setReports(prev => prev.map(r => r.id === updated.id ? updated : r))
+    setEditReport(null)
+  }
+  const handleDelete = (id: string) => {
+    setReports(prev => prev.filter(r => r.id !== id))
+    setEditReport(null)
+  }
+
   return (
     <div style={{ padding: '20px 22px' }}>
       <PageHeader title="送迎日報一覧" sub="送迎業務（二種免許）の日報一覧" />
 
-      {/* フィルター */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <Select value={filterYear} onChange={v => { setFilterYear(v); setFilterMonth('') }}>
           <option value="">すべての年</option>
@@ -60,11 +225,10 @@ export default function TransportList() {
         </Select>
       </div>
 
-      {/* サマリー */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         {[
           { label: '件数',         value: `${filtered.length}件` },
-          { label: '旅客運送手当', value: `¥${totalFare.toLocaleString()}`,   color: 'var(--accent)' },
+          { label: '旅客運送報酬', value: `¥${totalFare.toLocaleString()}`,   color: 'var(--accent)' },
           { label: '点呼手当',     value: `¥${totalTenko.toLocaleString()}` },
           { label: '合計手当',     value: `¥${totalAmount.toLocaleString()}`, color: 'var(--accent)', bold: true },
         ].map(c => (
@@ -76,13 +240,13 @@ export default function TransportList() {
 
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-          💡 送迎業務（二種免許）の日報一覧
+          💡 行をクリックすると編集できます
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
-                {['稼働日', '出発エリア', '到着エリア', '乗客', '旅客運送手当', '点呼手当', '高速代等（立替）', '合計手当', '状態'].map(h => (
+                {['稼働日', '出発エリア', '到着エリア', '乗客', '旅客運送報酬', '点呼手当', '高速代等（立替）', '合計手当', '状態'].map(h => (
                   <th key={h} style={{ padding: '7px 10px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textAlign: 'left', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '.3px' }}>{h}</th>
                 ))}
               </tr>
@@ -93,34 +257,37 @@ export default function TransportList() {
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={9} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>送迎日報がありません</td></tr>
               ) : filtered.map(r => (
-                <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
+                <tr key={r.id}
+                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                  onClick={() => setEditReport(r)}
+                  onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--accent-bg)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
                   <td style={{ padding: '10px 10px', fontSize: 12, whiteSpace: 'nowrap' }}>{r.date}</td>
                   <td style={{ padding: '10px 10px', fontSize: 12 }}>{r.from_area || '—'}</td>
                   <td style={{ padding: '10px 10px', fontSize: 12 }}>{r.to_area || '—'}</td>
                   <td style={{ padding: '10px 10px', fontSize: 12 }}>{r.passengers || '—'}</td>
-                  <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'right' }}>
-                    {r.fare > 0 ? `¥${r.fare.toLocaleString()}` : '—'}
-                  </td>
+                  <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'right' }}>{r.fare > 0 ? `¥${r.fare.toLocaleString()}` : '—'}</td>
                   <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'right' }}>
                     {r.tenko_fee > 0 ? <><div>¥{r.tenko_fee.toLocaleString()}</div><div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.tenko_label}</div></> : '—'}
                   </td>
-                  <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'right', color: 'var(--text-muted)' }}>
-                    {r.toll_fee > 0 ? `¥${r.toll_fee.toLocaleString()}` : '—'}
-                  </td>
-                  <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>
-                    ¥{(r.total ?? 0).toLocaleString()}
-                  </td>
-                  <td style={{ padding: '10px 10px' }}>
-                    <SentBadge sent={r.sent} />
-                  </td>
+                  <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{r.toll_fee > 0 ? `¥${r.toll_fee.toLocaleString()}` : '—'}</td>
+                  <td style={{ padding: '10px 10px', fontSize: 12, textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>¥{(r.total ?? 0).toLocaleString()}</td>
+                  <td style={{ padding: '10px 10px' }}><SentBadge sent={r.sent} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Card>
+
+      {editReport && (
+        <EditModal
+          report={editReport}
+          onClose={() => setEditReport(null)}
+          onSave={handleSave}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   )
 }
