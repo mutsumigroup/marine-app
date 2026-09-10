@@ -3,6 +3,7 @@ import { Card, PageHeader, Select } from '../components/UI'
 import { supabase } from '../lib/supabase'
 import type { TransportReport } from '../types/transport'
 import { FARE_TABLE, FROM_AREAS, getToAreas, getFare, TENKO_OPTIONS } from '../lib/fareTable'
+import { sendEmail } from '../lib/email'
 
 // ステータスバッジ
 function SentBadge({ sent }: { sent: boolean }) {
@@ -19,11 +20,12 @@ function SentBadge({ sent }: { sent: boolean }) {
 }
 
 // 編集モーダル
-function EditModal({ report, onClose, onSave, onDelete }: {
+function EditModal({ report, onClose, onSave, onDelete, dailyMail }: {
   report: TransportReport
   onClose: () => void
   onSave: (updated: TransportReport) => void
   onDelete: (id: string) => void
+  dailyMail: string
 }) {
   const [f, setF] = useState({
     date: report.date,
@@ -38,6 +40,8 @@ function EditModal({ report, onClose, onSave, onDelete }: {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sendResult, setSendResult] = useState('')
 
   const set = (key: string) => (v: string | number) => setF(prev => ({ ...prev, [key]: v }))
 
@@ -67,6 +71,32 @@ function EditModal({ report, onClose, onSave, onDelete }: {
     const { error } = await supabase.from('transport_reports').update(updated).eq('id', report.id)
     if (!error) onSave(updated)
     setSaving(false)
+  }
+
+  const handleSendEmail = async () => {
+    setSending(true)
+    setSendResult('')
+    try {
+      const lines = [
+        '【送迎日報】',
+        `稼働日：${f.date}`,
+        f.fromArea && f.toArea ? `ルート：${f.fromArea} → ${f.toArea}` : '運行：点呼のみ',
+        f.fromArea && f.toArea ? `旅客運送報酬：¥${(fare ?? 0).toLocaleString()}` : '',
+        `点呼手当：${tenkoOpt.label}${tenkoFee > 0 ? `（¥${tenkoFee.toLocaleString()}）` : ''}`,
+        `高速代等（立替）：¥${tollFee.toLocaleString()} ※別途実費精算`,
+        `合計手当：¥${total.toLocaleString()}`,
+        f.notes ? `備考：${f.notes}` : '',
+      ].filter(Boolean).join('\n')
+      await sendEmail({
+        to_email: dailyMail,
+        subject: `【送迎日報】${f.date}${f.fromArea && f.toArea ? ` ${f.fromArea}→${f.toArea}` : ' 点呼のみ'}`,
+        message: lines,
+      })
+      setSendResult('success')
+    } catch {
+      setSendResult('error')
+    }
+    setSending(false)
   }
 
   const handleDelete = async () => {
@@ -165,6 +195,12 @@ function EditModal({ report, onClose, onSave, onDelete }: {
           </button>
           <div style={{ display: 'flex', gap: 8 }}>
             <button style={btn('secondary')} onClick={onClose}>キャンセル</button>
+            {dailyMail && (
+              <button style={{...btn('secondary'), color: sending ? '#aaa' : '#16a34a', borderColor: '#16a34a'}}
+                onClick={handleSendEmail} disabled={sending}>
+                {sending ? '送信中...' : sendResult === 'success' ? '✅ 送信済' : sendResult === 'error' ? '❌ 失敗' : '📤 メール送信'}
+              </button>
+            )}
             <button style={btn('primary')} onClick={handleSave} disabled={saving}>{saving ? '保存中...' : '💾 保存'}</button>
           </div>
         </div>
@@ -173,7 +209,7 @@ function EditModal({ report, onClose, onSave, onDelete }: {
   )
 }
 
-export default function TransportList() {
+export default function TransportList({ dailyMail = '' }: { dailyMail?: string }) {
   const [reports, setReports] = useState<TransportReport[]>([])
   const [loading, setLoading] = useState(true)
   const [filterYear, setFilterYear] = useState('')
@@ -286,6 +322,7 @@ export default function TransportList() {
           onClose={() => setEditReport(null)}
           onSave={handleSave}
           onDelete={handleDelete}
+          dailyMail={dailyMail}
         />
       )}
     </div>
