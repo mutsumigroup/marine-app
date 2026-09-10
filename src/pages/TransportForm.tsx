@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Card, CardTitle, Field, Input, Select, Btn, PageHeader } from '../components/UI'
-import { FARE_TABLE, FROM_AREAS, getToAreas, getFare, TENKO_OPTIONS } from '../lib/fareTable'
+import { TENKO_OPTIONS } from '../lib/fareTable'
 import type { TransportReport } from '../types/transport'
 import { supabase } from '../lib/supabase'
 import { sendEmail } from '../lib/email'
@@ -31,6 +31,30 @@ export default function TransportForm({ settings, onSuccess }: Props) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
+  // Supabaseからエリア動的取得
+  const [fareMap, setFareMap] = useState<Record<string, Record<string, number>>>({})
+  const [loadingAreas, setLoadingAreas] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from('transport_fare_settings').select('*')
+      if (data && data.length > 0) {
+        const map: Record<string, Record<string, number>> = {}
+        data.forEach((d: any) => {
+          if (!map[d.from_area]) map[d.from_area] = {}
+          map[d.from_area][d.to_area] = d.fare
+        })
+        setFareMap(map)
+      } else {
+        // fallback: fareTable.tsの静的データ
+        const { FARE_TABLE } = await import('../lib/fareTable')
+        setFareMap(FARE_TABLE as Record<string, Record<string, number>>)
+      }
+      setLoadingAreas(false)
+    }
+    load()
+  }, [])
+
   const set = (key: keyof typeof EMPTY) => (v: string | number) =>
     setF(prev => ({ ...prev, [key]: v }))
 
@@ -39,8 +63,9 @@ export default function TransportForm({ settings, onSuccess }: Props) {
     setF(prev => ({ ...prev, fromArea: v, toArea: '' }))
   }
 
-  const toAreas = getToAreas(f.fromArea)
-  const fare = getFare(f.fromArea, f.toArea)
+  const fromAreas = Object.keys(fareMap).sort()
+  const toAreas = f.fromArea && fareMap[f.fromArea] ? Object.keys(fareMap[f.fromArea]).sort() : []
+  const fare = (f.fromArea && f.toArea && fareMap[f.fromArea]?.[f.toArea] !== undefined) ? fareMap[f.fromArea][f.toArea] : null
   const tenkoOpt = TENKO_OPTIONS[f.tenkoIdx]
   const tenkoFee = tenkoOpt?.value ?? 0
   const tollFee = parseInt(f.toll) || 0
@@ -112,6 +137,8 @@ export default function TransportForm({ settings, onSuccess }: Props) {
     }
   }, [f, fare, tenkoFee, tollFee, total, canSubmit, tenkoOpt, settings, onSuccess])
 
+  if (loadingAreas) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>エリア情報を読み込み中...</div>
+
   return (
     <div style={{ padding: '20px 22px' }}>
       <PageHeader title="送迎日報作成" sub="二種免許を使用した送迎業務の日報（旅客運送手当表に基づく自動計算）" />
@@ -149,7 +176,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
           <Field label="出発エリア（点呼のみの場合は選択不要）">
             <Select value={f.fromArea} onChange={handleFromChange}>
               <option value="">-- 選択してください --</option>
-              {FROM_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+              {fromAreas.map(a => <option key={a} value={a}>{a}</option>)}
             </Select>
           </Field>
           <Field label="到着エリア（点呼のみの場合は選択不要）">
