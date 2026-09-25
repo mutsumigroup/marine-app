@@ -208,7 +208,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
     setSubmitting(true)
     const ok = await onSubmit({ date: f.date, port: f.port, ship: f.ship, crew: parseInt(f.crew) || 0, category: f.category, work: f.work, amount: parseInt(f.amount) || 0, park_place: f.parkPlace, park_fee: parseInt(f.parkFee) || 0, hw_from1: f.hwFrom1, hw_to1: f.hwTo1, hw_from2: f.hwFrom2, hw_to2: f.hwTo2, hw_fee: parseInt(f.hwFee) || 0, hw_voucher: f.hwVoucher, meal: parseInt(f.meal) || 0, hotel_fee: parseInt(f.hotelFee) || 0,
         shinkansen_fee: parseInt(f.shinkansenFee) || 0,
-        other_exp: parseInt(f.otherExp) || 0, expenses: totalExp, extra_expenses: extraItems.length > 0 ? extraItems : undefined, voucher: f.vouchers.join(","), bill_month: f.billMonth, notes: f.notes, invoiced: false, paid: false })
+        other_exp: parseInt(f.otherExp) || 0, expenses: totalExp, extra_expenses: extraItems.length > 0 ? extraItems : undefined, voucher: f.vouchers.join("|||"), bill_month: f.billMonth, notes: f.notes, invoiced: false, paid: false })
     if (ok) { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfNames([]); localStorage.removeItem('marine_daily_draft'); setSection('basic'); setExtraItems([]) }
     setSubmitting(false)
   }
