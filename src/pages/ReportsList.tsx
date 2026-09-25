@@ -589,8 +589,11 @@ const COLS = [
 export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpdateReport, onDeleteReport, prices = {}, settings }: Props) {
   const [searchParams, setSearchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState<'ship' | 'transport'>('ship')
-  const [filterYear, setFilterYear] = useState('')
-  const [filterMonth, setFilterMonth] = useState('')
+  const _now = new Date()
+  const _currentYear = String(_now.getFullYear())
+  const _currentMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`
+  const [filterYear, setFilterYear] = useState(_currentYear)
+  const [filterMonth, setFilterMonth] = useState(_currentMonth)
   const [filterCategory, setFilterCategory] = useState('')
   // URLパラメータからcategoryを読み取る
   React.useEffect(() => {
