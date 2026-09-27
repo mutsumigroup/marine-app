@@ -503,7 +503,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
           </button>
         ))}
       </div>
-      {activeTab === 'transport' ? <TransportInvoices /> : <div>
+      {activeTab === 'transport' ? <TransportInvoices settings={settings} /> : <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         {[
           { label: '請求総額',   value: `¥${totalAmt.toLocaleString()}`,  color: '#1a1a1a' },
