@@ -30,6 +30,7 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail, fareMap }: {
     passengers: report.passengers,
     notes: report.notes,
     billMonth: report.bill_month,
+    shipName: (report as any).ship_name || '',
   })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -49,7 +50,7 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail, fareMap }: {
 
   const handleSave = async () => {
     setSaving(true)
-    const updated: TransportReport = { ...report, date: f.date, from_area: f.fromArea, to_area: f.toArea, fare: fare ?? 0, tenko_label: tenkoOpt.label, tenko_fee: tenkoFee, toll_fee: tollFee, passengers: f.passengers, notes: f.notes, total, bill_month: f.billMonth }
+    const updated: TransportReport = { ...report, date: f.date, from_area: f.fromArea, to_area: f.toArea, fare: fare ?? 0, tenko_label: tenkoOpt.label, tenko_fee: tenkoFee, toll_fee: tollFee, passengers: f.passengers, notes: f.notes, total, bill_month: f.billMonth, ...(({ ship_name: f.shipName }) as any) }
     const { error } = await supabase.from('transport_reports').update(updated).eq('id', report.id)
     if (!error) onSave(updated)
     setSaving(false)
@@ -95,6 +96,12 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail, fareMap }: {
               <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>稼働日</div>
               <input type="date" style={inp} value={f.date} onChange={e => set('date')(e.target.value)} />
             </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>船名</div>
+              <input style={inp} value={f.shipName} onChange={e => set('shipName')(e.target.value)} placeholder="例：スタアオブホノルル" />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>乗客人数</div>
               <select style={inp} value={f.passengers} onChange={e => set('passengers')(e.target.value)}>
@@ -233,22 +240,23 @@ export default function TransportList({ dailyMail = '' }: { dailyMail?: string }
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
-                {([['稼働日','90px','left'],['出発エリア','110px','left'],['到着エリア','110px','left'],['乗客','60px','left'],['旅客運送報酬','100px','right'],['点呼手当','120px','right'],['高速代等','80px','right'],['合計手当','90px','right']] as [string,string,string][]).map(([h,w,align]) => (
+                {([['稼働日','90px','left'],['船名','100px','left'],['出発エリア','110px','left'],['到着エリア','110px','left'],['乗客','60px','left'],['旅客運送報酬','100px','right'],['点呼手当','120px','right'],['高速代等','80px','right'],['合計手当','90px','right']] as [string,string,string][]).map(([h,w,align]) => (
                   <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textAlign: align as 'left'|'right', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', width: w }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>読み込み中...</td></tr>
+                <tr><td colSpan={9} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>読み込み中...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>送迎日報がありません</td></tr>
+                <tr><td colSpan={9} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>送迎日報がありません</td></tr>
               ) : filtered.map(r => (
                 <tr key={r.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                   onClick={() => setEditReport(r)}
                   onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--accent-bg)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
                   <td style={{ padding: '10px 8px', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.date}</td>
+                  <td style={{ padding: '10px 8px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(r as any).ship_name || '—'}</td>
                   <td style={{ padding: '10px 8px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.from_area || '—'}</td>
                   <td style={{ padding: '10px 8px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.to_area || '—'}</td>
                   <td style={{ padding: '10px 8px', fontSize: 12 }}>{r.passengers || '—'}</td>

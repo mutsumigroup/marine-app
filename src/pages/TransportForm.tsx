@@ -23,6 +23,7 @@ const EMPTY = {
   passengers: '—（点呼のみ）',
   notes: '',
   billMonth: thisMonth(),
+  shipName: '',
 }
 
 export default function TransportForm({ settings, onSuccess }: Props) {
@@ -82,7 +83,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
     }
     setSubmitting(true)
     try {
-      const record: Omit<TransportReport, 'id' | 'created_at' | 'updated_at'> = {
+      const record = {
         date: f.date,
         from_area: f.fromArea,
         to_area: f.toArea,
@@ -95,6 +96,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
         total,
         bill_month: f.billMonth,
         sent: false,
+        ship_name: f.shipName,
       }
 
       // Supabaseへ保存
@@ -161,6 +163,11 @@ export default function TransportForm({ settings, onSuccess }: Props) {
           <Field label="稼働日" required>
             <Input type="date" value={f.date} onChange={set('date')} />
           </Field>
+          <Field label="船名">
+            <Input value={f.shipName} onChange={set('shipName')} placeholder="例：スタアオブホノルル" />
+          </Field>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
           <Field label="乗客人数">
             <Select value={f.passengers} onChange={set('passengers')}>
               <option value="—（点呼のみ）">—（点呼のみ）</option>
