@@ -233,16 +233,16 @@ export default function TransportList({ dailyMail = '' }: { dailyMail?: string }
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
-                {[['稼働日','90px'],['出発エリア','110px'],['到着エリア','110px'],['乗客','60px'],['旅客運送報酬','100px'],['点呼手当','120px'],['高速代等','80px'],['合計手当','90px'],['状態','70px']].map(([h,w]) => (
+                {[['稼働日','90px'],['出発エリア','110px'],['到着エリア','110px'],['乗客','60px'],['旅客運送報酬','100px'],['点呼手当','120px'],['高速代等','80px'],['合計手当','90px']].map(([h,w]) => (
                   <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textAlign: 'left', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', width: w }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>読み込み中...</td></tr>
+                <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>読み込み中...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>送迎日報がありません</td></tr>
+                <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>送迎日報がありません</td></tr>
               ) : filtered.map(r => (
                 <tr key={r.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                   onClick={() => setEditReport(r)}
@@ -256,7 +256,6 @@ export default function TransportList({ dailyMail = '' }: { dailyMail?: string }
                   <td style={{ padding: '10px 8px', fontSize: 11, textAlign: 'right' }}>{r.tenko_fee > 0 ? <><div>¥{r.tenko_fee.toLocaleString()}</div><div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.tenko_label}</div></> : '—'}</td>
                   <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'right', color: 'var(--text-muted)' }}>{r.toll_fee > 0 ? `¥${r.toll_fee.toLocaleString()}` : '—'}</td>
                   <td style={{ padding: '10px 8px', fontSize: 12, textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>¥{(r.total ?? 0).toLocaleString()}</td>
-                  <td style={{ padding: '10px 8px' }}><SentBadge sent={r.sent} /></td>
                 </tr>
               ))}
             </tbody>
