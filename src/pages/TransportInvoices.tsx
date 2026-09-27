@@ -160,7 +160,7 @@ function TransportInvoiceSheet({ summary, settings, onClose, onStatusChange }: {
                 {sorted.map((r, i) => (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
                     <td style={tdS}>{r.date}</td>
-                    <td style={tdS}>{r.from_area} → {r.to_area}</td>
+                    <td style={tdS}>{r.from_area && r.to_area ? `${r.from_area} → ${r.to_area}` : r.from_area || r.to_area || '—'}</td>
                     <td style={{ ...tdS, maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.passengers || '—'}</td>
                     <td style={{ ...tdS, textAlign: 'right' }}>¥{(r.fare ?? 0).toLocaleString()}</td>
                     <td style={{ ...tdS, textAlign: 'right' }}>{(r.tenko_fee ?? 0) > 0 ? `¥${r.tenko_fee.toLocaleString()}` : '—'}</td>
