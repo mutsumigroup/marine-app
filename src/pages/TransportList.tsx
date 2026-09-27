@@ -233,8 +233,8 @@ export default function TransportList({ dailyMail = '' }: { dailyMail?: string }
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
-                {[['稼働日','90px'],['出発エリア','110px'],['到着エリア','110px'],['乗客','60px'],['旅客運送報酬','100px'],['点呼手当','120px'],['高速代等','80px'],['合計手当','90px']].map(([h,w]) => (
-                  <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textAlign: 'left', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', width: w }}>{h}</th>
+                {([['稼働日','90px','left'],['出発エリア','110px','left'],['到着エリア','110px','left'],['乗客','60px','left'],['旅客運送報酬','100px','right'],['点呼手当','120px','right'],['高速代等','80px','right'],['合計手当','90px','right']] as [string,string,string][]).map(([h,w,align]) => (
+                  <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textAlign: align as 'left'|'right', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', width: w }}>{h}</th>
                 ))}
               </tr>
             </thead>
