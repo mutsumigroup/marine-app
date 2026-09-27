@@ -82,6 +82,15 @@ function InlineLabel({ value, onChange }: { value: string; onChange: (v: string)
   )
 }
 
+const EXPENSE_KEY_MAP: Record<string, string> = {
+  '駐車場料金': 'park',
+  '高速料金':   'hw',
+  '食事代':     'meal',
+  'ホテル代金': 'hotel',
+  '新幹線代金': 'shinkansen',
+  'その他立替': 'other',
+}
+
 function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice, processing }: {
   inv: Invoice; reports: Report[]; settings: Settings
   onClose: () => void; onSend: (id: string) => Promise<void>
@@ -141,6 +150,13 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   const [rows, setRows] = useState(initRows)
   const [expItems, setExpItems] = useState(initExp)
   const [saving, setSaving] = useState(false)
+
+  const handleExpenseClick = (label: string) => {
+    const expKey = EXPENSE_KEY_MAP[label]
+    let url = `#/reports?month=${inv.billing_month}&from=invoices`
+    if (expKey) url += `&expense=${expKey}`
+    window.location.href = url
+  }
   const [pdfGenerating, setPdfGenerating] = useState(false)
   const sheetRef = useRef<HTMLDivElement>(null)
 
@@ -334,7 +350,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                 ＋ 項目追加
               </button>
             </div>
-            <div className="no-print" style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>項目名・金額をクリックして編集、×で削除できます</div>
+            <div className="no-print" style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>項目名・金額をクリックして編集、×で削除、📋で日報一覧を確認</div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
 
@@ -345,6 +361,11 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                     </td>
                     <td style={{ ...tdS, textAlign: 'right' }}>
                       ¥<InlineNum value={e.amount} onChange={v => setExpAmt(i, v)} width={90} />
+                    </td>
+                    <td style={{ padding: '7px 4px', textAlign: 'center', width: 24 }} className="no-print">
+                      <button onClick={() => handleExpenseClick(e.label)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontSize: 13, lineHeight: 1, padding: 0 }}
+                        title="日報一覧で確認">📋</button>
                     </td>
                     <td style={{ padding: '7px 4px', textAlign: 'center', width: 24 }}>
                       <button onClick={() => removeExpItem(i)}

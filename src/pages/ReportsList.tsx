@@ -595,6 +595,30 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const [filterYear, setFilterYear] = useState(_currentYear)
   const [filterMonth, setFilterMonth] = useState(_currentMonth)
   const [filterCategory, setFilterCategory] = useState('')
+  const [filterExpense, setFilterExpense] = useState('')
+
+  const EXPENSE_LABEL_MAP: Record<string, string> = {
+    park: '駐車場料金',
+    hw: '高速料金',
+    meal: '食事代',
+    hotel: 'ホテル代金',
+    shinkansen: '新幹線代金',
+    other: 'その他立替',
+  }
+
+  const expenseFilter = (r: Report) => {
+    if (!filterExpense) return true
+    switch (filterExpense) {
+      case 'park': return r.park_fee > 0
+      case 'hw': return r.hw_fee > 0
+      case 'meal': return r.meal > 0
+      case 'hotel': return (r.hotel_fee ?? 0) > 0
+      case 'shinkansen': return (r.shinkansen_fee ?? 0) > 0
+      case 'other': return r.other_exp > 0
+      default: return true
+    }
+  }
+
   // URLパラメータからcategoryを読み取る
   React.useEffect(() => {
     const cat = searchParams.get('category')
@@ -604,6 +628,8 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       setFilterYear(month.slice(0, 4))
       setFilterMonth(month)
     }
+    const expense = searchParams.get('expense')
+    if (expense) setFilterExpense(expense)
   }, [searchParams])
   const fromInvoices = searchParams.get('from') === 'invoices'
   const backMonth = searchParams.get('month')
@@ -637,7 +663,8 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const filtered = reports.filter(r =>
     (!filterYear || r.bill_month?.startsWith(filterYear)) &&
     (!filterMonth || r.bill_month === filterMonth) &&
-    (!filterCategory || r.category === filterCategory)
+    (!filterCategory || r.category === filterCategory) &&
+    expenseFilter(r)
   )
   const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date))
   const totalAmount = filtered.reduce((s, r) => s + r.amount, 0)
@@ -678,6 +705,12 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
           </div>
         )}
       </PageHeader>
+      {filterExpense && (
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '8px 14px', marginBottom: 12, fontSize: 12, color: '#1d4ed8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>📋 請求書から移動：<strong>{EXPENSE_LABEL_MAP[filterExpense] ?? filterExpense}</strong> がある日報のみ表示</span>
+          <button onClick={() => setFilterExpense('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: 11, padding: '2px 6px' }}>✕ 絞り込み解除</button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>件数: <strong>{filtered.length}件</strong></div>
