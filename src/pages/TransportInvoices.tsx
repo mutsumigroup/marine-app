@@ -137,8 +137,8 @@ function TransportInvoiceSheet({ summary, settings, onClose, onStatusChange }: {
 
           {/* 合計金額バー */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1a1a', color: '#fff', borderRadius: 6, padding: '10px 16px', marginBottom: 20 }}>
-            <div style={{ fontSize: 12 }}>ご請求金額（税抜）</div>
-            <div style={{ fontSize: 20, fontWeight: 500 }}>¥{summary.total.toLocaleString()}</div>
+            <div style={{ fontSize: 12 }}>ご請求金額（税込）</div>
+            <div style={{ fontSize: 20, fontWeight: 500 }}>¥{Math.floor(summary.total * 1.1).toLocaleString()}</div>
           </div>
 
           {/* 業務明細テーブル */}
@@ -186,8 +186,14 @@ function TransportInvoiceSheet({ summary, settings, onClose, onStatusChange }: {
                   <span>高速代等 小計</span><span>¥{summary.totalToll.toLocaleString()}</span>
                 </div>
               )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 3 }}>
+                <span>小計（税抜）</span><span>¥{summary.total.toLocaleString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 3 }}>
+                <span>消費税（10%）</span><span>¥{Math.floor(summary.total * 0.1).toLocaleString()}</span>
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, borderTop: '0.5px solid #ddd', paddingTop: 6, marginTop: 3 }}>
-                <span>合計</span><span>¥{summary.total.toLocaleString()}</span>
+                <span>合計（税込）</span><span>¥{Math.floor(summary.total * 1.1).toLocaleString()}</span>
               </div>
             </div>
           </div>
