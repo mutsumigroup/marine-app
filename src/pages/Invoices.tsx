@@ -548,7 +548,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
                 <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, flexWrap: 'wrap' }}>
                   <span>業務 <strong style={{color:'var(--text)'}}>¥{inv.subtotal.toLocaleString()}</strong></span>
                   <span>消費税 <strong style={{color:'var(--text)'}}>¥{inv.tax.toLocaleString()}</strong></span>
-                  <span>立替 <strong style={{color:'var(--text)'}}>¥{inv.expenses.toLocaleString()}</strong></span>
+                  <span>立替 <strong style={{color:'var(--text)'}}>¥{(inv.expense_items && inv.expense_items.length > 0 ? inv.expense_items.reduce((s: number, e: {amount: number}) => s + e.amount, 0) : inv.expenses).toLocaleString()}</strong></span>
                   <span>件数 <strong style={{color:'var(--text)'}}>{mr.length}件</strong></span>
                   {inv.paid_date && <span>入金日 <strong style={{color:'var(--text)'}}>{inv.paid_date}</strong></span>}
                 </div>
