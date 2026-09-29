@@ -218,9 +218,10 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   }
   const [dirty, setDirty] = useState(false)
 
-  // 業務小計は日報のamount合計を使用（日報一覧の売上と一致させる）
-  const subtotal = monthReports.reduce((s, r) => s + (r.amount ?? 0), 0)
-  const tax = Math.round(subtotal * 0.1)
+  // ✅ FIX: 業務小計はrowsの計算値から（テーブル表示と一致 & インライン編集に即時反映）
+  const subtotal = rows.reduce((s, r) => s + r.count * r.shipP + r.crew * r.crewP, 0)
+  // ✅ FIX: 消費税は切り捨て（日本の標準的な計算方法）
+  const tax = Math.floor(subtotal * 0.1)
   const bizTotal = subtotal + tax
   const expenses = expItems.reduce((s, e) => s + e.amount, 0)
   const total = bizTotal + expenses
@@ -524,8 +525,33 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
         {sorted.length === 0
           ? <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>請求書がありません</div>
-          : sorted.map((inv, idx) => {
+          : (() => { const pr = settings.prices ?? {}; return sorted.map((inv, idx) => {
             const mr = reports.filter(r => r.bill_month === inv.billing_month)
+            // ✅ FIX: 業務小計をカテゴリ別count×priceで計算（r.amountではなく）
+            const catSum: Record<string, { count: number; crew: number }> = {}
+            mr.forEach(r => {
+              if (!catSum[r.category]) catSum[r.category] = { count: 0, crew: 0 }
+              catSum[r.category].count++
+              catSum[r.category].crew += r.crew
+            })
+            const liveSub = Object.entries(catSum).reduce((s, [cat, d]) => {
+              const p = pr[cat] ?? { ship: 10000, crew: 1000 }
+              return s + d.count * (p.ship ?? 10000) + d.crew * (p.crew ?? 1000)
+            }, 0)
+            // ✅ FIX: 消費税切り捨て
+            const liveTax = Math.floor(liveSub * 0.1)
+            // ✅ FIX: 立替金はexpense_items優先、なければ日報＋固定費から再計算
+            const liveExp = (() => {
+              if (inv.expense_items && inv.expense_items.length > 0) {
+                return inv.expense_items.reduce((s: number, e: { amount: number }) => s + e.amount, 0)
+              }
+              const reportExp = mr.reduce((s, r) =>
+                s + r.park_fee + r.hw_fee + r.meal + (r.hotel_fee ?? 0) + (r.shinkansen_fee ?? 0) + r.other_exp +
+                ((r as any).extra_expenses ?? []).reduce((es: number, e: { amount: number }) => es + e.amount, 0), 0)
+              const fixedExp = (settings.fixed_expenses ?? []).reduce((s: number, e: { amount: number }) => s + e.amount, 0)
+              return reportExp + fixedExp
+            })()
+            const liveTotal = liveSub + liveTax + liveExp
             return (
               <div key={inv.id} style={{ borderBottom: idx < sorted.length-1 ? '0.5px solid var(--border)' : 'none', padding: '14px 18px', transition: 'background .1s' }}
                 onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background='var(--surface2,#f9f9f9)'}
@@ -533,22 +559,14 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                   <div style={{ fontSize: 14, fontWeight: 600, minWidth: 70 }}>{inv.billing_month}</div>
                   <StatusBadge status={inv.status} />
-                  <div style={{ marginLeft: 'auto', fontSize: 16, fontWeight: 600 }}>
-                    {(() => {
-                      const liveSubtotal = mr.reduce((s, r) => s + (r.amount ?? 0), 0)
-                      const liveTax = Math.round(liveSubtotal * 0.1)
-                      const liveExpenses = inv.expense_items && inv.expense_items.length > 0
-                        ? inv.expense_items.reduce((s: number, e: {amount: number}) => s + e.amount, 0)
-                        : inv.expenses
-                      const liveTotal = liveSubtotal + liveTax + liveExpenses
-                      return `¥${liveTotal.toLocaleString()}`
-                    })()}
-                  </div>
+                  {/* ✅ FIX: ライブ計算値を表示 */}
+                  <div style={{ marginLeft: 'auto', fontSize: 16, fontWeight: 600 }}>¥{liveTotal.toLocaleString()}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, flexWrap: 'wrap' }}>
-                  <span>業務 <strong style={{color:'var(--text)'}}>¥{inv.subtotal.toLocaleString()}</strong></span>
-                  <span>消費税 <strong style={{color:'var(--text)'}}>¥{inv.tax.toLocaleString()}</strong></span>
-                  <span>立替 <strong style={{color:'var(--text)'}}>¥{(inv.expense_items && inv.expense_items.length > 0 ? inv.expense_items.reduce((s: number, e: {amount: number}) => s + e.amount, 0) : inv.expenses).toLocaleString()}</strong></span>
+                  {/* ✅ FIX: 詳細ラベルもライブ計算値を表示（古いDB値ではなく） */}
+                  <span>業務 <strong style={{color:'var(--text)'}}>¥{liveSub.toLocaleString()}</strong></span>
+                  <span>消費税 <strong style={{color:'var(--text)'}}>¥{liveTax.toLocaleString()}</strong></span>
+                  <span>立替 <strong style={{color:'var(--text)'}}>¥{liveExp.toLocaleString()}</strong></span>
                   <span>件数 <strong style={{color:'var(--text)'}}>{mr.length}件</strong></span>
                   {inv.paid_date && <span>入金日 <strong style={{color:'var(--text)'}}>{inv.paid_date}</strong></span>}
                 </div>
@@ -561,8 +579,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
                 </div>
               </div>
             )
-          })
-        }
+          })})()}
       </div>
       {previewInv && <InvoiceSheet key={previewInv.id} inv={previewInv} reports={reports} settings={settings} onClose={() => setPreviewId(null)} onSend={handleSend} onUpdateInvoice={onUpdateInvoice} processing={processing===previewInv.id} />}
     </div>}
