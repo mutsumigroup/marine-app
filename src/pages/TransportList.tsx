@@ -173,8 +173,8 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail, fareMap }: {
 export default function TransportList({ dailyMail = '' }: { dailyMail?: string }) {
   const [reports, setReports] = useState<TransportReport[]>([])
   const [loading, setLoading] = useState(true)
-  const [filterYear, setFilterYear] = useState('')
-  const [filterMonth, setFilterMonth] = useState('')
+  const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()))
+  const [filterMonth, setFilterMonth] = useState(new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'))
   const [editReport, setEditReport] = useState<TransportReport | null>(null)
   const [fareMap, setFareMap] = useState<Record<string, Record<string, number>>>({})
 
