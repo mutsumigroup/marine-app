@@ -219,7 +219,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   const [dirty, setDirty] = useState(false)
 
   // ✅ FIX: 業務小計はrowsの計算値から（テーブル表示と一致 & インライン編集に即時反映）
-  const subtotal = rows.reduce((s, r) => s + r.count * r.shipP + r.crew * r.crewP, 0)
+  const subtotal = monthReports.reduce((s, r) => s + (r.amount ?? 0), 0)
   // ✅ FIX: 消費税は切り捨て（日本の標準的な計算方法）
   const tax = Math.floor(subtotal * 0.1)
   const bizTotal = subtotal + tax
@@ -528,16 +528,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onPaid, 
           : (() => { const pr = settings.prices ?? {}; return sorted.map((inv, idx) => {
             const mr = reports.filter(r => r.bill_month === inv.billing_month)
             // ✅ FIX: 業務小計をカテゴリ別count×priceで計算（r.amountではなく）
-            const catSum: Record<string, { count: number; crew: number }> = {}
-            mr.forEach(r => {
-              if (!catSum[r.category]) catSum[r.category] = { count: 0, crew: 0 }
-              catSum[r.category].count++
-              catSum[r.category].crew += r.crew
-            })
-            const liveSub = Object.entries(catSum).reduce((s, [cat, d]) => {
-              const p = pr[cat] ?? { ship: 10000, crew: 1000 }
-              return s + d.count * (p.ship ?? 10000) + d.crew * (p.crew ?? 1000)
-            }, 0)
+            const liveSub = mr.reduce((s, r) => s + (r.amount ?? 0), 0)
             // ✅ FIX: 消費税切り捨て
             const liveTax = Math.floor(liveSub * 0.1)
             // ✅ FIX: 立替金はexpense_items優先、なければ日報＋固定費から再計算
