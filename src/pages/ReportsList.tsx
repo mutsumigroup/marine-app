@@ -637,6 +637,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const [hwReport, setHwReport] = useState<Report | null>(null)
   const [editReport, setEditReport] = useState<Report | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectionMode, setSelectionMode] = useState(false)
   const toggleRow = (id: string) => {
     setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
@@ -759,10 +760,13 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
 
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>💡 行をクリックすると編集できます</div>
-          {selectedIds.size > 0 && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(59,130,246,0.1)', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 12px', borderBottom: '1px solid var(--border)' }}>
+            <button onClick={() => { setSelectionMode(v => { if(v) setSelectedIds(new Set()); return !v }) }} style={{ color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600, background: selectionMode ? 'rgba(59,130,246,0.1)' : 'none' }}>{/* selectionModeBtn */}{selectionMode ? '✕ キャンセル' : '☑ 一括ダウンロード'}</button>
+          </div>
+          {selectionMode && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(59,130,246,0.1)', borderBottom: '1px solid var(--border)' }}>
             <span style={{ fontSize: 12, color: 'var(--accent)' }}>{selectedIds.size}件選択中</span>
             <button onClick={() => bulkDownload(sorted.filter(r => selectedIds.has(String(r.id))))} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>📦 PDF一括ダウンロード</button>
-            <button onClick={() => setSelectedIds(new Set())} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 5, padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>解除</button>
+            <button onClick={() => { setSelectionMode(false); setSelectedIds(new Set()) }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 5, padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>解除</button>
           </div>}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
