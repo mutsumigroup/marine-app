@@ -772,9 +772,9 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
-                <th style={{ padding: '7px 8px', width: 36, textAlign: 'center' }}>
+                {selectionMode && <th style={{ padding: '7px 8px', width: 36, textAlign: 'center' }}>
                   <input type="checkbox" checked={sorted.length > 0 && sorted.every(r => selectedIds.has(String(r.id)))} onChange={() => toggleAllRows(sorted)} style={{ cursor: 'pointer' }} />
-                </th>
+                </th>}
                 {COLS.map(([h, w]) => (
                   <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: h === '売上金額' ? 'var(--accent)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.3px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textAlign: 'left', width: w === 'auto' ? undefined : w, background: h === '売上金額' ? 'var(--accent-bg)' : undefined }}>{h}</th>
                 ))}
@@ -787,9 +787,9 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                   <tr key={r.id} onClick={() => setEditReport(r)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
-                    <td style={{ padding: '7px 8px', textAlign: 'center', width: 36 }} onClick={e => e.stopPropagation()}>
+                    {selectionMode && <td style={{ padding: '7px 8px', textAlign: 'center', width: 36 }} onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={selectedIds.has(String(r.id))} onChange={() => toggleRow(String(r.id))} style={{ cursor: 'pointer' }} />
-                  </td>
+                  </td>}
                   <td style={TD}>{r.date}</td>
                     <td style={{ ...TD, maxWidth: 76, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.port}</td>
                     <td style={{ ...TD, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.ship}>{r.ship}</td>
