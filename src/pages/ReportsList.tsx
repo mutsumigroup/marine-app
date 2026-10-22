@@ -5,6 +5,7 @@ import { Card, Select, PageHeader, Btn, Field, Input, Grid, Divider, useIsMobile
 import { CATEGORIES } from '../types'
 import type { Report, Settings } from '../types'
 import { sendEmail, buildDailyReportEmail } from '../lib/email'
+import JSZip from 'jszip'
 
 interface Props {
   reports: Report[]
@@ -635,6 +636,39 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const backMonth = searchParams.get('month')
   const [hwReport, setHwReport] = useState<Report | null>(null)
   const [editReport, setEditReport] = useState<Report | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const toggleRow = (id: string) => {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+  const toggleAllRows = (rows: any[]) => {
+    const ids = rows.map(r => String(r.id))
+    setSelectedIds(ids.length > 0 && ids.every(id => selectedIds.has(id)) ? new Set<string>() : new Set(ids))
+  }
+  const bulkDownload = async (rows: any[]) => {
+    const sel = rows.filter(r => r.voucher)
+    if (sel.length === 0) { alert('PDFが存在する日報を選択してください'); return }
+    const zip = new JSZip(); let cnt = 0
+    for (const r of sel) {
+      const parts = String(r.voucher).split('|||').filter(Boolean)
+      parts.filter(p => p.startsWith('data:')).forEach((url, i) => {
+        const [meta, b64] = url.split(',')
+        const ext = meta.includes('pdf') ? 'pdf' : 'bin'
+        const fname = `voucher_${(r.date||'').replace(/-/g,'')}_${(r.ship||'').replace(/\s+/g,'_')}_${i+1}.${ext}`
+        const bin = atob(b64)
+        const bytes = new Uint8Array(bin.length)
+        for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j)
+        zip.file(fname, bytes); cnt++
+      })
+    }
+    if (cnt === 0) { alert('選択した日報にPDFがありません'); return }
+    const blob = await zip.generateAsync({ type: 'blob' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `vouchers_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.zip`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 100)
+  }
 
   React.useEffect(() => {
     const hwId = searchParams.get('hw')
@@ -725,10 +759,18 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
 
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>💡 行をクリックすると編集できます</div>
+          {selectedIds.size > 0 && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(59,130,246,0.1)', borderBottom: '1px solid var(--border)' }}>
+            <span style={{ fontSize: 12, color: 'var(--accent)' }}>{selectedIds.size}件選択中</span>
+            <button onClick={() => bulkDownload(sorted.filter(r => selectedIds.has(String(r.id))))} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>📦 PDF一括ダウンロード</button>
+            <button onClick={() => setSelectedIds(new Set())} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 5, padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>解除</button>
+          </div>}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
+                <th style={{ padding: '7px 8px', width: 36, textAlign: 'center' }}>
+                  <input type="checkbox" checked={sorted.length > 0 && sorted.every(r => selectedIds.has(String(r.id)))} onChange={() => toggleAllRows(sorted)} style={{ cursor: 'pointer' }} />
+                </th>
                 {COLS.map(([h, w]) => (
                   <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: h === '売上金額' ? 'var(--accent)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.3px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textAlign: 'left', width: w === 'auto' ? undefined : w, background: h === '売上金額' ? 'var(--accent-bg)' : undefined }}>{h}</th>
                 ))}
@@ -736,12 +778,15 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
             </thead>
             <tbody>
               {sorted.length === 0
-                ? <tr><td colSpan={COLS.length} style={{ padding: 32, textAlign: 'center', color: 'var(--text-light)' }}>日報がありません</td></tr>
+                ? <tr><td colSpan={COLS.length + 1} style={{ padding: 32, textAlign: 'center', color: 'var(--text-light)' }}>日報がありません</td></tr>
                 : sorted.map(r => (
                   <tr key={r.id} onClick={() => setEditReport(r)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
-                    <td style={TD}>{r.date}</td>
+                    <td style={{ padding: '7px 8px', textAlign: 'center', width: 36 }} onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={selectedIds.has(String(r.id))} onChange={() => toggleRow(String(r.id))} style={{ cursor: 'pointer' }} />
+                  </td>
+                  <td style={TD}>{r.date}</td>
                     <td style={{ ...TD, maxWidth: 76, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.port}</td>
                     <td style={{ ...TD, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.ship}>{r.ship}</td>
                     <td style={{ ...TD, textAlign: 'center' }}>{r.crew}</td>
