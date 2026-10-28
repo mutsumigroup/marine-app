@@ -5,7 +5,6 @@ import { Card, Select, PageHeader, Btn, Field, Input, Grid, Divider, useIsMobile
 import { CATEGORIES } from '../types'
 import type { Report, Settings } from '../types'
 import { sendEmail, buildDailyReportEmail } from '../lib/email'
-import JSZip from 'jszip'
 
 interface Props {
   reports: Report[]
@@ -648,6 +647,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const bulkDownload = async (rows: any[]) => {
     const sel = rows.filter(r => r.voucher)
     if (sel.length === 0) { alert('PDFが存在する日報を選択してください'); return }
+    const { default: JSZip } = await import('jszip')
     const zip = new JSZip(); let cnt = 0
     for (const r of sel) {
       const parts = String(r.voucher).split('|||').filter(Boolean)
