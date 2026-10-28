@@ -2,21 +2,21 @@ import { HashRouter as BrowserRouter, Routes, Route, useLocation } from 'react-r
 import { useAppState } from './hooks/useAppState'
 import Sidebar from './components/Sidebar'
 import { LoadingSpinner, ToastContainer, useIsMobile } from './components/UI'
-import Dashboard from './pages/Dashboard'
-import DailyForm from './pages/DailyForm'
-import ReportsList from './pages/ReportsList'
-import Sales from './pages/Sales'
-import Invoices from './pages/Invoices'
-import Payments from './pages/Payments'
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const DailyForm = lazy(() => import('./pages/DailyForm'))
+const ReportsList = lazy(() => import('./pages/ReportsList'))
+const Sales = lazy(() => import('./pages/Sales'))
+const Invoices = lazy(() => import('./pages/Invoices'))
+const Payments = lazy(() => import('./pages/Payments'))
 import Annual from './pages/Annual'
-import SettingsPage from './pages/Settings'
+const SettingsPage = lazy(() => import('./pages/Settings'))
 import KyForm from './pages/KyForm'
 import TransportForm from './pages/TransportForm'
 import DailyMenu from './pages/DailyMenu'
 import TransportList from './pages/TransportList'
 import KyList from './pages/KyList'
 import PortMasterPage from './pages/PortMasterPage'
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'ダッシュボード',
@@ -63,6 +63,7 @@ function AppInner() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {isMobile && <MobileHeader onMenu={() => setSidebarOpen(true)} />}
         <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: isMobile ? 52 : 0 }}>
+          <Suspense fallback={<div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'60vh',color:'var(--text-muted)',fontSize:14}}>読み込み中...</div>}>
           <Routes>
             <Route path="/" element={<Dashboard reports={app.reports} invoices={app.invoices} settings={app.settings} reload={app.reload} onUpdateReport={app.updateReport} onDeleteReport={app.deleteReport} />} />
             <Route path="/daily" element={<DailyMenu />} />
@@ -79,6 +80,7 @@ function AppInner() {
             <Route path="/ky" element={<KyList kyReports={app.kyReports} onDelete={app.deleteKyReport} />} />
             <Route path="/ports" element={<PortMasterPage portMasters={app.portMasters} onSave={app.savePortMaster} onDelete={app.deletePortMasterById} />} />
           </Routes>
+          </Suspense>
         </main>
       </div>
       <ToastContainer toasts={app.toasts} remove={app.removeToast} />
