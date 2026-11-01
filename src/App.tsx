@@ -21,7 +21,7 @@ import { useState, lazy, Suspense } from 'react'
 const PAGE_TITLES: Record<string, string> = {
   '/': 'ダッシュボード',
   '/daily': '日報作成',
-  '/daily/ship': '船泊日報作成',
+  '/daily/ship': '船舶日報作成',
   '/reports': '日報一覧',
   '/sales': '売上管理',
   '/invoices': '請求書管理',

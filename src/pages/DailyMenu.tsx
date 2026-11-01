@@ -8,7 +8,7 @@ export default function DailyMenu() {
     {
       path: '/daily/ship',
       icon: '🚢',
-      title: '船泊日報作成',
+      title: '船舶日報作成',
       desc: '既存の船舶業務日報を作成します。\n港名・船名・対応区分・費用を記録。',
       badge: '既存機能',
       badgeColor: '#e3f0fd',
@@ -77,7 +77,7 @@ export default function DailyMenu() {
         background: '#e8f4fd', border: '1px solid #bee3f8',
         borderRadius: 8, fontSize: 12, color: '#2b6cb0', maxWidth: 800,
       }}>
-        💡 船泊・送迎の日報はそれぞれ独立して管理されます。「日報一覧」でまとめて確認できます。
+        💡 船舶・送迎の日報はそれぞれ独立して管理されます。「日報一覧」でまとめて確認できます。
       </div>
     </div>
   )

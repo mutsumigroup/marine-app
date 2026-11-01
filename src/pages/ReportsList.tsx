@@ -716,7 +716,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         {(['ship', 'transport'] as const).map(key => (
           <button key={key} onClick={() => setActiveTab(key)}
             style={{ padding: '10px 20px', fontSize: 13, fontWeight: activeTab === key ? 600 : 400, color: activeTab === key ? 'var(--text)' : 'var(--text-muted)', background: 'none', border: 'none', borderBottom: activeTab === key ? '2px solid var(--text)' : '2px solid transparent', cursor: 'pointer', marginBottom: -1 }}>
-            {key === 'ship' ? '🚢 船泊日報' : '🚗 送迎日報'}
+            {key === 'ship' ? '🚢 船舶日報' : '🚗 送迎日報'}
           </button>
         ))}
       </div>
