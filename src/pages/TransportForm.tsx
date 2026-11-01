@@ -28,11 +28,21 @@ const EMPTY = {
 
 export default function TransportForm({ settings, onSuccess }: Props) {
   const [f, setF] = useState(EMPTY)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const draftId = new URLSearchParams(window.location.search).get('draft')
 
   // 日付を常に今日に設定
   useEffect(() => {
     setF(prev => ({ ...prev, date: today() }))
   }, [])
+
+  useEffect(() => {
+    if (draftId) {
+      const drafts: any[] = JSON.parse(localStorage.getItem('marine_transport_drafts') || '[]')
+      const draft = drafts.find((d: any) => d.id === draftId)
+      if (draft) setF({ ...draft.formData, date: today() })
+    }
+  }, [draftId])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -79,6 +89,18 @@ export default function TransportForm({ settings, onSuccess }: Props) {
 
   // バリデーション: 点呼のみ or エリア選択済み
   const canSubmit = f.shipName.trim() !== '' && ((f.fromArea && f.toArea && ['1名', '2名', '3名', '4名', '5名以上'].includes(f.passengers)) || tenkoFee > 0)
+
+  const handleSaveDraft = () => {
+    const drafts: any[] = JSON.parse(localStorage.getItem('marine_transport_drafts') || '[]')
+    const id = draftId ?? crypto.randomUUID()
+    const label = (f.fromArea || '未設定') + ' → ' + (f.toArea || '未設定') + '　' + f.date
+    const newDraft = { id, savedAt: new Date().toISOString(), label, formData: { ...f } }
+    const updated: any[] = draftId
+      ? drafts.map((d: any) => d.id === draftId ? newDraft : d)
+      : [...drafts, newDraft]
+    localStorage.setItem('marine_transport_drafts', JSON.stringify(updated))
+    alert('保留として保存しました')
+  }
 
   const handleSubmit = useCallback(async () => {
     setError('')
@@ -293,10 +315,43 @@ export default function TransportForm({ settings, onSuccess }: Props) {
 
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
         <Btn onClick={() => { setF({ ...EMPTY, date: today(), billMonth: thisMonth() }); setError(''); setSuccess(false) }}>↺ クリア</Btn>
-        <Btn variant="primary" onClick={handleSubmit} disabled={submitting || !canSubmit}>
+        <Btn variant="secondary" onClick={handleSaveDraft} disabled={submitting} style={{ marginRight: 8 }}>保留として保存</Btn>
+        <Btn variant="primary" onClick={() => setShowConfirm(true)} disabled={submitting || !canSubmit}>
           {submitting ? '送信中...' : '📨 日報送信'}
         </Btn>
       </div>
+
+      {showConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius)', padding: 24, maxWidth: 500, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', maxHeight: '80vh', overflowY: 'auto' }}>
+            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>📋 送信前の確認</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <tbody>
+                {([
+                  ['稼働日', f.date],
+                  ['船名', f.shipName || '⚠️ 未入力'],
+                  ['乗客人数', f.passengers],
+                  ['出発エリア', f.fromArea || '（点呼のみ）'],
+                  ['到着エリア', f.toArea || '（点呼のみ）'],
+                  ['旅客運送報酬', fare != null ? '¥' + fare.toLocaleString() : '別途協議'],
+                  ['点呼手当', tenkoFee > 0 ? '¥' + tenkoFee.toLocaleString() : 'なし'],
+                  ['高速代・駐車場', f.toll ? '¥' + Number(f.toll).toLocaleString() : 'なし'],
+                  ['備考', f.notes || 'なし'],
+                ] as [string, string][]).map(([lbl, val]) => (
+                  <tr key={lbl} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '8px 4px', color: 'var(--text-muted)', width: '38%', fontSize: 13 }}>{lbl}</td>
+                    <td style={{ padding: '8px 4px', fontWeight: String(val).startsWith('⚠️') ? 'bold' : 'normal', color: String(val).startsWith('⚠️') ? '#e53e3e' : 'inherit' }}>{val}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button onClick={() => setShowConfirm(false)} style={{ flex: 1, padding: '10px 0', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'transparent', cursor: 'pointer', fontSize: 14 }}>← 修正する</button>
+              <button onClick={() => { setShowConfirm(false); handleSubmit() }} disabled={submitting} style={{ flex: 2, padding: '10px 0', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer', fontWeight: 'bold', fontSize: 14 }}>✓ 送信する</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
