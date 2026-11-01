@@ -78,7 +78,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
   const total = (fare ?? 0) + tenkoFee
 
   // バリデーション: 点呼のみ or エリア選択済み
-  const canSubmit = (f.fromArea && f.toArea && ['1名', '2名', '3名', '4名', '5名以上'].includes(f.passengers)) || tenkoFee > 0
+  const canSubmit = f.shipName.trim() !== '' && ((f.fromArea && f.toArea && ['1名', '2名', '3名', '4名', '5名以上'].includes(f.passengers)) || tenkoFee > 0)
 
   const handleSubmit = useCallback(async () => {
     setError('')
