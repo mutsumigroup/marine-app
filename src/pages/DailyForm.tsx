@@ -105,6 +105,18 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
   const [f, setF] = useState(EMPTY)
   const [showConfirm, setShowConfirm] = useState(false)
   const draftId = new URLSearchParams(window.location.search).get('draft')
+
+  const handleSaveDraft = () => {
+    const drafts: any[] = JSON.parse(localStorage.getItem('marine_daily_drafts') || '[]')
+    const id = draftId ?? crypto.randomUUID()
+    const label = (f.ship || '船名未入力') + '　' + f.date
+    const newDraft = { id, savedAt: new Date().toISOString(), label, formData: { ...f } }
+    const updated: any[] = draftId
+      ? drafts.map((d: any) => d.id === draftId ? newDraft : d)
+      : [...drafts, newDraft]
+    localStorage.setItem('marine_daily_drafts', JSON.stringify(updated))
+    alert('保留として保存しました')
+  }
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [pdfNames, setPdfNames] = useState<string[]>([])
