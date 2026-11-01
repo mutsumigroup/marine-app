@@ -73,14 +73,6 @@ function AutoInput({ value, onChange, placeholder, suggestions }: { value: strin
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
-
-  useEffect(() => {
-    if (draftId) {
-      const drafts: any[] = JSON.parse(localStorage.getItem('marine_daily_drafts') || '[]')
-      const draft = drafts.find((d: any) => d.id === draftId)
-      if (draft) setF(prev => ({ ...draft.formData, date: prev.date }))
-    }
-  }, [draftId])
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
       <input type="text" value={value} onChange={e => onChange(e.target.value)} onFocus={() => update(value)} onBlur={() => setTimeout(() => setShow(false), 150)} placeholder={placeholder}
