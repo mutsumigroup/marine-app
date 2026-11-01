@@ -351,7 +351,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
             </Card>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
               <button onClick={() => setSection('transport')} style={{ padding: '14px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-dark)', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>← 戻る</button>
-              <button onClick={() => setShowConfirm(true)} disabled={submitting} style={{ padding: '16px', background: submitting ? 'var(--text-muted)' : 'var(--success)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}>
+              <button onClick={handleSubmit} disabled={submitting} style={{ padding: '16px', background: submitting ? 'var(--text-muted)' : 'var(--success)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}>
                 {submitting ? '送信中...' : '📨 日報を送信'}
               </button>
             </div>
