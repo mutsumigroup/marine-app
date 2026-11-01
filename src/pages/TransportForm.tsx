@@ -180,13 +180,13 @@ export default function TransportForm({ settings, onSuccess }: Props) {
           </Field>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <Field label="出発エリア（点呼のみの場合は選択不要）">
+          <Field label="出発エリア">
             <Select value={f.fromArea} onChange={handleFromChange}>
               <option value="">-- 選択してください --</option>
               {fromAreas.map(a => <option key={a} value={a}>{a}</option>)}
             </Select>
           </Field>
-          <Field label="到着エリア（点呼のみの場合は選択不要）">
+          <Field label="到着エリア">
             <select value={f.toArea} onChange={e => set('toArea')(e.target.value)} disabled={!f.fromArea} style={{ padding: '8px 10px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%', opacity: !f.fromArea ? 0.5 : 1 }}>
               <option value="">-- {f.fromArea ? '選択してください' : '出発エリアを先に選択'} --</option>
               {toAreas.map(a => <option key={a} value={a}>{a}</option>)}
