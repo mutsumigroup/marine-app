@@ -73,6 +73,14 @@ function AutoInput({ value, onChange, placeholder, suggestions }: { value: strin
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
+
+  useEffect(() => {
+    if (draftId) {
+      const drafts: any[] = JSON.parse(localStorage.getItem('marine_daily_drafts') || '[]')
+      const draft = drafts.find((d: any) => d.id === draftId)
+      if (draft) setF(prev => ({ ...draft.formData, date: prev.date }))
+    }
+  }, [draftId])
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
       <input type="text" value={value} onChange={e => onChange(e.target.value)} onFocus={() => update(value)} onBlur={() => setTimeout(() => setShow(false), 150)} placeholder={placeholder}
@@ -103,6 +111,8 @@ const EMPTY = {
 
 export default function DailyForm({ onSubmit, pastReports = [], prices = {}, customCategories = [] }: Props) {
   const [f, setF] = useState(EMPTY)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const draftId = new URLSearchParams(window.location.search).get('draft')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [pdfNames, setPdfNames] = useState<string[]>([])
@@ -337,7 +347,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
             </Card>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
               <button onClick={() => setSection('transport')} style={{ padding: '14px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border-dark)', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>← 戻る</button>
-              <button onClick={handleSubmit} disabled={submitting} style={{ padding: '16px', background: submitting ? 'var(--text-muted)' : 'var(--success)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}>
+              <button onClick={() => setShowConfirm(true)} disabled={submitting} style={{ padding: '16px', background: submitting ? 'var(--text-muted)' : 'var(--success)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}>
                 {submitting ? '送信中...' : '📨 日報を送信'}
               </button>
             </div>
@@ -422,6 +432,28 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
         <Btn onClick={() => { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfNames([]); localStorage.removeItem('marine_daily_draft'); setExtraItems([]) }}>↺ クリア</Btn>
         <Btn variant="primary" onClick={handleSubmit} disabled={submitting}>{submitting ? '送信中...' : '📨 日報送信'}</Btn>
       </div>
+
+      {showConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius)', padding: 24, maxWidth: 500, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', maxHeight: '80vh', overflowY: 'auto' }}>
+            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>📋 送信前の確認</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <tbody>
+                {(Object.entries(f) as [string, any][]).map(([key, val]) => (
+                  <tr key={key} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '7px 4px', color: 'var(--text-muted)', width: '38%', fontSize: 12 }}>{key}</td>
+                    <td style={{ padding: '7px 4px', fontSize: 13 }}>{String(val) === '' ? <span style={{ color: '#aaa' }}>（未入力）</span> : String(val)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button onClick={() => setShowConfirm(false)} style={{ flex: 1, padding: '10px 0', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'transparent', cursor: 'pointer', fontSize: 14 }}>← 修正する</button>
+              <button onClick={() => { setShowConfirm(false); handleSubmit() }} disabled={submitting} style={{ flex: 2, padding: '10px 0', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer', fontWeight: 'bold', fontSize: 14 }}>✓ 送信する</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

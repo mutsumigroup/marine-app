@@ -1,8 +1,15 @@
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useNavigate } from 'react-router-dom'
 import { PageHeader } from '../components/UI'
 
 export default function DailyMenu() {
   const navigate = useNavigate()
+  const [transportDrafts, setTransportDrafts] = useState<any[]>([])
+  const [dailyDrafts, setDailyDrafts] = useState<any[]>([])
+
+  useEffect(() => {
+    setTransportDrafts(JSON.parse(localStorage.getItem('marine_transport_drafts') || '[]'))
+    setDailyDrafts(JSON.parse(localStorage.getItem('marine_daily_drafts') || '[]'))
+  }, [])
 
   const cards = [
     {

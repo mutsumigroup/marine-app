@@ -315,7 +315,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
 
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
         <Btn onClick={() => { setF({ ...EMPTY, date: today(), billMonth: thisMonth() }); setError(''); setSuccess(false) }}>↺ クリア</Btn>
-        <Btn variant="secondary" onClick={handleSaveDraft} disabled={submitting} style={{ marginRight: 8 }}>保留として保存</Btn>
+        <Btn variant="default" onClick={handleSaveDraft} disabled={submitting} style={{ marginRight: 8 }}>保留として保存</Btn>
         <Btn variant="primary" onClick={() => setShowConfirm(true)} disabled={submitting || !canSubmit}>
           {submitting ? '送信中...' : '📨 日報送信'}
         </Btn>
