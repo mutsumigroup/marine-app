@@ -78,7 +78,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
   const total = (fare ?? 0) + tenkoFee
 
   // バリデーション: 点呼のみ or エリア選択済み
-  const canSubmit = (f.fromArea && f.toArea) || tenkoFee > 0
+  const canSubmit = (f.fromArea && f.toArea && ['1名', '2名', '3名', '4名', '5名以上'].includes(f.passengers)) || tenkoFee > 0
 
   const handleSubmit = useCallback(async () => {
     setError('')
@@ -227,7 +227,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
 
       {/* 追加費用 */}
       <Card>
-        {f.fromArea && f.toArea && f.passengers === '-' && (
+        {f.fromArea && f.toArea && !['1名', '2名', '3名', '4名', '5名以上'].includes(f.passengers) && (
         <div style={{ fontSize: 13, color: 'var(--accent)', margin: '8px 0', padding: '10px 14px', background: 'var(--accent-bg)', borderRadius: 'var(--radius)', border: '2px solid var(--accent)' }}>
           ⚠️ 乗客人数を選択してください（点呼のみの場合は不要）
         </div>
