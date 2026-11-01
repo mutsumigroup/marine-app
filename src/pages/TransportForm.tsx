@@ -227,7 +227,12 @@ export default function TransportForm({ settings, onSuccess }: Props) {
 
       {/* 追加費用 */}
       <Card>
-        <CardTitle>追加費用・点呼手当</CardTitle>
+        {f.fromArea && f.toArea && f.passengers === '-' && (
+        <div style={{ fontSize: 13, color: 'var(--accent)', margin: '8px 0', padding: '10px 14px', background: 'var(--accent-bg)', borderRadius: 'var(--radius)', border: '2px solid var(--accent)' }}>
+          ⚠️ 乗客人数を選択してください（点呼のみの場合は不要）
+        </div>
+      )}
+      <CardTitle>追加費用・点呼手当</CardTitle>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
           <Field label="点呼手当（点呼のみ）">
             <Select value={String(f.tenkoIdx)} onChange={v => set('tenkoIdx')(parseInt(v))}>
