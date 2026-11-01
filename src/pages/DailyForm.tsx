@@ -140,7 +140,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
       const saved = localStorage.getItem(DRAFT_KEY)
       if (saved) {
         const draft = JSON.parse(saved)
-        setF(draft.f ?? EMPTY)
+        setF({ ...(draft.f ?? EMPTY), date: new Date().toISOString().slice(0, 10) })
         setPdfNames(draft.pdfNames ?? [])
         setExtraItems(draft.extraItems ?? [])
         setAutoCalc(draft.autoCalc ?? true)

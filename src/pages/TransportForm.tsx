@@ -28,6 +28,11 @@ const EMPTY = {
 
 export default function TransportForm({ settings, onSuccess }: Props) {
   const [f, setF] = useState(EMPTY)
+
+  // 日付を常に今日に設定
+  useEffect(() => {
+    setF(prev => ({ ...prev, date: today() }))
+  }, [])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
