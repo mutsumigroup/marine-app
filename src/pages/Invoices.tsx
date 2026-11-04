@@ -368,15 +368,12 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                 {expItems.map((e, i) => (e as any)._type !== 'fixed' && (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
                     <td style={tdS}>
-                      <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
+                      {EXPENSE_KEY_MAP[e.label]
+                        ? <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
+                        : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer', color: '#2563eb', textDecoration: 'underline dotted' }} title="日報を確認">{e.label}</span>}
                     </td>
                     <td style={{ ...tdS, textAlign: 'right' }}>
                       ¥<InlineNum value={e.amount} onChange={v => setExpAmt(i, v)} width={90} />
-                    </td>
-                    <td style={{ padding: '7px 4px', textAlign: 'center', width: 24 }} className="no-print">
-                      <button onClick={() => handleExpenseClick(e.label)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontSize: 13, lineHeight: 1, padding: 0 }}
-                        title="日報一覧で確認">📋</button>
                     </td>
                     <td style={{ padding: '7px 4px', textAlign: 'center', width: 24 }}>
                       <button onClick={() => removeExpItem(i)}
@@ -416,7 +413,9 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                 {expItems.map((e, i) => (e as any)._type === 'fixed' && (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
                     <td style={tdS}>
-                      <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
+                      {EXPENSE_KEY_MAP[e.label]
+                        ? <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
+                        : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer', color: '#2563eb', textDecoration: 'underline dotted' }} title="日報を確認">{e.label}</span>}
                     </td>
                     <td style={{ ...tdS, textAlign: 'right' }}>
                       ¥<InlineNum value={e.amount} onChange={v => setExpAmt(i, v)} width={90} />
