@@ -632,6 +632,18 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
     if (expense) setFilterExpense(expense)
   }, [searchParams])
   const fromInvoices = searchParams.get('from') === 'invoices'
+  const reportId = searchParams.get('reportId')
+  useEffect(() => {
+    if (!reportId) return
+    const el = document.getElementById(`report-${reportId}`)
+    if (el) {
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.style.background = '#fff8c5'
+        setTimeout(() => { el.style.background = '' }, 2500)
+      }, 300)
+    }
+  }, [reportId])
   const backMonth = searchParams.get('month')
   const [hwReport, setHwReport] = useState<Report | null>(null)
   const [editReport, setEditReport] = useState<Report | null>(null)
@@ -784,7 +796,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
               {sorted.length === 0
                 ? <tr><td colSpan={COLS.length + 1} style={{ padding: 32, textAlign: 'center', color: 'var(--text-light)' }}>日報がありません</td></tr>
                 : sorted.map(r => (
-                  <tr key={r.id} onClick={() => setEditReport(r)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                  <tr key={r.id} id={`report-${r.id}`} onClick={() => setEditReport(r)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
                     {selectionMode && <td style={{ padding: '7px 8px', textAlign: 'center', width: 36 }} onClick={e => e.stopPropagation()}>
