@@ -122,7 +122,17 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     const shinkansenTotal = monthReports.reduce((s, r) => s + (r.shinkansen_fee ?? 0), 0)
     const othTotal  = monthReports.reduce((s, r) => s + r.other_exp, 0)
     const fixedExp  = settings.fixed_expenses ?? []
-    const extraExp  = monthReports.flatMap(r => r.extra_expenses ?? [])
+    const rawExp    = monthReports.flatMap(r => r.extra_expenses ?? [])
+    const extraExp  = Object.values(
+      rawExp.reduce((acc: Record<string, {label: string; amount: number; _type?: string}>, item) => {
+        if (acc[item.label]) {
+          acc[item.label] = { ...acc[item.label], amount: acc[item.label].amount + item.amount }
+        } else {
+          acc[item.label] = { ...item }
+        }
+        return acc
+      }, {})
+    )
 
     // 業務立替金（日報から）
     const businessItems = [
