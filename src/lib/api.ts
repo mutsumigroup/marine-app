@@ -23,7 +23,7 @@ export async function deletePortMaster(id: string): Promise<void> {
 // ===================== KY REPORTS =====================
 
 export async function fetchKyReports(): Promise<KyReport[]> {
-  const { data, error } = await supabase.from('ky_reports').select('*').order('date', { ascending: false })
+  const { data, error } = await supabase.from('ky_reports').select('*').order('created_at', { ascending: false })
   if (error) throw new Error(`KY報告の取得に失敗: ${error.message}`)
   return (data ?? []) as KyReport[]
 }
@@ -103,7 +103,7 @@ export async function fetchReports(): Promise<Report[]> {
   const { data, error } = await supabase
     .from('reports')
     .select('*')
-    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
 
   if (error) throw new Error(`日報の取得に失敗しました: ${error.message}`)
   return (data ?? []) as Report[]
