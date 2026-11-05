@@ -1,0 +1,1 @@
+{"name":"日報作成アプリ","short_name":"日報アプリ","description":"船舶日報・請求書管理システム","start_url":"/marine-app/","display":"standalone","background_color":"#1a1a2e","theme_color":"#1a1a2e","lang":"en","scope":"/marine-app/","icons":[{"src":"icon-192x192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512x512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
