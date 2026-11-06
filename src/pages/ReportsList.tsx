@@ -631,7 +631,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
     const expense = searchParams.get('expense')
     if (expense) setFilterExpense(expense)
   }, [searchParams])
-  const fromInvoices = searchParams.get('from') === 'invoices'
+  const [fromInvoices, setFromInvoices] = useState(false)
   const reportId = searchParams.get('reportId')
   useEffect(() => {
     if (!reportId) return
@@ -644,7 +644,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       }, 300)
     }
   }, [reportId])
-  const backMonth = searchParams.get('month')
+  const [backMonth, setBackMonth] = useState('')
   const [hwReport, setHwReport] = useState<Report | null>(null)
   const [editReport, setEditReport] = useState<Report | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -701,6 +701,10 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       const year = month.slice(0, 4)
       setFilterYear(year)
       setFilterMonth(month)
+      if (searchParams.get('from') === 'invoices') {
+        setFromInvoices(true)
+        setBackMonth(month)
+      }
       setSearchParams({}, { replace: true })
     }
   }, [])
