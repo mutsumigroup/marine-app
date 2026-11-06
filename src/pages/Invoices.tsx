@@ -97,6 +97,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   onUpdateInvoice: (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total' | 'expense_items'>) => Promise<boolean>
   processing: boolean
 }) {
+  const navigate = useNavigate()
   const monthReports = reports.filter(r => r.bill_month === inv.billing_month)
   const pr = settings.prices ?? {}
 
@@ -165,7 +166,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
     const expKey = EXPENSE_KEY_MAP[label]
     let url = `#/reports?month=${inv.billing_month}&from=invoices`
     if (expKey) url += `&expense=${expKey}`
-    window.location.href = url
+    navigate(url.replace(/^#/, ''))
   }
   const [pdfGenerating, setPdfGenerating] = useState(false)
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -337,7 +338,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                   const line = r.count * r.shipP + r.crew * r.crewP
                   return (
                     <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
-                      <td style={{...tdS, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline dotted', textUnderlineOffset: 3}} onClick={() => { window.location.href = `#/reports?category=${encodeURIComponent(r.cat)}&month=${inv.billing_month}&from=invoices` }}>{r.cat}</td>
+                      <td style={{...tdS, cursor: 'pointer', color: 'var(--accent)', textDecoration: 'underline dotted', textUnderlineOffset: 3}} onClick={() => { navigate(`/reports?category=${encodeURIComponent(r.cat)}&month=${inv.billing_month}&from=invoices`) }}>{r.cat}</td>
                       <td style={{ ...tdS, textAlign: 'right' }}><InlineNum value={r.count} onChange={v => setRow(i, 'count', v)} width={40} />隻</td>
                       <td style={{ ...tdS, textAlign: 'right' }}><InlineNum value={r.crew} onChange={v => setRow(i, 'crew', v)} width={40} />名</td>
                       <td style={{ ...tdS, textAlign: 'right', color: '#888' }}>¥{r.shipP.toLocaleString()} / ¥{r.crewP.toLocaleString()}</td>
@@ -468,6 +469,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
 }
 
 export default function Invoices({ invoices, reports, settings, onSend, onPaid, onRevert, onUpdateInvoice }: Props) {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'ship' | 'transport'>('ship')
   const [filter, setFilter] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
