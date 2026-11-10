@@ -51,12 +51,13 @@ interface EditableRow extends TransportReport {
   _toll: number
 }
 
-function TransportInvoiceSheet({ month, reports: initReports, settings, onClose }: {
+function TransportInvoiceSheet({ month, reports: initReports, settings, onClose, onSend }: {
   month: string
   reports: TransportReport[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   settings: any
   onClose: () => void
+  onSend: (month: string) => Promise<boolean>
 }) {
   const [rows, setRows] = useState<EditableRow[]>(
     [...initReports]
@@ -179,7 +180,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#f7f7f5', borderBottom: '0.5px solid #ddd' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>送迎請求書 — {month}分</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <StatusBadge status="未請求" />
+            {initReports.some(r => r.sent) ? <StatusBadge status="送信済" /> : <StatusBadge status="未請求" />}
             <Btn variant="success" disabled={sending || pdfGenerating} onClick={handleSendInvoice} style={{ fontSize: 12, padding: "3px 8px" }}>{sending ? "送信中..." : "🚀 PDF生成・送信"}</Btn>
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#999' }}>✕</button>
           </div>
@@ -303,7 +304,7 @@ interface MonthSummary {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function TransportInvoices({ settings }: { settings: any }) {
+export default function TransportInvoices({ settings, onSend }: { settings: any; onSend: (month: string) => Promise<boolean> }) {
   const [reports, setReports] = useState<TransportReport[]>([])
   const [loading, setLoading] = useState(true)
   const [previewMonth, setPreviewMonth] = useState<string | null>(null)
@@ -393,6 +394,7 @@ export default function TransportInvoices({ settings }: { settings: any }) {
           reports={previewSummary.reports}
           settings={settings}
           onClose={() => { setPreviewMonth(null); load() }}
+          onSend={onSend}
         />
       )}
     </div>

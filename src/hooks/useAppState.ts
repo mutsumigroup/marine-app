@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Report, Invoice, Settings, Toast, KyReport, PortMaster } from '../types'
 import * as api from '../lib/api'
+import { supabase } from '../lib/supabase'
 import { sendEmail, buildDailyReportEmail, buildInvoiceEmail } from '../lib/email'
 
 const DEFAULT_SETTINGS: Settings = {
@@ -365,13 +366,44 @@ export function useAppState() {
     }
   }, [addToast])
 
+  const sendTransportInvoice = useCallback(async (month: string): Promise<boolean> => {
+    try {
+      const sentAt = new Date().toLocaleString('ja-JP')
+      const { error } = await supabase
+        .from('transport_reports')
+        .update({ sent: true })
+        .eq('bill_month', month)
+      if (error) throw error
+      const toEmail = settings.inv_mail || settings.client_email
+      if (toEmail) {
+        try {
+          await sendEmail({
+            to_email: toEmail,
+            subject: `【送迎請求書】${month}分 ${settings.client_name || ''}`,
+            message: `${settings.client_name || ''} 御中\n\n${month}分の送迎業務請求書をお送りします。\n\n送信日時：${sentAt}`,
+          })
+          addToast('success', `送迎請求書 ${month}分 を ${toEmail} へ送信しました（${sentAt}）`)
+        } catch {
+          addToast('info', 'ステータスを更新しました。メール送信に失敗しました。')
+        }
+      } else {
+        addToast('success', `送迎請求書 ${month}分 のステータスを送信済みに更新しました（${sentAt}）`)
+      }
+      return true
+    } catch (err) {
+      addToast('error', `送信失敗：${(err as Error).message}`)
+      return false
+    }
+  }, [settings, addToast])
+
   return {
     reports, invoices, settings,
     kyReports, portMasters,
     loading, toasts,
     addToast, removeToast,
     submitReport, saveSettings,
-    sendInvoice, markPaid, revertInvoice,
+    sendInvoice,
+    sendTransportInvoice, markPaid, revertInvoice,
     updateAmount,
     updateReport,
     deleteReport,
