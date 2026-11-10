@@ -180,6 +180,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose 
           <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>送迎請求書 — {month}分</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <StatusBadge status="未請求" />
+            <Btn variant="success" disabled={sending || pdfGenerating} onClick={handleSendInvoice} style={{ fontSize: 12, padding: "3px 8px" }}>{sending ? "送信中..." : "🚀 PDF生成・送信"}</Btn>
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#999' }}>✕</button>
           </div>
         </div>
