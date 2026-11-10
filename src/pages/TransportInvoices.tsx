@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Btn } from '../components/UI'
 import { supabase } from '../lib/supabase'
+import { sendEmail } from '../lib/email'
 import type { TransportReport } from '../types/transport'
 
 function StatusBadge({ status }: { status: string }) {
@@ -65,6 +66,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose 
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [pdfGenerating, setPdfGenerating] = useState(false)
+  const [sending, setSending] = useState(false)
   const sheetRef = useRef<HTMLDivElement>(null)
 
   const setRow = (i: number, field: '_fare' | '_tenko' | '_toll', v: number) => {
@@ -90,6 +92,38 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose 
     }
     setDirty(false)
     setSaving(false)
+  }
+
+  const handleSendInvoice = async () => {
+    setSending(true)
+    try {
+      if (dirty) {
+        for (const r of rows) {
+          await supabase.from('transport_reports').update({
+            fare: r._fare, tenko_fee: r._tenko, toll_fee: r._toll, total: r._fare + r._tenko,
+          }).eq('id', r.id)
+        }
+        setDirty(false)
+      }
+      const toEmail = settings.inv_mail || settings.client_email
+      if (toEmail) {
+        const sentAt = new Date().toLocaleString('ja-JP')
+        await sendEmail({
+          to_email: toEmail,
+          subject: `【送迎請求書】${month}分 ${settings.client_name}`,
+          message: `${settings.client_name} 御中\n\n${month}分の送迎業務請求書をお送りします。\n\n合計（税込）：¥${total.toLocaleString()}\n\n詳細は請求書PDFをご確認ください。`,
+        })
+        alert(`請求書を ${toEmail} へ送信しました（${sentAt}）`)
+      } else {
+        alert('メール設定がありません。設定画面でメールアドレスを登録してください。')
+      }
+      onClose()
+    } catch (err) {
+      console.error('送信エラー:', err)
+      alert('送信に失敗しました: ' + String(err))
+    } finally {
+      setSending(false)
+    }
   }
 
   const handleDownloadPdf = async () => {
@@ -250,6 +284,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose 
         {/* Footer */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', background: '#f7f7f5', borderTop: '0.5px solid #ddd' }}>
           <Btn onClick={handleDownloadPdf} disabled={pdfGenerating}>{pdfGenerating ? '生成中...' : '📄 PDFダウンロード'}</Btn>
+          <Btn variant="success" disabled={sending || pdfGenerating || saving} onClick={handleSendInvoice}>{sending ? '送信中...' : '🚀 PDF生成・送信'}</Btn>
           <Btn onClick={onClose}>閉じる</Btn>
           {dirty && <Btn variant="primary" disabled={saving} onClick={handleSave}>{saving ? '保存中...' : '💾 保存'}</Btn>}
         </div>
