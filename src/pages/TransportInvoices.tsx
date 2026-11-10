@@ -99,7 +99,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose,
     setSending(true)
     try {
       if (dirty) {
-        for (const r of editRows) {
+        for (const r of rows) {
           await supabase.from('transport_reports').update({
             fare: r.fare, tenko_fee: r.tenko_fee, toll_fee: r.toll_fee,
             total: r.fare + r.tenko_fee + r.toll_fee,
