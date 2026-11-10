@@ -99,29 +99,18 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose,
     setSending(true)
     try {
       if (dirty) {
-        for (const r of rows) {
+        for (const r of editRows) {
           await supabase.from('transport_reports').update({
-            fare: r._fare, tenko_fee: r._tenko, toll_fee: r._toll, total: r._fare + r._tenko,
+            fare: r.fare, tenko_fee: r.tenko_fee, toll_fee: r.toll_fee,
+            total: r.fare + r.tenko_fee + r.toll_fee,
           }).eq('id', r.id)
         }
         setDirty(false)
       }
-      const toEmail = settings.inv_mail || settings.client_email
-      if (toEmail) {
-        const sentAt = new Date().toLocaleString('ja-JP')
-        await sendEmail({
-          to_email: toEmail,
-          subject: `【送迎請求書】${month}分 ${settings.client_name}`,
-          message: `${settings.client_name} 御中\n\n${month}分の送迎業務請求書をお送りします。\n\n合計（税込）：¥${total.toLocaleString()}\n\n詳細は請求書PDFをご確認ください。`,
-        })
-        alert(`請求書を ${toEmail} へ送信しました（${sentAt}）`)
-      } else {
-        alert('メール設定がありません。設定画面でメールアドレスを登録してください。')
-      }
-      onClose()
+      const success = await onSend(month)
+      if (success) onClose()
     } catch (err) {
-      console.error('送信エラー:', err)
-      alert('送信に失敗しました: ' + String(err))
+      console.error(err)
     } finally {
       setSending(false)
     }
