@@ -370,7 +370,7 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <Btn size="sm" onClick={() => setPreviewMonth(s.month)}>👁 確認・編集</Btn>
-              <Btn size="sm" variant="success" onClick={() => setPreviewMonth(s.month)}>📤 PDF生成・送信</Btn>
+              <Btn size="sm" variant="success" onClick={() => onSend(s.month)}>📤 PDF生成・送信</Btn>
             </div>
           </div>
         ))}
