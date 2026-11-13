@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardTitle, Field, Input, Grid, Divider, Btn, PageHeader } from '../components/UI'
 import { CATEGORIES } from '../types'
 import type { Settings as SettingsType } from '../types'
-import { DEFAULT_DAILY_TEMPLATE, DEFAULT_INVOICE_TEMPLATE } from '../lib/email'
+import { DEFAULT_DAILY_TEMPLATE, DEFAULT_INVOICE_TEMPLATE, DEFAULT_TRANSPORT_INVOICE_TEMPLATE } from '../lib/email'
 import { supabase } from '../lib/supabase'
 import { FARE_TABLE } from '../lib/fareTable'
 
@@ -11,6 +11,8 @@ interface Props { settings: SettingsType; onSave: (s: SettingsType) => Promise<b
 export default function Settings({ settings, onSave }: Props) {
   const [f, setF] = useState<SettingsType>(settings)
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [activeTab, setActiveTab] = useState<'basic' | 'ship' | 'transport' | 'email'>('basic')
 
   // 送迎エリア管理
   interface TransportArea { from: string; to: string; fare: number }
@@ -100,7 +102,8 @@ export default function Settings({ settings, onSave }: Props) {
 
   const handleSave = async () => {
     setSaving(true)
-    await onSave(f)
+    const ok = await onSave(f)
+    if (ok) { setSaved(true); setTimeout(() => setSaved(false), 2000) }
     setSaving(false)
   }
 
@@ -108,6 +111,29 @@ export default function Settings({ settings, onSave }: Props) {
     <div style={{ padding: '20px 22px' }}>
       <PageHeader title="設定" sub="変更はSupabaseへ保存されます" />
 
+
+      {/* タブナビ */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid var(--border)' }}>
+        {([
+          { id: 'basic',     icon: '🏢', label: '基本情報' },
+          { id: 'ship',      icon: '🚢', label: '船舶設定' },
+          { id: 'transport', icon: '🚗', label: '送迎設定' },
+          { id: 'email',     icon: '📧', label: 'メール・通知' },
+        ] as const).map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: '10px 18px', fontSize: 13, fontWeight: 600, border: 'none', background: 'none',
+              cursor: 'pointer', marginBottom: -2,
+              color: activeTab === tab.id ? 'var(--navy)' : 'var(--text-muted)',
+              borderBottom: activeTab === tab.id ? '2px solid var(--navy)' : '2px solid transparent',
+              transition: 'color .15s',
+            }}>
+            {tab.icon} {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'basic' && <>
       <Card>
         <CardTitle>🏢 自社情報（請求書に表示）</CardTitle>
         <Grid cols={2} style={{ marginBottom: 10 }}>
@@ -139,7 +165,12 @@ export default function Settings({ settings, onSave }: Props) {
           </Field>
         </Grid>
       </Card>
+      <div style={{ textAlign: 'right', marginTop: 4, marginBottom: 4 }}>
+        <Btn variant="success" onClick={handleSave} disabled={saving}>{saved ? '✓ 保存しました' : saving ? '保存中...' : '✓ 保存する'}</Btn>
+      </div>
+      </>}
 
+      {activeTab === 'ship' && <>
       <Card>
         <CardTitle>💴 対応区分 単価設定</CardTitle>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -192,8 +223,12 @@ export default function Settings({ settings, onSave }: Props) {
           ＋ 対応区分を追加
         </Btn>
       </Card>
+      <div style={{ textAlign: 'right', marginTop: 4, marginBottom: 4 }}>
+        <Btn variant="success" onClick={handleSave} disabled={saving}>{saved ? '✓ 保存しました' : saving ? '保存中...' : '✓ 保存する'}</Btn>
+      </div>
+      </>}
 
-      {/* 送迎エリア管理 */}
+      {activeTab === 'transport' && <>
       <Card>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <div>
@@ -271,7 +306,9 @@ export default function Settings({ settings, onSave }: Props) {
           </div>
         </div>
       </Card>
+      </>}
 
+      {activeTab === 'email' && <>
       <Card>
         <CardTitle>📧 メール設定</CardTitle>
         <Grid cols={2}>
@@ -414,12 +451,10 @@ export default function Settings({ settings, onSave }: Props) {
           </div>
         )}
       </Card>
-
-      <div style={{ textAlign: 'right', marginTop: 4 }}>
-        <Btn variant="success" onClick={handleSave} disabled={saving}>
-          {saving ? '保存中...' : '✓ 設定を保存（Supabase）'}
-        </Btn>
+      <div style={{ textAlign: 'right', marginTop: 4, marginBottom: 4 }}>
+        <Btn variant="success" onClick={handleSave} disabled={saving}>{saved ? '✓ 保存しました' : saving ? '保存中...' : '✓ 保存する'}</Btn>
       </div>
+      </>}
     </div>
   )
 }

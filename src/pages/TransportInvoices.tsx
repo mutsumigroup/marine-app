@@ -297,6 +297,7 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
   const [reports, setReports] = useState<TransportReport[]>([])
   const [loading, setLoading] = useState(true)
   const [previewMonth, setPreviewMonth] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'all' | '未請求' | '送信済'>('all')
 
   const load = async () => {
     setLoading(true)
@@ -327,6 +328,12 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
       total: reps.reduce((s, r) => s + (r.total ?? 0), 0),
     }))
 
+  const sentCount   = summaries.filter(s => s.reports.some(r => r.sent)).length
+  const unsentCount = summaries.length - sentCount
+  const filteredSummaries = statusFilter === 'all' ? summaries
+    : statusFilter === '送信済' ? summaries.filter(s => s.reports.some(r => r.sent))
+    : summaries.filter(s => !s.reports.some(r => r.sent))
+
   const totalAll = summaries.reduce((s, m) => s + Math.floor(m.total * 1.1), 0)
   const previewSummary = previewMonth ? summaries.find(s => s.month === previewMonth) ?? null : null
 
@@ -337,8 +344,9 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         {[
           { label: '送迎請求総額', value: `¥${totalAll.toLocaleString()}`, color: '#1a1a1a' },
-          { label: '月数',         value: `${summaries.length}ヶ月`,       color: '#2563eb' },
-          { label: '総件数',       value: `${reports.length}件`,            color: '#d97706' },
+          { label: '未請求',       value: `${unsentCount}ヶ月`,             color: '#d97706' },
+          { label: '送信済',       value: `${sentCount}ヶ月`,               color: '#2563eb' },
+          { label: '総件数',       value: `${reports.length}件`,            color: '#6b7280' },
         ].map(c => (
           <div key={c.label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 14px', boxShadow: 'var(--shadow)' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 3 }}>{c.label}</div>
@@ -347,14 +355,29 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
         ))}
       </div>
 
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+        {(['all', '未請求', '送信済'] as const).map(f => (
+          <button key={f} onClick={() => setStatusFilter(f)}
+            style={{
+              padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              border: `1.5px solid ${statusFilter === f ? 'var(--navy)' : 'var(--border)'}`,
+              background: statusFilter === f ? 'var(--navy)' : 'var(--surface)',
+              color: statusFilter === f ? '#fff' : 'var(--text-muted)',
+              transition: 'all .15s',
+            }}>
+            {f === 'all' ? 'すべて' : f}
+          </button>
+        ))}
+      </div>
+
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
-        {summaries.length === 0 ? (
+        {filteredSummaries.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
             送迎日報がありません。まず送迎日報を作成してください。
           </div>
-        ) : summaries.map((s, idx) => (
+        ) : filteredSummaries.map((s, idx) => (
           <div key={s.month}
-            style={{ borderBottom: idx < summaries.length - 1 ? '0.5px solid var(--border)' : 'none', padding: '14px 18px', transition: 'background .1s' }}
+            style={{ borderBottom: idx < filteredSummaries.length - 1 ? '0.5px solid var(--border)' : 'none', padding: '14px 18px', transition: 'background .1s' }}
             onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--surface2,#f9f9f9)'}
             onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ''}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
