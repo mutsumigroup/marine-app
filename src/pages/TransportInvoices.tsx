@@ -169,7 +169,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose,
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#f7f7f5', borderBottom: '0.5px solid #ddd' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>送迎請求書 — {month}分</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {initReports.some(r => r.sent) ? <StatusBadge status="送信済" /> : {s.reports.some(r => r.sent) ? <StatusBadge status='送信済' /> : <StatusBadge status='未請求' />}}
+            {initReports.some(r => r.sent) ? <StatusBadge status="送信済" /> : <StatusBadge status="未請求" />}
             <Btn variant="success" disabled={sending || pdfGenerating} onClick={handleSendInvoice} style={{ fontSize: 12, padding: "3px 8px" }}>{sending ? "送信中..." : "🚀 PDF生成・送信"}</Btn>
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#999' }}>✕</button>
           </div>
