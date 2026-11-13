@@ -135,6 +135,39 @@ export function buildDailyReportEmail(report: {
     .replace(/{annual_url}/g, annualUrl)
 }
 
+export const DEFAULT_TRANSPORT_INVOICE_TEMPLATE = `{client_name} 御中
+
+いつもお世話になっております。
+{billing_month}分の送迎業務請求書をお送りします。
+
+■ 請求月：{billing_month}
+■ 件数：{count}件
+■ 旅客運送報酬（税抜）：¥{subtotal}
+■ 消費税（10%）：¥{tax}
+■ 請求金額（税込）：¥{total}
+
+お手数ですが、ご確認のうえお振込みくださいますようお願いいたします。
+
+---
+マリン業務管理システム`
+
+export function buildTransportInvoiceEmail(params: {
+  billing_month: string
+  subtotal: number
+  tax: number
+  total: number
+  count: number
+}, clientName: string, template?: string): string {
+  const tpl = template || DEFAULT_TRANSPORT_INVOICE_TEMPLATE
+  return tpl
+    .replace(/{client_name}/g, clientName || '')
+    .replace(/{billing_month}/g, params.billing_month)
+    .replace(/{subtotal}/g, params.subtotal.toLocaleString())
+    .replace(/{tax}/g, params.tax.toLocaleString())
+    .replace(/{total}/g, params.total.toLocaleString())
+    .replace(/{count}/g, String(params.count))
+}
+
 export function buildInvoiceEmail(invoice: {
   id: string
   billing_month: string

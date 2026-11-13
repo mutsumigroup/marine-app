@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Report, Invoice, Settings, Toast, KyReport, PortMaster } from '../types'
 import * as api from '../lib/api'
 import { supabase } from '../lib/supabase'
-import { sendEmail, buildDailyReportEmail, buildInvoiceEmail } from '../lib/email'
+import { sendEmail, buildDailyReportEmail, buildInvoiceEmail, buildTransportInvoiceEmail } from '../lib/email'
 
 const DEFAULT_SETTINGS: Settings = {
   company_name: '',
@@ -369,6 +369,17 @@ export function useAppState() {
   const sendTransportInvoice = useCallback(async (month: string): Promise<boolean> => {
     try {
       const sentAt = new Date().toLocaleString('ja-JP')
+      const { data: monthReports, error: fetchError } = await supabase
+        .from('transport_reports')
+        .select('fare, tenko_fee')
+        .eq('bill_month', month)
+      if (fetchError) throw fetchError
+      const totalFare = (monthReports || []).reduce((s: number, r: { fare?: number }) => s + (r.fare ?? 0), 0)
+      const totalTenko = (monthReports || []).reduce((s: number, r: { tenko_fee?: number }) => s + (r.tenko_fee ?? 0), 0)
+      const subtotal = totalFare + totalTenko
+      const tax = Math.floor(subtotal * 0.1)
+      const total = subtotal + tax
+      const count = (monthReports || []).length
       const { error } = await supabase
         .from('transport_reports')
         .update({ sent: true })
@@ -380,7 +391,11 @@ export function useAppState() {
           await sendEmail({
             to_email: toEmail,
             subject: `【送迎請求書】${month}分 ${settings.client_name || ''}`,
-            message: `${settings.client_name || ''} 御中\n\n${month}分の送迎業務請求書をお送りします。\n\n送信日時：${sentAt}`,
+            message: buildTransportInvoiceEmail(
+              { billing_month: month, subtotal, tax, total, count },
+              settings.client_name || '',
+              settings.transport_invoice_template
+            ),
           })
           addToast('success', `送迎請求書 ${month}分 を ${toEmail} へ送信しました（${sentAt}）`)
         } catch {
