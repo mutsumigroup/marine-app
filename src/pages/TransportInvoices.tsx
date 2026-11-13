@@ -169,7 +169,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose,
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#f7f7f5', borderBottom: '0.5px solid #ddd' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>送迎請求書 — {month}分</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {initReports.some(r => r.sent) ? <StatusBadge status="送信済" /> : <StatusBadge status="未請求" />}
+            {initReports.some(r => r.sent) ? <StatusBadge status="送信済" /> : {s.reports.some(r => r.sent) ? <StatusBadge status='送信済' /> : <StatusBadge status='未請求' />}}
             <Btn variant="success" disabled={sending || pdfGenerating} onClick={handleSendInvoice} style={{ fontSize: 12, padding: "3px 8px" }}>{sending ? "送信中..." : "🚀 PDF生成・送信"}</Btn>
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#999' }}>✕</button>
           </div>
@@ -359,7 +359,7 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
             onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ''}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
               <div style={{ fontSize: 14, fontWeight: 600, minWidth: 70 }}>{s.month}</div>
-              <StatusBadge status="未請求" />
+              {s.reports.some(r => r.sent) ? <StatusBadge status='送信済' /> : <StatusBadge status='未請求' />}
               <div style={{ marginLeft: 'auto', fontSize: 16, fontWeight: 600 }}>¥{Math.floor(s.total * 1.1).toLocaleString()}</div>
             </div>
             <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, flexWrap: 'wrap' }}>
@@ -370,7 +370,7 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <Btn size="sm" onClick={() => setPreviewMonth(s.month)}>👁 確認・編集</Btn>
-              <Btn size="sm" variant="success" onClick={() => onSend(s.month)}>📤 PDF生成・送信</Btn>
+              <Btn size="sm" variant="success" onClick={async () => { const ok = await onSend(s.month); if (ok) load() }}>📤 PDF生成・送信</Btn>
             </div>
           </div>
         ))}
