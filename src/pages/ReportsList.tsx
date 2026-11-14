@@ -725,6 +725,13 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const totalHotel = filtered.reduce((s, r) => s + (r.hotel_fee ?? 0), 0)
   const totalShinkansen = filtered.reduce((s, r) => s + (r.shinkansen_fee ?? 0), 0)
   const zeroCount = filtered.filter(r => r.amount === 0).length
+  const voucherByShip = filtered.reduce((acc: Record<string, number>, r) => {
+    if (!r.ship) return acc
+    const urls = (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('http') || p.startsWith('data:'))
+    if (urls.length > 0) acc[r.ship] = (acc[r.ship] ?? 0) + urls.length
+    return acc
+  }, {})
+  const voucherEntries = Object.entries(voucherByShip) as [string, number][]
 
   return (
     <div style={{ padding: '16px 18px' }}>
@@ -771,6 +778,11 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>食事代: <strong>¥{totalMeal.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>ホテル代金: <strong>¥{totalHotel.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>新幹線代金: <strong>¥{totalShinkansen.toLocaleString()}</strong></div>
+        {voucherEntries.length > 0 && (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>
+            🔗 バウチャー: <strong>{voucherEntries.map(([ship, cnt]) => `${ship} ${cnt}件`).join(' / ')}</strong>
+          </div>
+        )}
         {zeroCount > 0 && <div style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, color: 'var(--warning)' }}>⚠ 売上未入力: <strong>{zeroCount}件</strong></div>}
       </div>
 
