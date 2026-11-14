@@ -281,6 +281,7 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
   // voucherName: 各PDFのカスタム名 (index -> name)
   const [voucherNames, setVoucherNames] = useState<Record<number, string>>({})
   const [editingNameIdx, setEditingNameIdx] = useState<number | null>(null)
+  const [previewPdfModal, setPreviewPdfModal] = useState<string | null>(null)
   const handleVoucherFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).filter(fi => fi.type === 'application/pdf')
     if (!files.length) return
@@ -305,13 +306,17 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
     })
     e.target.value = ''
   }
-  const openVoucherPdf = (dataUrl: string) => {
-    const [meta, b64] = dataUrl.split(',')
-    const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'
-    const binary = atob(b64)
-    const arr = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i)
-    window.open(URL.createObjectURL(new Blob([arr], { type: mime })), '_blank')
+  const openVoucherPdf = (url: string) => {
+    if (url.startsWith('data:')) {
+      const [meta, b64] = url.split(',')
+      const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'
+      const binary = atob(b64)
+      const arr = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i)
+      setPreviewPdfModal(URL.createObjectURL(new Blob([arr], { type: mime })))
+    } else {
+      setPreviewPdfModal(url)
+    }
   }
   const removeVoucher = (idx: number) => {
     const next = voucherList.filter((_, i) => i !== idx).join('|||')
@@ -375,6 +380,7 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
                       <button onClick={() => openVoucherPdf(url)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, padding: 0, textDecoration: 'underline' }}>
                         🔗 {displayName}
                       </button>
+                      <button onClick={() => openVoucherPdf(url)} title="プレビュー" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: 12, padding: '0 2px' }}>👀</button>
                       {editingNameIdx === i ? (
                         <input
                           autoFocus

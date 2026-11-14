@@ -121,6 +121,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
   const [error, setError] = useState('')
   const [pdfNames, setPdfNames] = useState<string[]>([])
   const [hwPdfName, setHwPdfName] = useState('')
+  const [previewPdf, setPreviewPdf] = useState<string | null>(null)
   const hwFileRef = useRef<HTMLInputElement>(null)
   const [autoCalc, setAutoCalc] = useState(true)
   const [section, setSection] = useState<'basic' | 'transport' | 'sales'>('basic')
@@ -277,6 +278,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
                   {pdfNames.map((name, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: 'var(--success-bg)', border: '1px solid var(--success)', marginBottom: 6 }}>
                       <span style={{ flex: 1, fontSize: 13, color: 'var(--success)' }}>✅ {name}</span>
+                      <button type="button" onClick={() => setPreviewPdf(f.vouchers[i])} title="プレビュー" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: 15, padding: '0 2px' }}>👀</button>
                       <button type="button" onClick={() => removePdf(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>×</button>
                     </div>
                   ))}
@@ -362,6 +364,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
   }
 
   return (
+    <>
     <div style={{ padding: '20px 22px' }}>
       <PageHeader title="日報作成" sub="送信すると売上・請求データへ自動連携（Supabase保存）" />
       {error && <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', border: '1px solid var(--danger-border)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 14, fontSize: 12 }}>⚠ {error}</div>}
@@ -388,6 +391,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
             {pdfNames.map((name, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 'var(--radius)', background: 'var(--success-bg)', border: '1px solid var(--success)', marginBottom: 4 }}>
                 <span style={{ flex: 1, fontSize: 11, color: 'var(--success)' }}>✅ {name}</span>
+                <button type="button" onClick={() => setPreviewPdf(f.vouchers[i])} title="プレビュー" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: 13, padding: '0 2px' }}>👀</button>
                 <button type="button" onClick={() => removePdf(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, padding: 0 }}>×</button>
               </div>
             ))}
@@ -459,5 +463,18 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
         </div>
       )}
     </div>
+      {previewPdf && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#1e293b', color: '#fff', flexShrink: 0, paddingTop: 'max(10px, env(safe-area-inset-top))' }}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>📄 PDFプレビュー</span>
+            <button onClick={() => setPreviewPdf(null)}
+              style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              ✕ 閉じる
+            </button>
+          </div>
+          <iframe src={previewPdf} style={{ flex: 1, border: 'none', width: '100%', display: 'block' }} title="PDF Preview" />
+        </div>
+      )}
+    </>
   )
 }
