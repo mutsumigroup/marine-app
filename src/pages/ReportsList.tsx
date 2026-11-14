@@ -734,6 +734,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
     return acc
   }, {})
   const voucherEntries = Object.entries(voucherByShip) as [string, number][]
+  const voucherTotal = voucherEntries.reduce((s, [, c]) => s + c, 0)
 
   return (
     <div style={{ padding: '16px 18px' }}>
@@ -783,6 +784,8 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         {voucherEntries.length > 0 && (
           <div style={{ background: filterShip ? 'var(--accent-bg)' : 'var(--surface)', border: `1px solid ${filterShip ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-muted)' }}>🔗 バウチャー:</span>
+            <span style={{ fontWeight: 700 }}>合計 {voucherTotal}件</span>
+            <span style={{ color: 'var(--border)' }}>|</span>
             {voucherEntries.map(([ship, cnt]) => (
               <button key={ship} onClick={() => setFilterShip(filterShip === ship ? '' : ship)}
                 style={{ padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none',
