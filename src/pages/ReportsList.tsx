@@ -778,84 +778,6 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
           </div>
         )}
       </PageHeader>
-      {filterShip && voucherEntries.some(([s]) => s === filterShip) && (
-        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 16px', marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, color: '#1d4ed8', fontWeight: 600 }}>📎 {filterShip} のVoucher結合</span>
-            <span style={{ fontSize: 12, color: '#3b82f6' }}>合計 {voucherEntries.find(([s]) => s === filterShip)?.[1] ?? 0}件</span>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-              <button onClick={() => { setVoucherSelectMode(v => { if(v) setSelectedVouchers(new Set()); return !v }) }}
-                style={{ padding: '5px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid #3b82f6', background: voucherSelectMode ? '#3b82f6' : 'none', color: voucherSelectMode ? '#fff' : '#3b82f6' }}>
-                {voucherSelectMode ? '✕ キャンセル' : '☑ PDFを選んで結合'}
-              </button>
-              {!voucherSelectMode && (
-                <button onClick={async () => {
-                  const urls = filtered.flatMap((r: import('../types').Report) => (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:') || p.startsWith('http')))
-                  if (!urls.length) { alert('結合できるPDFがありません'); return }
-                  try {
-                    const merged = await PDFDocument.create()
-                    for (const url of urls) {
-                      let bytes: Uint8Array
-                      if (url.startsWith('data:')) {
-                        const b64 = url.split(',')[1]
-                        bytes = Uint8Array.from(atob(b64), (c: string) => c.charCodeAt(0))
-                      } else {
-                        const res = await fetch(url)
-                        bytes = new Uint8Array(await res.arrayBuffer())
-                      }
-                      const doc = await PDFDocument.load(bytes, { ignoreEncryption: true })
-                      const pages = await merged.copyPages(doc, doc.getPageIndices())
-                      pages.forEach((p: import('pdf-lib').PDFPage) => merged.addPage(p))
-                    }
-                    const pdfBytes = await merged.save()
-                    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
-                    a.download = `voucher_${filterShip.replace(/\s+/g, '_')}_all.pdf`; a.click()
-                    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
-                  } catch (e) { alert('PDF結合に失敗しました: ' + (e as Error).message) }
-                }} style={{ padding: '5px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#1d4ed8', color: '#fff' }}>
-                  ⬇ 全件まとめてダウンロード
-                </button>
-              )}
-              {voucherSelectMode && selectedVouchers.size > 0 && (
-                <button onClick={async () => {
-                  const urlList: string[] = []
-                  filtered.forEach((r: import('../types').Report) => {
-                    const links = (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:') || p.startsWith('http'))
-                    links.forEach((url: string, i: number) => { if (selectedVouchers.has(`${r.id}_${i}`)) urlList.push(url) })
-                  })
-                  if (!urlList.length) return
-                  try {
-                    const merged = await PDFDocument.create()
-                    for (const url of urlList) {
-                      let bytes: Uint8Array
-                      if (url.startsWith('data:')) {
-                        const b64 = url.split(',')[1]
-                        bytes = Uint8Array.from(atob(b64), (c: string) => c.charCodeAt(0))
-                      } else {
-                        const res = await fetch(url)
-                        bytes = new Uint8Array(await res.arrayBuffer())
-                      }
-                      const doc = await PDFDocument.load(bytes, { ignoreEncryption: true })
-                      const pages = await merged.copyPages(doc, doc.getPageIndices())
-                      pages.forEach((p: import('pdf-lib').PDFPage) => merged.addPage(p))
-                    }
-                    const pdfBytes = await merged.save()
-                    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
-                    a.download = `voucher_${filterShip.replace(/\s+/g, '_')}_selected.pdf`; a.click()
-                    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
-                    setVoucherSelectMode(false); setSelectedVouchers(new Set())
-                  } catch (e) { alert('PDF結合に失敗しました: ' + (e as Error).message) }
-                }} style={{ padding: '5px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#1d4ed8', color: '#fff' }}>
-                  ⬇ 選択した{selectedVouchers.size}件を結合
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {filterExpense && (
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '8px 14px', marginBottom: 12, fontSize: 12, color: '#1d4ed8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>📋 請求書から移動：<strong>{EXPENSE_LABEL_MAP[filterExpense] ?? filterExpense}</strong> がある日報のみ表示</span>
@@ -891,6 +813,74 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         )}
         {zeroCount > 0 && <div style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, color: 'var(--warning)' }}>⚠ 売上未入力: <strong>{zeroCount}件</strong></div>}
       </div>
+
+      {filterShip && voucherEntries.some(([s]) => s === filterShip) && (
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 16px', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, color: '#1d4ed8', fontWeight: 600 }}>📎 {filterShip} のVoucher結合</span>
+            <span style={{ fontSize: 12, color: '#3b82f6' }}>合計 {voucherEntries.find(([s]) => s === filterShip)?.[1] ?? 0}件</span>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button onClick={() => { setVoucherSelectMode(v => { if(v) setSelectedVouchers(new Set()); return !v }) }}
+                style={{ padding: '5px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid #3b82f6', background: voucherSelectMode ? '#3b82f6' : 'none', color: voucherSelectMode ? '#fff' : '#3b82f6' }}>
+                {voucherSelectMode ? '✕ キャンセル' : '☑ PDFを選んで結合'}
+              </button>
+              {!voucherSelectMode && (
+                <button onClick={async () => {
+                  const urls = filtered.flatMap((r: import('../types').Report) => (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:') || p.startsWith('http')))
+                  if (!urls.length) { alert('結合できるPDFがありません'); return }
+                  try {
+                    const merged = await PDFDocument.create()
+                    for (const url of urls) {
+                      let bytes: Uint8Array
+                      if (url.startsWith('data:')) { const b64 = url.split(',')[1]; bytes = Uint8Array.from(atob(b64), (c: string) => c.charCodeAt(0)) }
+                      else { const res = await fetch(url); bytes = new Uint8Array(await res.arrayBuffer()) }
+                      const doc = await PDFDocument.load(bytes, { ignoreEncryption: true })
+                      const pages = await merged.copyPages(doc, doc.getPageIndices())
+                      pages.forEach((p: import('pdf-lib').PDFPage) => merged.addPage(p))
+                    }
+                    const pdfBytes = await merged.save()
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
+                    a.download = `voucher_${filterShip.replace(/\s+/g, '_')}_all.pdf`; a.click()
+                    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+                  } catch (e) { alert('PDF結合に失敗しました: ' + (e as Error).message) }
+                }} style={{ padding: '5px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#1d4ed8', color: '#fff' }}>
+                  ⬇ 全件まとめてダウンロード
+                </button>
+              )}
+              {voucherSelectMode && selectedVouchers.size > 0 && (
+                <button onClick={async () => {
+                  const urlList: string[] = []
+                  filtered.forEach((r: import('../types').Report) => {
+                    const links = (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:') || p.startsWith('http'))
+                    links.forEach((url: string, i: number) => { if (selectedVouchers.has(`${r.id}_${i}`)) urlList.push(url) })
+                  })
+                  if (!urlList.length) return
+                  try {
+                    const merged = await PDFDocument.create()
+                    for (const url of urlList) {
+                      let bytes: Uint8Array
+                      if (url.startsWith('data:')) { const b64 = url.split(',')[1]; bytes = Uint8Array.from(atob(b64), (c: string) => c.charCodeAt(0)) }
+                      else { const res = await fetch(url); bytes = new Uint8Array(await res.arrayBuffer()) }
+                      const doc = await PDFDocument.load(bytes, { ignoreEncryption: true })
+                      const pages = await merged.copyPages(doc, doc.getPageIndices())
+                      pages.forEach((p: import('pdf-lib').PDFPage) => merged.addPage(p))
+                    }
+                    const pdfBytes = await merged.save()
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
+                    a.download = `voucher_${filterShip.replace(/\s+/g, '_')}_selected.pdf`; a.click()
+                    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+                    setVoucherSelectMode(false); setSelectedVouchers(new Set())
+                  } catch (e) { alert('PDF結合に失敗しました: ' + (e as Error).message) }
+                }} style={{ padding: '5px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: '#1d4ed8', color: '#fff' }}>
+                  ⬇ 選択した{selectedVouchers.size}件を結合
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>💡 行をクリックすると編集できます</div>
