@@ -839,7 +839,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                       pages.forEach((p: any) => merged.addPage(p))
                     }
                     const pdfBytes = await merged.save()
-                    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+                    const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' })
                     const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
                     a.download = `voucher_${filterShip.replace(/\s+/g, '_')}_all.pdf`; a.click()
                     setTimeout(() => URL.revokeObjectURL(a.href), 1000)
@@ -867,7 +867,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                       pages.forEach((p: any) => merged.addPage(p))
                     }
                     const pdfBytes = await merged.save()
-                    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+                    const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' })
                     const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
                     a.download = `voucher_${filterShip.replace(/\s+/g, '_')}_selected.pdf`; a.click()
                     setTimeout(() => URL.revokeObjectURL(a.href), 1000)
