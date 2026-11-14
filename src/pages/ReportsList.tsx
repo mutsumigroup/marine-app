@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { PDFDocument } from 'pdf-lib'
 import TransportList from './TransportList'
 import { useSearchParams } from 'react-router-dom'
 import { Card, Select, PageHeader, Btn, Field, Input, Grid, Divider, useIsMobile } from '../components/UI'
@@ -277,6 +278,9 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
 
   // Voucher（最大5枚）アップロード処理
   const voucherList = f.voucher ? f.voucher.split('|||').filter(Boolean) : []
+  // voucherName: 各PDFのカスタム名 (index -> name)
+  const [voucherNames, setVoucherNames] = useState<Record<number, string>>({})
+  const [editingNameIdx, setEditingNameIdx] = useState<number | null>(null)
   const handleVoucherFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).filter(fi => fi.type === 'application/pdf')
     if (!files.length) return
@@ -364,23 +368,28 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
               {/* アップロード済みPDFリスト */}
               {voucherList.length > 0 && (
                 <div style={{ marginBottom: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {voucherList.map((url, i) => (
+                  {voucherList.map((url, i) => {
+                    const displayName = voucherNames[i] ?? `PDF${voucherList.length > 1 ? i + 1 : ''}`
+                    return (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 6, padding: '3px 8px' }}>
-                      <button
-                        onClick={() => openVoucherPdf(url)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, padding: 0, textDecoration: 'underline' }}
-                      >
-                        🔗 PDF{voucherList.length > 1 ? i + 1 : ''}
+                      <button onClick={() => openVoucherPdf(url)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, padding: 0, textDecoration: 'underline' }}>
+                        🔗 {displayName}
                       </button>
-                      <button
-                        onClick={() => removeVoucher(i)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, padding: '0 2px', lineHeight: 1 }}
-                        title="削除"
-                      >
-                        ✕
-                      </button>
+                      {editingNameIdx === i ? (
+                        <input
+                          autoFocus
+                          defaultValue={displayName}
+                          onBlur={e => { const v = e.target.value.trim(); if (v) setVoucherNames(prev => ({ ...prev, [i]: v })); setEditingNameIdx(null) }}
+                          onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingNameIdx(null) }}
+                          style={{ fontSize: 11, border: '1px solid var(--accent)', borderRadius: 4, padding: '1px 6px', width: 140, outline: 'none' }}
+                        />
+                      ) : (
+                        <button onClick={() => setEditingNameIdx(i)} title="名前を編集" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11, padding: '0 2px' }}>✏️</button>
+                      )}
+                      <button onClick={() => removeVoucher(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, padding: '0 2px', lineHeight: 1 }} title="削除">✕</button>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
               {/* アップロードボタン（5枚未満のときのみ表示） */}
@@ -796,6 +805,31 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
               </button>
             ))}
             {filterShip && <button onClick={() => setFilterShip('')} style={{ fontSize: 11, padding: '2px 8px', border: '1px solid var(--border)', borderRadius: 999, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>✕ 解除</button>}
+            {filterShip && voucherEntries.some(([s]) => s === filterShip) && (
+              <button onClick={async () => {
+                const urls = filtered.flatMap(r => (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:')))
+                if (!urls.length) { alert('結合できるPDFがありません'); return }
+                try {
+                  const merged = await PDFDocument.create()
+                  for (const dataUrl of urls) {
+                    const b64 = dataUrl.split(',')[1]
+                    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+                    const doc = await PDFDocument.load(bytes)
+                    const pages = await merged.copyPages(doc, doc.getPageIndices())
+                    pages.forEach(p => merged.addPage(p))
+                  }
+                  const pdfBytes = await merged.save()
+                  const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+                  const a = document.createElement('a')
+                  a.href = URL.createObjectURL(blob)
+                  a.download = `voucher_${filterShip.replace(/\s+/g, '_')}_merged.pdf`
+                  a.click()
+                  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+                } catch (e) { alert('PDF結合に失敗しました: ' + (e as Error).message) }
+              }} style={{ padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'var(--navy)', color: '#fff' }}>
+                📎 {filterShip}のVoucherを一括結合
+              </button>
+            )}
           </div>
         )}
         {zeroCount > 0 && <div style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, color: 'var(--warning)' }}>⚠ 売上未入力: <strong>{zeroCount}件</strong></div>}
