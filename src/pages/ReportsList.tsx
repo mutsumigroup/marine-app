@@ -943,19 +943,15 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       </Card>
 
       {previewPdf && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => setPreviewPdf(null)}>
-          <div style={{ position: 'relative', width: '92vw', height: '92vh', background: '#fff', borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.4)', overflow: 'hidden' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#1e293b', color: '#fff' }}>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>📄 PDFプレビュー</span>
-              <button onClick={() => setPreviewPdf(null)}
-                style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
-                ✕ 閉じる
-              </button>
-            </div>
-            <iframe src={previewPdf} style={{ width: '100%', height: 'calc(100% - 40px)', border: 'none' }} title="PDF Preview" />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#1e293b', color: '#fff', flexShrink: 0, paddingTop: 'max(10px, env(safe-area-inset-top))' }}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>📄 PDFプレビュー</span>
+            <button onClick={() => setPreviewPdf(null)}
+              style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              ✕ 閉じる
+            </button>
           </div>
+          <iframe src={previewPdf} style={{ flex: 1, border: 'none', width: '100%', display: 'block' }} title="PDF Preview" />
         </div>
       )}
       {hwReport && <HwPopup report={hwReport} onClose={() => setHwReport(null)} onSavePdf={onSavePdf} settings={settings} onUpdateReport={onUpdateReport} />}
