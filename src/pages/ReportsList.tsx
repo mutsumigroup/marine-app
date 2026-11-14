@@ -608,6 +608,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const [filterShip, setFilterShip] = useState('')
   const [voucherSelectMode, setVoucherSelectMode] = useState(false)
   const [selectedVouchers, setSelectedVouchers] = useState<Set<string>>(new Set())
+  const [previewPdf, setPreviewPdf] = useState<string | null>(null)
   const toggleVoucher = (key: string) => setSelectedVouchers(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s })
 
   const EXPENSE_LABEL_MAP: Record<string, string> = {
@@ -926,7 +927,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                     <td style={{ ...TD, fontSize: 11 }}>{r.hotel_fee > 0 ? `¥${r.hotel_fee.toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.shinkansen_fee > 0 ? `¥${r.shinkansen_fee.toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 10, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
-                      {r.voucher ? (() => { const parts = r.voucher.split('|||'); const links = parts.filter((p: string) => p.startsWith('http') || p.startsWith('data:')); const texts = parts.filter((p: string) => !p.startsWith('http') && !p.startsWith('data:')); return <>{links.map((url: string, i: number) => { const vkey = `${r.id}_${i}`; return (<div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{voucherSelectMode && <input type="checkbox" checked={selectedVouchers.has(vkey)} onChange={() => toggleVoucher(vkey)} style={{ cursor: 'pointer', accentColor: 'var(--accent)' }} />}<button onClick={() => { if(url.startsWith('data:')){const a=url.split(',');const m=a[0].match(/:(.*?);/)?.[1]??'application/pdf';const b=atob(a[1]);const n=b.length;const u=new Uint8Array(n);for(let j=0;j<n;j++)u[j]=b.charCodeAt(j);const blobUrl=URL.createObjectURL(new Blob([u],{type:m}));const dlEl=document.createElement('a');dlEl.href=blobUrl;dlEl.download=`voucher_${(r.date||'').replace(/-/g,'')}_${(r.ship||'').replace(/\s+/g,'_')}_${i+1}.pdf`;dlEl.click();setTimeout(()=>URL.revokeObjectURL(blobUrl),100)}else{window.open(url,'_blank')}}} style={{ color: voucherSelectMode && selectedVouchers.has(vkey) ? 'var(--navy)' : 'var(--accent)', textDecoration: 'underline', fontSize: 10, display: 'block', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: voucherSelectMode && selectedVouchers.has(vkey) ? 700 : 400 }}>🔗 PDF{links.length > 1 ? i+1 : ''}</button></div>) })}{texts.length > 0 && <span style={{ color: 'var(--text-light)', fontSize: 10 }}>{texts.join(', ')}</span>}</> })() : <span style={{ color: 'var(--text-light)' }}>—</span>}
+                      {r.voucher ? (() => { const parts = r.voucher.split('|||'); const links = parts.filter((p: string) => p.startsWith('http') || p.startsWith('data:')); const texts = parts.filter((p: string) => !p.startsWith('http') && !p.startsWith('data:')); return <>{links.map((url: string, i: number) => { const vkey = `${r.id}_${i}`; return (<div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{voucherSelectMode && <input type="checkbox" checked={selectedVouchers.has(vkey)} onChange={() => toggleVoucher(vkey)} style={{ cursor: 'pointer', accentColor: 'var(--accent)' }} />}<button onClick={() => { if(url.startsWith('data:')){const a=url.split(',');const m=a[0].match(/:(.*?);/)?.[1]??'application/pdf';const b=atob(a[1]);const n=b.length;const u=new Uint8Array(n);for(let j=0;j<n;j++)u[j]=b.charCodeAt(j);const blobUrl=URL.createObjectURL(new Blob([u],{type:m}));const dlEl=document.createElement('a');dlEl.href=blobUrl;dlEl.download=`voucher_${(r.date||'').replace(/-/g,'')}_${(r.ship||'').replace(/\s+/g,'_')}_${i+1}.pdf`;dlEl.click();setTimeout(()=>URL.revokeObjectURL(blobUrl),100)}else{window.open(url,'_blank')}}} style={{ color: voucherSelectMode && selectedVouchers.has(vkey) ? 'var(--navy)' : 'var(--accent)', textDecoration: 'underline', fontSize: 10, display: 'block', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: voucherSelectMode && selectedVouchers.has(vkey) ? 700 : 400 }}>🔗 PDF{links.length > 1 ? i+1 : ''}</button><button onClick={(e) => { e.stopPropagation(); if(url.startsWith('data:')){const a=url.split(',');const m=a[0].match(/:(.*?);/)?.[1]??'application/pdf';const b=atob(a[1]);const n=b.length;const u=new Uint8Array(n);for(let j=0;j<n;j++)u[j]=b.charCodeAt(j);setPreviewPdf(URL.createObjectURL(new Blob([u],{type:m})))}else{setPreviewPdf(url)}}} style={{ color: '#7c3aed', fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }} title="プレビュー">👀</button></div>) })}{texts.length > 0 && <span style={{ color: 'var(--text-light)', fontSize: 10 }}>{texts.join(', ')}</span>}</> })() : <span style={{ color: 'var(--text-light)' }}>—</span>}
                     </td>
                 <td style={{ ...TD, fontSize: 11 }} onClick={(e) => e.stopPropagation()}>
                   <ExtraExpenseCell items={r.extra_expenses ?? []} otherExp={r.other_exp ?? 0} />
@@ -941,6 +942,22 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         </div>
       </Card>
 
+      {previewPdf && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setPreviewPdf(null)}>
+          <div style={{ position: 'relative', width: '92vw', height: '92vh', background: '#fff', borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.4)', overflow: 'hidden' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#1e293b', color: '#fff' }}>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>📄 PDFプレビュー</span>
+              <button onClick={() => setPreviewPdf(null)}
+                style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                ✕ 閉じる
+              </button>
+            </div>
+            <iframe src={previewPdf} style={{ width: '100%', height: 'calc(100% - 40px)', border: 'none' }} title="PDF Preview" />
+          </div>
+        </div>
+      )}
       {hwReport && <HwPopup report={hwReport} onClose={() => setHwReport(null)} onSavePdf={onSavePdf} settings={settings} onUpdateReport={onUpdateReport} />}
       {editReport && <EditModal report={editReport} onClose={() => setEditReport(null)} onSave={onUpdateReport} onDelete={onDeleteReport} prices={prices} settings={settings} />}
       </div>}
