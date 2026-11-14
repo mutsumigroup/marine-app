@@ -826,7 +826,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
               </button>
               {!voucherSelectMode && (
                 <button onClick={async () => {
-                  const urls = filtered.flatMap((r: import('../types').Report) => (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:') || p.startsWith('http')))
+                  const urls = filtered.flatMap((r: Report) => (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:') || p.startsWith('http')))
                   if (!urls.length) { alert('結合できるPDFがありません'); return }
                   try {
                     const merged = await PDFDocument.create()
@@ -836,7 +836,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                       else { const res = await fetch(url); bytes = new Uint8Array(await res.arrayBuffer()) }
                       const doc = await PDFDocument.load(bytes, { ignoreEncryption: true })
                       const pages = await merged.copyPages(doc, doc.getPageIndices())
-                      pages.forEach((p: import('pdf-lib').PDFPage) => merged.addPage(p))
+                      pages.forEach((p: any) => merged.addPage(p))
                     }
                     const pdfBytes = await merged.save()
                     const blob = new Blob([pdfBytes], { type: 'application/pdf' })
@@ -851,7 +851,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
               {voucherSelectMode && selectedVouchers.size > 0 && (
                 <button onClick={async () => {
                   const urlList: string[] = []
-                  filtered.forEach((r: import('../types').Report) => {
+                  filtered.forEach((r: Report) => {
                     const links = (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:') || p.startsWith('http'))
                     links.forEach((url: string, i: number) => { if (selectedVouchers.has(`${r.id}_${i}`)) urlList.push(url) })
                   })
@@ -864,7 +864,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                       else { const res = await fetch(url); bytes = new Uint8Array(await res.arrayBuffer()) }
                       const doc = await PDFDocument.load(bytes, { ignoreEncryption: true })
                       const pages = await merged.copyPages(doc, doc.getPageIndices())
-                      pages.forEach((p: import('pdf-lib').PDFPage) => merged.addPage(p))
+                      pages.forEach((p: any) => merged.addPage(p))
                     }
                     const pdfBytes = await merged.save()
                     const blob = new Blob([pdfBytes], { type: 'application/pdf' })
