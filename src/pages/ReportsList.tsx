@@ -780,14 +780,20 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
           <span style={{ fontSize: 13, color: '#1d4ed8', fontWeight: 600 }}>📎 {filterShip} のVoucherを一括結合</span>
           <span style={{ fontSize: 12, color: '#3b82f6' }}>{voucherEntries.find(([s]) => s === filterShip)?.[1] ?? 0}件のPDFを1ファイルにまとめてダウンロードします</span>
           <button onClick={async () => {
-            const urls = filtered.flatMap((r: import('../types').Report) => (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:')))
+            const urls = filtered.flatMap((r: import('../types').Report) => (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('data:') || p.startsWith('http')))
             if (!urls.length) { alert('結合できるPDFがありません'); return }
             try {
               const merged = await PDFDocument.create()
-              for (const dataUrl of urls) {
-                const b64 = dataUrl.split(',')[1]
-                const bytes = Uint8Array.from(atob(b64), (c: string) => c.charCodeAt(0))
-                const doc = await PDFDocument.load(bytes)
+              for (const url of urls) {
+                let bytes: Uint8Array
+                if (url.startsWith('data:')) {
+                  const b64 = url.split(',')[1]
+                  bytes = Uint8Array.from(atob(b64), (c: string) => c.charCodeAt(0))
+                } else {
+                  const res = await fetch(url)
+                  bytes = new Uint8Array(await res.arrayBuffer())
+                }
+                const doc = await PDFDocument.load(bytes, { ignoreEncryption: true })
                 const pages = await merged.copyPages(doc, doc.getPageIndices())
                 pages.forEach((p: import('pdf-lib').PDFPage) => merged.addPage(p))
               }
