@@ -265,7 +265,7 @@ function HwPopup({ report, onClose, onSavePdf, settings, onUpdateReport }: { rep
   )
 }
 
-export function EditModal({ report, onClose, onSave, onDelete, prices, settings }: { report: Report; onClose: () => void; onSave: (id: string, updates: Partial<Report>) => Promise<boolean>; onDelete: (id: string) => Promise<boolean>; prices: Record<string, { ship: number; crew: number }>; settings?: import('../types').Settings }) {
+export function EditModal({ report, onClose, onSave, onDelete, prices, settings }: { report: Report; onClose: () => void; onSave: (id: string, updates: Partial<Report>) => Promise<boolean>; onDelete: (id: string) => Promise<boolean>; prices: Record<string, { ship: number; crew: number }>; settings?: Settings }) {
   const [f, setF] = useState({ ...report })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
