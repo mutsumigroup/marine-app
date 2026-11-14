@@ -596,6 +596,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const [filterMonth, setFilterMonth] = useState(_currentMonth)
   const [filterCategory, setFilterCategory] = useState('')
   const [filterExpense, setFilterExpense] = useState('')
+  const [filterShip, setFilterShip] = useState('')
 
   const EXPENSE_LABEL_MAP: Record<string, string> = {
     park: '駐車場料金',
@@ -715,6 +716,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
     (!filterYear || r.bill_month?.startsWith(filterYear)) &&
     (!filterMonth || r.bill_month === filterMonth) &&
     (!filterCategory || r.category === filterCategory) &&
+    (!filterShip || r.ship === filterShip) &&
     expenseFilter(r)
   )
   const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date))
@@ -779,8 +781,18 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>ホテル代金: <strong>¥{totalHotel.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>新幹線代金: <strong>¥{totalShinkansen.toLocaleString()}</strong></div>
         {voucherEntries.length > 0 && (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>
-            🔗 バウチャー: <strong>{voucherEntries.map(([ship, cnt]) => `${ship} ${cnt}件`).join(' / ')}</strong>
+          <div style={{ background: filterShip ? 'var(--accent-bg)' : 'var(--surface)', border: `1px solid ${filterShip ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ color: 'var(--text-muted)' }}>🔗 バウチャー:</span>
+            {voucherEntries.map(([ship, cnt]) => (
+              <button key={ship} onClick={() => setFilterShip(filterShip === ship ? '' : ship)}
+                style={{ padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none',
+                  background: filterShip === ship ? 'var(--accent)' : 'var(--surface2)',
+                  color: filterShip === ship ? '#fff' : 'var(--text)',
+                  transition: 'background .15s' }}>
+                {ship} {cnt}件
+              </button>
+            ))}
+            {filterShip && <button onClick={() => setFilterShip('')} style={{ fontSize: 11, padding: '2px 8px', border: '1px solid var(--border)', borderRadius: 999, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>✕ 解除</button>}
           </div>
         )}
         {zeroCount > 0 && <div style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, color: 'var(--warning)' }}>⚠ 売上未入力: <strong>{zeroCount}件</strong></div>}
