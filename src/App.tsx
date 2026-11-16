@@ -54,19 +54,8 @@ function AppInner() {
   const app = useAppState()
   const isMobile = useIsMobile()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false)
 
-  if (app.loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 16, background: '#f8fafc' }}>
-      <LoadingSpinner />
-      {app.loadSlow && (
-        <div style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease' }}>
-          <div style={{ fontSize: 14, color: '#475569', fontWeight: 600 }}>サーバーを起動中です...</div>
-          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>初回起動は最大1分かかる場合があります</div>
-        </div>
-      )}
-    </div>
-  )
+  if (app.loading) return <LoadingSpinner />
 
   if (app.loadError) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 20, padding: 24, background: '#f8fafc', textAlign: 'center' }}>
@@ -89,7 +78,7 @@ function AppInner() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={!isMobile && desktopSidebarCollapsed} onToggle={() => setDesktopSidebarCollapsed(v => !v)} />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {isMobile && <MobileHeader onMenu={() => setSidebarOpen(true)} />}
         <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: isMobile ? 52 : 0 }}>
