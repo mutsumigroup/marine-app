@@ -41,14 +41,44 @@ export function useAppState() {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   const loadAll = useCallback(async () => {
     setLoading(true)
-    try {
-      const [r, inv, s] = await Promise.all([
-        api.fetchReports(),
-        api.fetchInvoices(),
-        api.fetchSettings(),
+    setLoadError(null)
+
+    // タイムアウト付きfetch wrapper
+    const withTimeout = <T,>(promise: Promise<T>, ms = 15000): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error('接続タイムアウト（15秒）')), ms)
+        ),
       ])
+    }
+
+    // 自動リトライ（最大3回、指数バックオフ）
+    const fetchWithRetry = async () => {
+      const attempts = 3
+      let lastErr: Error | null = null
+      for (let i = 0; i < attempts; i++) {
+        if (i > 0) await new Promise(r => setTimeout(r, 1000 * i))
+        try {
+          const [r, inv, s] = await withTimeout(Promise.all([
+            api.fetchReports(),
+            api.fetchInvoices(),
+            api.fetchSettings(),
+          ]))
+          return { r, inv, s }
+        } catch (err) {
+          lastErr = err as Error
+        }
+      }
+      throw lastErr
+    }
+
+    try {
+      const { r, inv, s } = await fetchWithRetry()
       setReports(r)
       setInvoices(inv)
       setSettings(s)
@@ -61,11 +91,10 @@ export function useAppState() {
         setPortMasters(pm)
       })
     } catch (err) {
-      addToast('error', `データの読み込みに失敗しました: ${(err as Error).message}`)
-    } finally {
+      setLoadError((err as Error).message)
       setLoading(false)
     }
-  }, [addToast])
+  }, [])
 
   useEffect(() => { loadAll() }, [loadAll])
 
@@ -414,7 +443,7 @@ export function useAppState() {
   return {
     reports, invoices, settings,
     kyReports, portMasters,
-    loading, toasts,
+    loading, loadError, toasts,
     addToast, removeToast,
     submitReport, saveSettings,
     sendInvoice,

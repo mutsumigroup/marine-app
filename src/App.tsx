@@ -57,6 +57,25 @@ function AppInner() {
 
   if (app.loading) return <LoadingSpinner />
 
+  if (app.loadError) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 20, padding: 24, background: '#f8fafc', textAlign: 'center' }}>
+      <div style={{ fontSize: 48 }}>⚠️</div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b' }}>データの読み込みに失敗しました</div>
+      <div style={{ fontSize: 13, color: '#64748b', maxWidth: 320, lineHeight: 1.6 }}>
+        ネットワーク接続を確認してください。<br />
+        サーバーが一時的に停止している可能性があります。
+      </div>
+      <div style={{ fontSize: 11, color: '#94a3b8', background: '#f1f5f9', borderRadius: 6, padding: '6px 12px', maxWidth: 360, wordBreak: 'break-all' }}>
+        {app.loadError}
+      </div>
+      <button
+        onClick={() => app.reload()}
+        style={{ marginTop: 8, padding: '12px 32px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+        🔄 再読み込み
+      </button>
+    </div>
+  )
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
