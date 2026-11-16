@@ -29,6 +29,7 @@ export function useAppState() {
   const [kyReports, setKyReports] = useState<KyReport[]>([])
   const [portMasters, setPortMasters] = useState<PortMaster[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [toasts, setToasts] = useState<Toast[]>([])
 
   const addToast = useCallback((type: Toast['type'], message: string) => {
@@ -40,8 +41,6 @@ export function useAppState() {
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
-
-  const [loadError, setLoadError] = useState<string | null>(null)
 
   const loadAll = useCallback(async () => {
     setLoading(true)
