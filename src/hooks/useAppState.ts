@@ -451,7 +451,7 @@ export function useAppState() {
   return {
     reports, invoices, settings,
     kyReports, portMasters,
-    loading, loadError, toasts,
+    loading, loadError, loadSlow, toasts,
     addToast, removeToast,
     submitReport, saveSettings,
     sendInvoice,

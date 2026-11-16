@@ -99,14 +99,27 @@ export async function updateSettings(settings: Partial<Settings>): Promise<void>
 
 // ===================== REPORTS =====================
 
+// 一覧用：voucher/hw_voucherを除いた軽量取得
 export async function fetchReports(): Promise<Report[]> {
   const { data, error } = await supabase
     .from('reports')
-    .select('*')
+    .select('id,date,port,ship,crew,category,work,amount,park_place,park_fee,hw_from1,hw_to1,hw_from2,hw_to2,hw_fee,meal,hotel_fee,shinkansen_fee,other_exp,extra_expenses,expenses,expense_items,bill_month,notes,invoiced,paid,created_at,updated_at')
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(`日報の取得に失敗しました: ${error.message}`)
   return (data ?? []) as Report[]
+}
+
+// 1件フルデータ取得（voucher含む）
+export async function fetchReportById(id: string): Promise<Report | null> {
+  const { data, error } = await supabase
+    .from('reports')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) return null
+  return data as Report
 }
 
 export async function insertReport(report: Omit<Report, 'id' | 'created_at' | 'updated_at'>): Promise<Report> {

@@ -6,6 +6,7 @@ import { Card, Select, PageHeader, Btn, Field, Input, Grid, Divider, useIsMobile
 import { CATEGORIES } from '../types'
 import type { Report, Settings } from '../types'
 import { sendEmail, buildDailyReportEmail } from '../lib/email'
+import * as api from '../lib/api'
 
 interface Props {
   reports: Report[]
@@ -612,9 +613,41 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const [filterCategory, setFilterCategory] = useState('')
   const [filterExpense, setFilterExpense] = useState('')
   const [filterShip, setFilterShip] = useState('')
+  const openPdfFromList = async (reportId: string, voucherData: string | undefined, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const cached = voucherCache[reportId] ?? voucherData
+    const urlStr = cached ?? ''
+    const url = urlStr.split('|||').filter((p: string) => p.startsWith('http') || p.startsWith('data:'))[0]
+    if (url) {
+      if (url.startsWith('data:')) {
+        const [meta, b64] = url.split(','); const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'
+        const bin = atob(b64); const arr = new Uint8Array(bin.length)
+        for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j)
+        setPreviewPdf(URL.createObjectURL(new Blob([arr], { type: mime })))
+      } else { setPreviewPdf(url) }
+      return
+    }
+    setFetchingVoucherId(reportId)
+    const full = await api.fetchReportById(reportId)
+    setFetchingVoucherId(null)
+    if (!full?.voucher) return
+    setVoucherCache(prev => ({ ...prev, [reportId]: full.voucher }))
+    const urls = full.voucher.split('|||').filter((p: string) => p.startsWith('http') || p.startsWith('data:'))
+    if (!urls[0]) return
+    const u = urls[0]
+    if (u.startsWith('data:')) {
+      const [meta, b64] = u.split(','); const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'
+      const bin = atob(b64); const arr = new Uint8Array(bin.length)
+      for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j)
+      setPreviewPdf(URL.createObjectURL(new Blob([arr], { type: mime })))
+    } else { setPreviewPdf(u) }
+  }
+
   const [voucherSelectMode, setVoucherSelectMode] = useState(false)
   const [selectedVouchers, setSelectedVouchers] = useState<Set<string>>(new Set())
   const [previewPdf, setPreviewPdf] = useState<string | null>(null)
+  const [voucherCache, setVoucherCache] = useState<Record<string, string>>({})
+  const [fetchingVoucherId, setFetchingVoucherId] = useState<string | null>(null)
   const toggleVoucher = (key: string) => setSelectedVouchers(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s })
 
   const EXPENSE_LABEL_MAP: Record<string, string> = {
@@ -915,7 +948,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
               {sorted.length === 0
                 ? <tr><td colSpan={COLS.length + 1} style={{ padding: 32, textAlign: 'center', color: 'var(--text-light)' }}>日報がありません</td></tr>
                 : sorted.map(r => (
-                  <tr key={r.id} id={`report-${r.id}`} onClick={() => setEditReport(r)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                  <tr key={r.id} id={`report-${r.id}`} onClick={async () => { const full = await api.fetchReportById(r.id); setEditReport(full ?? r) }} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
                     {selectionMode && <td style={{ padding: '7px 8px', textAlign: 'center', width: 36 }} onClick={e => e.stopPropagation()}>
@@ -933,7 +966,23 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                     <td style={{ ...TD, fontSize: 11 }}>{r.hotel_fee > 0 ? `¥${r.hotel_fee.toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.shinkansen_fee > 0 ? `¥${r.shinkansen_fee.toLocaleString()}` : '—'}</td>
                     <td style={{ ...TD, fontSize: 10, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
-                      {r.voucher ? (() => { const parts = r.voucher.split('|||'); const links = parts.filter((p: string) => p.startsWith('http') || p.startsWith('data:')); const texts = parts.filter((p: string) => !p.startsWith('http') && !p.startsWith('data:')); return <>{links.map((url: string, i: number) => { const vkey = `${r.id}_${i}`; return (<div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{voucherSelectMode && <input type="checkbox" checked={selectedVouchers.has(vkey)} onChange={() => toggleVoucher(vkey)} style={{ cursor: 'pointer', accentColor: 'var(--accent)' }} />}<button onClick={() => { if(url.startsWith('data:')){const a=url.split(',');const m=a[0].match(/:(.*?);/)?.[1]??'application/pdf';const b=atob(a[1]);const n=b.length;const u=new Uint8Array(n);for(let j=0;j<n;j++)u[j]=b.charCodeAt(j);const blobUrl=URL.createObjectURL(new Blob([u],{type:m}));const dlEl=document.createElement('a');dlEl.href=blobUrl;dlEl.download=`voucher_${(r.date||'').replace(/-/g,'')}_${(r.ship||'').replace(/\s+/g,'_')}_${i+1}.pdf`;dlEl.click();setTimeout(()=>URL.revokeObjectURL(blobUrl),100)}else{window.open(url,'_blank')}}} style={{ color: voucherSelectMode && selectedVouchers.has(vkey) ? 'var(--navy)' : 'var(--accent)', textDecoration: 'underline', fontSize: 10, display: 'block', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: voucherSelectMode && selectedVouchers.has(vkey) ? 700 : 400 }}>🔗 PDF{links.length > 1 ? i+1 : ''}</button><button onClick={(e) => { e.stopPropagation(); if(url.startsWith('data:')){const a=url.split(',');const m=a[0].match(/:(.*?);/)?.[1]??'application/pdf';const b=atob(a[1]);const n=b.length;const u=new Uint8Array(n);for(let j=0;j<n;j++)u[j]=b.charCodeAt(j);setPreviewPdf(URL.createObjectURL(new Blob([u],{type:m})))}else{setPreviewPdf(url)}}} style={{ color: '#7c3aed', fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }} title="プレビュー">👀</button></div>) })}{texts.length > 0 && <span style={{ color: 'var(--text-light)', fontSize: 10 }}>{texts.join(', ')}</span>}</> })() : <span style={{ color: 'var(--text-light)' }}>—</span>}
+                      {fetchingVoucherId === r.id
+                        ? <span style={{ color: 'var(--text-light)', fontSize: 10 }}>読込中...</span>
+                        : (() => {
+                            const cached = voucherCache[r.id] ?? r.voucher ?? ''
+                            const links = cached.split('|||').filter((p: string) => p.startsWith('http') || p.startsWith('data:'))
+                            if (links.length > 0) {
+                              return <>{links.map((url: string, i: number) => {
+                                const vkey = `${r.id}_${i}`
+                                return (<div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  {voucherSelectMode && <input type="checkbox" checked={selectedVouchers.has(vkey)} onChange={() => toggleVoucher(vkey)} style={{ cursor: 'pointer', accentColor: 'var(--accent)' }} />}
+                                  <button onClick={(e) => openPdfFromList(r.id, cached, e)} style={{ color: 'var(--accent)', textDecoration: 'underline', fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>🔗 PDF{links.length > 1 ? i+1 : ''}</button>
+                                  <button onClick={(e) => openPdfFromList(r.id, cached, e)} style={{ color: '#7c3aed', fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }} title="プレビュー">👀</button>
+                                </div>)
+                              })}</>
+                            }
+                            return <button onClick={(e) => openPdfFromList(r.id, cached, e)} style={{ color: 'var(--accent)', fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>📄 PDF</button>
+                          })()}
                     </td>
                 <td style={{ ...TD, fontSize: 11 }} onClick={(e) => e.stopPropagation()}>
                   <ExtraExpenseCell items={r.extra_expenses ?? []} otherExp={r.other_exp ?? 0} />
