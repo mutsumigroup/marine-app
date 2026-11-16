@@ -85,17 +85,14 @@ export async function fetchSettings(): Promise<Settings> {
 export async function updateSettings(settings: Partial<Settings>): Promise<void> {
   const { data: existing } = await supabase.from('settings').select('id').limit(1).single()
 
-  // DBに存在しない可能性のある列を除外して保存
-  const { custom_categories: _cc, ...safeSettings } = settings as Settings & Record<string, unknown>
-
   if (existing) {
     const { error } = await supabase
       .from('settings')
-      .update(safeSettings)
+      .update(settings)
       .eq('id', existing.id)
     if (error) throw new Error(`設定の保存に失敗しました: ${error.message}`)
   } else {
-    const { error } = await supabase.from('settings').insert(safeSettings)
+    const { error } = await supabase.from('settings').insert(settings)
     if (error) throw new Error(`設定の作成に失敗しました: ${error.message}`)
   }
 }
