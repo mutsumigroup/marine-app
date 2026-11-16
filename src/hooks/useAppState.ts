@@ -29,6 +29,7 @@ export function useAppState() {
   const [kyReports, setKyReports] = useState<KyReport[]>([])
   const [portMasters, setPortMasters] = useState<PortMaster[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadSlow, setLoadSlow] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -44,14 +45,18 @@ export function useAppState() {
 
   const loadAll = useCallback(async () => {
     setLoading(true)
+    setLoadSlow(false)
     setLoadError(null)
 
-    // タイムアウト付きfetch wrapper
-    const withTimeout = <T,>(promise: Promise<T>, ms = 35000): Promise<T> => {
+    // 8秒後に「起動中」メッセージ表示
+    const slowTimer = setTimeout(() => setLoadSlow(true), 8000)
+
+    // タイムアウト付きfetch wrapper（90秒）
+    const withTimeout = <T,>(promise: Promise<T>, ms = 90000): Promise<T> => {
       return Promise.race([
         promise,
         new Promise<T>((_, reject) =>
-          setTimeout(() => reject(new Error('接続タイムアウト（35秒）')), ms)
+          setTimeout(() => reject(new Error('接続タイムアウト（90秒）')), ms)
         ),
       ])
     }
@@ -61,7 +66,7 @@ export function useAppState() {
       const attempts = 3
       let lastErr: Error | null = null
       for (let i = 0; i < attempts; i++) {
-        if (i > 0) await new Promise(r => setTimeout(r, 1000 * i))
+        if (i > 0) await new Promise(r => setTimeout(r, 2000 * i))
         try {
           const [r, inv, s] = await withTimeout(Promise.all([
             api.fetchReports(),
@@ -81,6 +86,8 @@ export function useAppState() {
       setReports(r)
       setInvoices(inv)
       setSettings(s)
+      clearTimeout(slowTimer)
+      setLoadSlow(false)
       setLoading(false)
       Promise.all([
         api.fetchKyReports().catch(() => [] as KyReport[]),
@@ -90,6 +97,8 @@ export function useAppState() {
         setPortMasters(pm)
       })
     } catch (err) {
+      clearTimeout(slowTimer)
+      setLoadSlow(false)
       setLoadError((err as Error).message)
       setLoading(false)
     }
