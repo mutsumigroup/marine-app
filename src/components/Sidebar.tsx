@@ -18,7 +18,7 @@ const NAV = [
   ]},
 ]
 
-export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => void }) {
+export default function Sidebar({ open, onClose, collapsed, onToggle }: { open?: boolean; onClose?: () => void; collapsed?: boolean; onToggle?: () => void }) {
   const location = useLocation()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
@@ -77,5 +77,28 @@ export default function Sidebar({ open, onClose }: { open?: boolean; onClose?: (
     )
   }
 
-  return navContent
+  if (collapsed) {
+    return (
+      <div style={{ width: 0, flexShrink: 0, position: 'relative' }}>
+        <button
+          onClick={onToggle}
+          title="サイドバーを開く"
+          style={{ position: 'fixed', top: 14, left: 0, zIndex: 100, background: 'var(--surface2)', border: '1px solid var(--border)', borderLeft: 'none', borderRadius: '0 6px 6px 0', padding: '8px 6px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, lineHeight: 1 }}>
+          ▶
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      {navContent}
+      <button
+        onClick={onToggle}
+        title="サイドバーを閉じる"
+        style={{ position: 'absolute', top: 14, right: -12, zIndex: 100, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '50%', width: 22, height: 22, cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>
+        ◀
+      </button>
+    </div>
+  )
 }
