@@ -47,11 +47,11 @@ export function useAppState() {
     setLoadError(null)
 
     // タイムアウト付きfetch wrapper
-    const withTimeout = <T,>(promise: Promise<T>, ms = 15000): Promise<T> => {
+    const withTimeout = <T,>(promise: Promise<T>, ms = 35000): Promise<T> => {
       return Promise.race([
         promise,
         new Promise<T>((_, reject) =>
-          setTimeout(() => reject(new Error('接続タイムアウト（15秒）')), ms)
+          setTimeout(() => reject(new Error('接続タイムアウト（35秒）')), ms)
         ),
       ])
     }
