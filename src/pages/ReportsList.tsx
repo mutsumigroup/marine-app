@@ -787,6 +787,12 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   }, {})
   const voucherEntries = Object.entries(voucherByShip) as [string, number][]
   const voucherTotal = voucherEntries.reduce((s, [, c]) => s + c, 0)
+  const reportsByShip = filtered.reduce((acc: Record<string, number>, r) => {
+    if (!r.ship) return acc
+    acc[r.ship] = (acc[r.ship] ?? 0) + 1
+    return acc
+  }, {})
+  const shipEntries = Object.entries(reportsByShip).sort((a, b) => b[1] - a[1]) as [string, number][]
 
   return (
     <div style={{ padding: '16px 18px' }}>
@@ -833,6 +839,21 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>食事代: <strong>¥{totalMeal.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>ホテル代金: <strong>¥{totalHotel.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>新幹線代金: <strong>¥{totalShinkansen.toLocaleString()}</strong></div>
+        {shipEntries.length > 1 && (
+          <div style={{ background: filterShip ? 'var(--accent-bg)' : 'var(--surface)', border: `1px solid ${filterShip ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ color: 'var(--text-muted)' }}>🚢 船名別:</span>
+            {shipEntries.map(([ship, cnt]) => (
+              <button key={ship} onClick={() => setFilterShip(filterShip === ship ? '' : ship)}
+                style={{ padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none',
+                  background: filterShip === ship ? 'var(--accent)' : 'var(--surface2)',
+                  color: filterShip === ship ? '#fff' : 'var(--text)',
+                  transition: 'background .15s' }}>
+                {ship} {cnt}件
+              </button>
+            ))}
+            {filterShip && <button onClick={() => setFilterShip('')} style={{ fontSize: 11, padding: '2px 8px', border: '1px solid var(--border)', borderRadius: 999, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>✕ 解除</button>}
+          </div>
+        )}
         {voucherEntries.length > 0 && (
           <div style={{ background: filterShip ? 'var(--accent-bg)' : 'var(--surface)', border: `1px solid ${filterShip ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-muted)' }}>🔗 バウチャー:</span>
