@@ -767,12 +767,14 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
 
   const years = [...new Set(reports.map(r => r.bill_month?.slice(0, 4)))].filter(Boolean).sort().reverse()
   const months = [...new Set(reports.filter(r => !filterYear || r.bill_month?.startsWith(filterYear)).map(r => r.bill_month))].sort().reverse()
-  const filtered = reports.filter(r =>
+  const filteredWithoutShip = reports.filter(r =>
     (!filterYear || r.bill_month?.startsWith(filterYear)) &&
     (!filterMonth || r.bill_month === filterMonth) &&
     (!filterCategory || r.category === filterCategory) &&
-    (!filterShip || r.ship === filterShip) &&
     expenseFilter(r)
+  )
+  const filtered = filteredWithoutShip.filter(r =>
+    (!filterShip || r.ship === filterShip)
   )
   const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date))
   const totalAmount = filtered.reduce((s, r) => s + r.amount, 0)
@@ -790,7 +792,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   }, {})
   const voucherEntries = Object.entries(voucherByShip) as [string, number][]
   const voucherTotal = voucherEntries.reduce((s, [, c]) => s + c, 0)
-  const reportsByShip = filtered.reduce((acc: Record<string, number>, r) => {
+  const reportsByShip = filteredWithoutShip.reduce((acc: Record<string, number>, r) => {
     if (!r.ship) return acc
     acc[r.ship] = (acc[r.ship] ?? 0) + 1
     return acc
