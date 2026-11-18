@@ -965,6 +965,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
           </div>
           {selectionMode && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(59,130,246,0.1)', borderBottom: '1px solid var(--border)' }}>
             <span style={{ fontSize: 12, color: 'var(--accent)' }}>{selectedIds.size}件選択中</span>
+            <button onClick={() => setSelectedIds(new Set(sorted.map(r => String(r.id))))} style={{ background: 'none', border: '1px solid var(--accent)', color: 'var(--accent)', borderRadius: 5, padding: '4px 8px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>☑ 全選択</button>
             <button disabled={bulkDownloading} onClick={() => bulkDownload(sorted.filter(r => selectedIds.has(String(r.id))))} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: bulkDownloading ? 'default' : 'pointer', fontWeight: 600, opacity: bulkDownloading ? 0.6 : 1 }}>{bulkDownloading ? '処理中...' : '📦 PDF一括ダウンロード'}</button>
             <button onClick={() => { setSelectionMode(false); setSelectedIds(new Set()) }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 5, padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>解除</button>
           </div>}
