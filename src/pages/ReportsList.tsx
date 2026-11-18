@@ -712,31 +712,41 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
     const ids = rows.map(r => String(r.id))
     setSelectedIds(ids.length > 0 && ids.every(id => selectedIds.has(id)) ? new Set<string>() : new Set(ids))
   }
+  const [bulkDownloading, setBulkDownloading] = useState(false)
   const bulkDownload = async (rows: any[]) => {
-    const sel = rows.filter(r => r.voucher)
+    const sel = rows.filter(r => r.has_voucher)
     if (sel.length === 0) { alert('PDFが存在する日報を選択してください'); return }
-    const { default: JSZip } = await import('jszip')
-    const zip = new JSZip(); let cnt = 0
-    for (const r of sel) {
-      const parts = String(r.voucher).split('|||').filter(Boolean)
-      parts.filter(p => p.startsWith('data:')).forEach((url, i) => {
-        const [meta, b64] = url.split(',')
-        const ext = meta.includes('pdf') ? 'pdf' : 'bin'
-        const fname = `voucher_${(r.date||'').replace(/-/g,'')}_${(r.ship||'').replace(/\s+/g,'_')}_${i+1}.${ext}`
-        const bin = atob(b64)
-        const bytes = new Uint8Array(bin.length)
-        for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j)
-        zip.file(fname, bytes); cnt++
-      })
+    setBulkDownloading(true)
+    try {
+      const { default: JSZip } = await import('jszip')
+      const zip = new JSZip(); let cnt = 0
+      for (const r of sel) {
+        const voucherStr = voucherCache[r.id] ?? (await api.fetchReportById(r.id))?.voucher ?? ''
+        if (!voucherCache[r.id] && voucherStr) setVoucherCache(prev => ({ ...prev, [r.id]: voucherStr }))
+        const parts = String(voucherStr).split('|||').filter(Boolean)
+        parts.filter(p => p.startsWith('data:')).forEach((url, i) => {
+          const [meta, b64] = url.split(',')
+          const ext = meta.includes('pdf') ? 'pdf' : 'bin'
+          const fname = `voucher_${(r.date||'').replace(/-/g,'')}_${(r.ship||'').replace(/\s+/g,'_')}_${i+1}.${ext}`
+          const bin = atob(b64.replace(/\s/g, ''))
+          const bytes = new Uint8Array(bin.length)
+          for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j)
+          zip.file(fname, bytes); cnt++
+        })
+      }
+      if (cnt === 0) { alert('選択した日報にPDFがありません'); return }
+      const blob = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `vouchers_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.zip`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 100)
+    } catch (err) {
+      alert('一括ダウンロードに失敗しました: ' + (err as Error).message)
+    } finally {
+      setBulkDownloading(false)
     }
-    if (cnt === 0) { alert('選択した日報にPDFがありません'); return }
-    const blob = await zip.generateAsync({ type: 'blob' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `vouchers_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.zip`
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 100)
   }
 
   React.useEffect(() => {
@@ -955,7 +965,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
           </div>
           {selectionMode && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(59,130,246,0.1)', borderBottom: '1px solid var(--border)' }}>
             <span style={{ fontSize: 12, color: 'var(--accent)' }}>{selectedIds.size}件選択中</span>
-            <button onClick={() => bulkDownload(sorted.filter(r => selectedIds.has(String(r.id))))} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>📦 PDF一括ダウンロード</button>
+            <button disabled={bulkDownloading} onClick={() => bulkDownload(sorted.filter(r => selectedIds.has(String(r.id))))} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: bulkDownloading ? 'default' : 'pointer', fontWeight: 600, opacity: bulkDownloading ? 0.6 : 1 }}>{bulkDownloading ? '処理中...' : '📦 PDF一括ダウンロード'}</button>
             <button onClick={() => { setSelectionMode(false); setSelectedIds(new Set()) }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 5, padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>解除</button>
           </div>}
         <div style={{ overflowX: 'auto' }}>
