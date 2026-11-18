@@ -89,6 +89,8 @@ export interface Report {
   expenses: number
   expense_items?: { label: string; amount: number; _type?: string }[]
   voucher: string
+  has_voucher?: boolean
+  has_hw_voucher?: boolean
   bill_month: string
   notes: string
   invoiced: boolean

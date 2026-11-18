@@ -615,32 +615,35 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const [filterShip, setFilterShip] = useState('')
   const openPdfFromList = async (reportId: string, voucherData: string | undefined, e: React.MouseEvent) => {
     e.stopPropagation()
-    const cached = voucherCache[reportId] ?? voucherData
-    const urlStr = cached ?? ''
-    const url = urlStr.split('|||').filter((p: string) => p.startsWith('http') || p.startsWith('data:'))[0]
-    if (url) {
-      if (url.startsWith('data:')) {
-        const [meta, b64] = url.split(','); const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'
-        const bin = atob(b64); const arr = new Uint8Array(bin.length)
-        for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j)
-        setPreviewPdf(URL.createObjectURL(new Blob([arr], { type: mime })))
-      } else { setPreviewPdf(url) }
-      return
+    try {
+      const openUrl = (u: string) => {
+        if (u.startsWith('data:')) {
+          const [meta, b64] = u.split(',')
+          const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'
+          const b64clean = b64.replace(/\s/g, '')
+          const bin = atob(b64clean); const arr = new Uint8Array(bin.length)
+          for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j)
+          setPreviewPdf(URL.createObjectURL(new Blob([arr], { type: mime })))
+        } else {
+          setPreviewPdf(u)
+        }
+      }
+      const cached = voucherCache[reportId] ?? voucherData
+      const urlStr = cached ?? ''
+      const url = urlStr.split('|||').filter((p: string) => p.startsWith('http') || p.startsWith('data:'))[0]
+      if (url) { openUrl(url); return }
+      setFetchingVoucherId(reportId)
+      const full = await api.fetchReportById(reportId)
+      setFetchingVoucherId(null)
+      if (!full?.voucher) { alert('このレポートにVoucherが見つかりません'); return }
+      setVoucherCache(prev => ({ ...prev, [reportId]: full.voucher }))
+      const urls = full.voucher.split('|||').filter((p: string) => p.startsWith('http') || p.startsWith('data:'))
+      if (!urls[0]) { alert('PDFデータの形式が不正です'); return }
+      openUrl(urls[0])
+    } catch (err) {
+      setFetchingVoucherId(null)
+      alert('PDFを開けませんでした: ' + (err as Error).message)
     }
-    setFetchingVoucherId(reportId)
-    const full = await api.fetchReportById(reportId)
-    setFetchingVoucherId(null)
-    if (!full?.voucher) return
-    setVoucherCache(prev => ({ ...prev, [reportId]: full.voucher }))
-    const urls = full.voucher.split('|||').filter((p: string) => p.startsWith('http') || p.startsWith('data:'))
-    if (!urls[0]) return
-    const u = urls[0]
-    if (u.startsWith('data:')) {
-      const [meta, b64] = u.split(','); const mime = meta.match(/:(.*?);/)?.[1] ?? 'application/pdf'
-      const bin = atob(b64); const arr = new Uint8Array(bin.length)
-      for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j)
-      setPreviewPdf(URL.createObjectURL(new Blob([arr], { type: mime })))
-    } else { setPreviewPdf(u) }
   }
 
   const [voucherSelectMode, setVoucherSelectMode] = useState(false)
@@ -1002,6 +1005,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                                 </div>)
                               })}</>
                             }
+                            if (!r.has_voucher) return <span style={{ color: 'var(--text-light)', fontSize: 10 }}>—</span>
                             return <button onClick={(e) => openPdfFromList(r.id, cached, e)} style={{ color: 'var(--accent)', fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>📄 PDF</button>
                           })()}
                     </td>

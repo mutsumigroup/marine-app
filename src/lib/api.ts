@@ -108,7 +108,7 @@ export async function fetchReports(): Promise<Report[]> {
 
   if (error) throw new Error(`日報の取得に失敗しました: ${error.message}`)
   // voucherはon-demand取得のため除外してメモリ節約
-  return (data ?? []).map(({ voucher: _v, hw_voucher: _hw, ...rest }: Record<string, unknown>) => rest as unknown as Report)
+  return (data ?? []).map(({ voucher: _v, hw_voucher: _hw, ...rest }: Record<string, unknown>) => ({ ...rest, has_voucher: !!(typeof _v === 'string' && _v.length > 10), has_hw_voucher: !!(typeof _hw === 'string' && _hw.length > 10) }) as unknown as Report)
 }
 
 // 1件フルデータ取得（voucher含む）
