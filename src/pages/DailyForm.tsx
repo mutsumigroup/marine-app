@@ -62,12 +62,11 @@ function AutoInput({ value, onChange, placeholder, suggestions }: { value: strin
   const wrapRef = useRef<HTMLDivElement>(null)
   const isMobile = useIsMobile()
   const update = useCallback((v: string) => {
-    if (v.length === 0) { setFiltered([]); setShow(false); return }
+    if (v.length === 0 || suggestions.includes(v)) { setFiltered([]); setShow(false); return }
     const list = [...new Set(suggestions)].filter(s => s.toLowerCase().includes(v.toLowerCase())).slice(0, 8)
     setFiltered(list)
     setShow(list.length > 0)
   }, [suggestions])
-  useEffect(() => { update(value) }, [value, update])
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setShow(false) }
     document.addEventListener('mousedown', handler)
@@ -75,7 +74,7 @@ function AutoInput({ value, onChange, placeholder, suggestions }: { value: strin
   }, [])
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
-      <input type="text" value={value} onChange={e => onChange(e.target.value)} onFocus={() => update(value)} onBlur={() => setTimeout(() => setShow(false), 150)} placeholder={placeholder}
+      <input type="text" value={value} onChange={e => { onChange(e.target.value); update(e.target.value) }} onBlur={() => setTimeout(() => setShow(false), 150)} placeholder={placeholder}
         style={{ padding: isMobile ? '12px 14px' : '8px 10px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: isMobile ? 16 : 13, width: '100%', outline: 'none' }} />
       {show && filtered.length > 0 && (
         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: 'var(--surface)', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,.12)', maxHeight: 220, overflowY: 'auto', marginTop: 2 }}>
