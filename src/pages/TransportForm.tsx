@@ -85,7 +85,7 @@ export default function TransportForm({ settings, onSuccess }: Props) {
   const tenkoOpt = TENKO_OPTIONS[f.tenkoIdx]
   const tenkoFee = tenkoOpt?.value ?? 0
   const tollFee = parseInt(f.toll) || 0
-  const total = (fare ?? 0) + tenkoFee
+  const total = (fare ?? 0) + tenkoFee + tollFee
 
   // バリデーション: 点呼のみ or エリア選択済み
   const canSubmit = f.shipName.trim() !== '' && ((f.fromArea && f.toArea && ['1名', '2名', '3名', '4名', '5名以上'].includes(f.passengers)) || tenkoFee > 0)

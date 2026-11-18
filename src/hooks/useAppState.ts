@@ -408,12 +408,13 @@ export function useAppState() {
       const sentAt = new Date().toLocaleString('ja-JP')
       const { data: monthReports, error: fetchError } = await supabase
         .from('transport_reports')
-        .select('fare, tenko_fee')
+        .select('fare, tenko_fee, toll_fee')
         .eq('bill_month', month)
       if (fetchError) throw fetchError
       const totalFare = (monthReports || []).reduce((s: number, r: { fare?: number }) => s + (r.fare ?? 0), 0)
       const totalTenko = (monthReports || []).reduce((s: number, r: { tenko_fee?: number }) => s + (r.tenko_fee ?? 0), 0)
-      const subtotal = totalFare + totalTenko
+      const totalToll = (monthReports || []).reduce((s: number, r: { toll_fee?: number }) => s + (r.toll_fee ?? 0), 0)
+      const subtotal = totalFare + totalTenko + totalToll
       const tax = Math.floor(subtotal * 0.1)
       const total = subtotal + tax
       const count = (monthReports || []).length

@@ -77,7 +77,8 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose,
 
   const totalFare   = rows.reduce((s, r) => s + r._fare, 0)
   const totalTenko  = rows.reduce((s, r) => s + r._tenko, 0)
-  const subtotal    = totalFare + totalTenko
+  const totalToll   = rows.reduce((s, r) => s + r._toll, 0)
+  const subtotal    = totalFare + totalTenko + totalToll
   const tax         = Math.floor(subtotal * 0.1)
   const total       = subtotal + tax
 
@@ -88,7 +89,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose,
         fare: r._fare,
         tenko_fee: r._tenko,
         toll_fee: r._toll,
-        total: r._fare + r._tenko,
+        total: r._fare + r._tenko + r._toll,
       }).eq('id', r.id)
     }
     setDirty(false)
@@ -225,7 +226,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose,
               <tbody>
                 {rows.map((r, i) => {
                   const area = r.from_area && r.to_area ? `${r.from_area} → ${r.to_area}` : '—'
-                  const sub = r._fare + r._tenko
+                  const sub = r._fare + r._tenko + r._toll
                   return (
                     <tr key={r.id} style={{ borderBottom: '0.5px solid #eee' }}>
                       <td style={tdS}>{r.date}</td>
@@ -251,6 +252,7 @@ function TransportInvoiceSheet({ month, reports: initReports, settings, onClose,
             <div style={{ marginTop: 8, padding: '8px 10px', background: '#fafafa', borderRadius: 6, border: '0.5px solid #eee', fontSize: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 3 }}><span>旅客運送報酬 小計</span><span>¥{totalFare.toLocaleString()}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 3 }}><span>点呼手当 小計</span><span>¥{totalTenko.toLocaleString()}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 3 }}><span>高速代等 小計</span><span>¥{totalToll.toLocaleString()}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 3, borderTop: '0.5px solid #ddd', paddingTop: 4, marginTop: 4 }}><span>業務小計（税抜）</span><span>¥{subtotal.toLocaleString()}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: 3 }}><span>消費税（10%）</span><span>¥{tax.toLocaleString()}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, borderTop: '0.5px solid #ddd', paddingTop: 6, marginTop: 3 }}><span>合計（税込）</span><span>¥{total.toLocaleString()}</span></div>
@@ -325,7 +327,7 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
       reports: reps,
       totalFare: reps.reduce((s, r) => s + (r.fare ?? 0), 0),
       totalTenko: reps.reduce((s, r) => s + (r.tenko_fee ?? 0), 0),
-      total: reps.reduce((s, r) => s + (r.total ?? 0), 0),
+      total: reps.reduce((s, r) => s + (r.fare ?? 0) + (r.tenko_fee ?? 0) + (r.toll_fee ?? 0), 0),
     }))
 
   const sentCount   = summaries.filter(s => s.reports.some(r => r.sent)).length
