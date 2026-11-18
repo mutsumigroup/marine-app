@@ -13,6 +13,8 @@ export interface TransportReport {
   total: number            // 合計手当
   bill_month: string       // 請求対象月
   sent: boolean            // 送信済フラグ
+  paid?: boolean           // 入金済フラグ
+  paid_date?: string | null // 入金日
   created_at?: string
   updated_at?: string
 }

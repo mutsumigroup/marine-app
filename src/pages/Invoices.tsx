@@ -10,6 +10,8 @@ interface Props {
   settings: Settings
   onSend: (id: string) => Promise<boolean>
   onSendTransport: (month: string) => Promise<boolean>
+  onPaidTransport: (month: string) => Promise<boolean>
+  onRevertTransport: (month: string, status: '未請求' | '送信済') => Promise<boolean>
   onPaid: (id: string) => Promise<boolean>
   onRevert: (id: string, status: string) => Promise<boolean>
   onUpdateInvoice: (id: string, updates: Pick<Invoice, 'subtotal' | 'tax' | 'expenses' | 'total' | 'expense_items'>) => Promise<boolean>
@@ -469,7 +471,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   )
 }
 
-export default function Invoices({ invoices, reports, settings, onSend, onSendTransport, onPaid, onRevert, onUpdateInvoice }: Props) {
+export default function Invoices({ invoices, reports, settings, onSend, onSendTransport, onPaidTransport, onRevertTransport, onPaid, onRevert, onUpdateInvoice }: Props) {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'ship' | 'transport'>('ship')
   const [filter, setFilter] = useState('')
@@ -516,7 +518,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onSendTr
           </button>
         ))}
       </div>
-      {activeTab === 'transport' ? <TransportInvoices settings={settings} onSend={onSendTransport} /> : <div>
+      {activeTab === 'transport' ? <TransportInvoices settings={settings} onSend={onSendTransport} onPaid={onPaidTransport} onRevert={onRevertTransport} /> : <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         {[
           { label: '請求総額',   value: `¥${totalAmt.toLocaleString()}`,  color: '#1a1a1a' },

@@ -449,6 +449,38 @@ export function useAppState() {
     }
   }, [settings, addToast])
 
+  const markTransportPaid = useCallback(async (month: string): Promise<boolean> => {
+    try {
+      const paidDate = new Date().toISOString().slice(0, 10)
+      const { error } = await supabase
+        .from('transport_reports')
+        .update({ paid: true, paid_date: paidDate })
+        .eq('bill_month', month)
+      if (error) throw error
+      addToast('success', `送迎請求書 ${month}分 を入金済にしました`)
+      return true
+    } catch (err) {
+      addToast('error', `更新失敗：${(err as Error).message}`)
+      return false
+    }
+  }, [addToast])
+
+  const revertTransportInvoice = useCallback(async (month: string, status: '未請求' | '送信済'): Promise<boolean> => {
+    try {
+      const updates = status === '未請求' ? { sent: false, paid: false, paid_date: null } : { paid: false, paid_date: null }
+      const { error } = await supabase
+        .from('transport_reports')
+        .update(updates)
+        .eq('bill_month', month)
+      if (error) throw error
+      addToast('success', `送迎請求書 ${month}分 を「${status}」に戻しました`)
+      return true
+    } catch (err) {
+      addToast('error', `更新失敗：${(err as Error).message}`)
+      return false
+    }
+  }, [addToast])
+
   return {
     reports, invoices, settings,
     kyReports, portMasters,
@@ -456,7 +488,7 @@ export function useAppState() {
     addToast, removeToast,
     submitReport, saveSettings,
     sendInvoice,
-    sendTransportInvoice, markPaid, revertInvoice,
+    sendTransportInvoice, markTransportPaid, revertTransportInvoice, markPaid, revertInvoice,
     updateAmount,
     updateReport,
     deleteReport,

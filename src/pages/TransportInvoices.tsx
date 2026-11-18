@@ -294,12 +294,21 @@ interface MonthSummary {
   total: number
 }
 
+type TransportStatus = '未請求' | '送信済' | '入金済'
+const getTransportStatus = (reps: TransportReport[]): TransportStatus =>
+  reps.some(r => r.paid) ? '入金済' : reps.some(r => r.sent) ? '送信済' : '未請求'
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function TransportInvoices({ settings, onSend }: { settings: any; onSend: (month: string) => Promise<boolean> }) {
+export default function TransportInvoices({ settings, onSend, onPaid, onRevert }: {
+  settings: any
+  onSend: (month: string) => Promise<boolean>
+  onPaid: (month: string) => Promise<boolean>
+  onRevert: (month: string, status: '未請求' | '送信済') => Promise<boolean>
+}) {
   const [reports, setReports] = useState<TransportReport[]>([])
   const [loading, setLoading] = useState(true)
   const [previewMonth, setPreviewMonth] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<'all' | '未請求' | '送信済'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | TransportStatus>('all')
 
   const load = async () => {
     setLoading(true)
@@ -330,11 +339,11 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
       total: reps.reduce((s, r) => s + (r.fare ?? 0) + (r.tenko_fee ?? 0) + (r.toll_fee ?? 0), 0),
     }))
 
-  const sentCount   = summaries.filter(s => s.reports.some(r => r.sent)).length
-  const unsentCount = summaries.length - sentCount
+  const unsentCount = summaries.filter(s => getTransportStatus(s.reports) === '未請求').length
+  const waitAmt = summaries.filter(s => getTransportStatus(s.reports) === '送信済').reduce((s, m) => s + Math.floor(m.total * 1.1), 0)
+  const paidAmt = summaries.filter(s => getTransportStatus(s.reports) === '入金済').reduce((s, m) => s + Math.floor(m.total * 1.1), 0)
   const filteredSummaries = statusFilter === 'all' ? summaries
-    : statusFilter === '送信済' ? summaries.filter(s => s.reports.some(r => r.sent))
-    : summaries.filter(s => !s.reports.some(r => r.sent))
+    : summaries.filter(s => getTransportStatus(s.reports) === statusFilter)
 
   const totalAll = summaries.reduce((s, m) => s + Math.floor(m.total * 1.1), 0)
   const previewSummary = previewMonth ? summaries.find(s => s.month === previewMonth) ?? null : null
@@ -346,9 +355,9 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         {[
           { label: '送迎請求総額', value: `¥${totalAll.toLocaleString()}`, color: '#1a1a1a' },
-          { label: '未請求',       value: `${unsentCount}ヶ月`,             color: '#d97706' },
-          { label: '送信済',       value: `${sentCount}ヶ月`,               color: '#2563eb' },
-          { label: '総件数',       value: `${reports.length}件`,            color: '#6b7280' },
+          { label: '入金待ち',     value: `¥${waitAmt.toLocaleString()}`,  color: '#dc2626' },
+          { label: '入金済',       value: `¥${paidAmt.toLocaleString()}`,  color: '#16a34a' },
+          { label: '未請求件数',   value: `${unsentCount}ヶ月`,             color: '#d97706' },
         ].map(c => (
           <div key={c.label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 14px', boxShadow: 'var(--shadow)' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 3 }}>{c.label}</div>
@@ -358,7 +367,7 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
       </div>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-        {(['all', '未請求', '送信済'] as const).map(f => (
+        {(['all', '未請求', '送信済', '入金済'] as const).map(f => (
           <button key={f} onClick={() => setStatusFilter(f)}
             style={{
               padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
@@ -377,14 +386,16 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
             送迎日報がありません。まず送迎日報を作成してください。
           </div>
-        ) : filteredSummaries.map((s, idx) => (
+        ) : filteredSummaries.map((s, idx) => {
+          const status = getTransportStatus(s.reports)
+          return (
           <div key={s.month}
             style={{ borderBottom: idx < filteredSummaries.length - 1 ? '0.5px solid var(--border)' : 'none', padding: '14px 18px', transition: 'background .1s' }}
             onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--surface2,#f9f9f9)'}
             onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ''}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
               <div style={{ fontSize: 14, fontWeight: 600, minWidth: 70 }}>{s.month}</div>
-              {s.reports.some(r => r.sent) ? <StatusBadge status='送信済' /> : <StatusBadge status='未請求' />}
+              <StatusBadge status={status} />
               <div style={{ marginLeft: 'auto', fontSize: 16, fontWeight: 600 }}>¥{Math.floor(s.total * 1.1).toLocaleString()}</div>
             </div>
             <div style={{ display: 'flex', gap: 20, fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, flexWrap: 'wrap' }}>
@@ -395,19 +406,24 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <Btn size="sm" onClick={() => setPreviewMonth(s.month)}>👁 確認・編集</Btn>
-              {!s.reports.some(r => r.sent) && (
+              {status === '未請求' && (
                 <Btn size="sm" variant="success" onClick={async () => { const ok = await onSend(s.month); if (ok) load() }}>📤 PDF生成・送信</Btn>
               )}
-              {s.reports.some(r => r.sent) && (
+              {status === '送信済' && (
+                <>
+                  <Btn size="sm" variant="primary" onClick={async () => { const ok = await onPaid(s.month); if (ok) load() }}>✓ 入金済にする</Btn>
+                  <Btn size="sm" variant="ghost" style={{ fontSize: 11, color: 'var(--text-muted)', border: '1px dashed var(--border-dark)' }}
+                    onClick={async () => { const ok = await onRevert(s.month, '未請求'); if (ok) load() }}>↩ 未請求に戻す</Btn>
+                </>
+              )}
+              {status === '入金済' && (
                 <Btn size="sm" variant="ghost" style={{ fontSize: 11, color: 'var(--text-muted)', border: '1px dashed var(--border-dark)' }}
-                  onClick={async () => {
-                    const { error } = await supabase.from('transport_reports').update({ sent: false }).eq('bill_month', s.month)
-                    if (!error) load()
-                  }}>↩ 未請求に戻す</Btn>
+                  onClick={async () => { const ok = await onRevert(s.month, '送信済'); if (ok) load() }}>↩ 送信済に戻す</Btn>
               )}
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {previewSummary && (
