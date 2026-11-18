@@ -393,7 +393,16 @@ export default function TransportInvoices({ settings, onSend }: { settings: any;
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <Btn size="sm" onClick={() => setPreviewMonth(s.month)}>👁 確認・編集</Btn>
-              <Btn size="sm" variant="success" onClick={async () => { const ok = await onSend(s.month); if (ok) load() }}>📤 PDF生成・送信</Btn>
+              {!s.reports.some(r => r.sent) && (
+                <Btn size="sm" variant="success" onClick={async () => { const ok = await onSend(s.month); if (ok) load() }}>📤 PDF生成・送信</Btn>
+              )}
+              {s.reports.some(r => r.sent) && (
+                <Btn size="sm" variant="ghost" style={{ fontSize: 11, color: 'var(--text-muted)', border: '1px dashed var(--border-dark)' }}
+                  onClick={async () => {
+                    const { error } = await supabase.from('transport_reports').update({ sent: false }).eq('bill_month', s.month)
+                    if (!error) load()
+                  }}>↩ 未請求に戻す</Btn>
+              )}
             </div>
           </div>
         ))}
