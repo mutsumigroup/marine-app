@@ -796,8 +796,8 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const zeroCount = filtered.filter(r => r.amount === 0).length
   const voucherByShip = filtered.reduce((acc: Record<string, number>, r) => {
     if (!r.ship) return acc
-    const urls = (r.voucher ?? '').split('|||').filter((p: string) => p.startsWith('http') || p.startsWith('data:'))
-    if (urls.length > 0) acc[r.ship] = (acc[r.ship] ?? 0) + urls.length
+    const cnt = r.voucher_count ?? 0
+    if (cnt > 0) acc[r.ship] = (acc[r.ship] ?? 0) + cnt
     return acc
   }, {})
   const voucherEntries = Object.entries(voucherByShip) as [string, number][]

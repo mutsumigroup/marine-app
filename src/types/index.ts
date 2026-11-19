@@ -91,6 +91,7 @@ export interface Report {
   voucher: string
   has_voucher?: boolean
   has_hw_voucher?: boolean
+  voucher_count?: number
   bill_month: string
   notes: string
   invoiced: boolean
