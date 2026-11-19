@@ -365,7 +365,7 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
         </Grid>
         <Grid cols={3} style={{ marginBottom: 10 }}>
           <Field label="船員人数"><Input type="number" value={String(f.crew)} onChange={handleCrewChange} /></Field>
-          <Field label="対応区分"><select value={f.category} onChange={e => handleCategoryChange(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%' }}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></Field>
+          <Field label="対応区分"><select value={f.category} onChange={e => handleCategoryChange(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--border-dark)', borderRadius: 'var(--radius)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, width: '100%' }}>{[...CATEGORIES, ...(settings?.custom_categories ?? [])].map(c => <option key={c}>{c}</option>)}</select></Field>
           <Field label="業務内容"><Input value={f.work} onChange={set('work')} /></Field>
         </Grid>
         <Grid cols={2} style={{ marginBottom: 10 }}>
@@ -831,7 +831,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         </Select>
         <Select value={filterCategory} onChange={setFilterCategory}>
           <option value="">すべての区分</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          {[...CATEGORIES, ...(settings?.custom_categories ?? [])].map(c => <option key={c} value={c}>{c}</option>)}
         </Select>
         {fromInvoices && backMonth && (
           <div style={{ padding: "8px 0 4px" }}>
