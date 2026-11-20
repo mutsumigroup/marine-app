@@ -44,7 +44,20 @@ export function useAppState() {
   }, [])
 
   const loadAll = useCallback(async () => {
-    setLoading(true)
+    // 前回取得したデータがあれば先に表示（裏で最新データに差し替える）
+    const CACHE_KEY = 'marine_app_cache_v1'
+    let hadCache = false
+    try {
+      const raw = localStorage.getItem(CACHE_KEY)
+      if (raw) {
+        const c = JSON.parse(raw)
+        if (Array.isArray(c.r) && Array.isArray(c.inv) && c.s) {
+          setReports(c.r); setInvoices(c.inv); setSettings(c.s)
+          hadCache = true
+        }
+      }
+    } catch { /* ignore */ }
+    setLoading(!hadCache)
     setLoadSlow(false)
     setLoadError(null)
 
@@ -86,6 +99,7 @@ export function useAppState() {
       setReports(r)
       setInvoices(inv)
       setSettings(s)
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ r, inv, s })) } catch { /* 容量超過などは無視 */ }
       clearTimeout(slowTimer)
       setLoadSlow(false)
       setLoading(false)
@@ -99,10 +113,11 @@ export function useAppState() {
     } catch (err) {
       clearTimeout(slowTimer)
       setLoadSlow(false)
-      setLoadError((err as Error).message)
+      if (hadCache) addToast('info', '最新データの取得に失敗したため、前回保存したデータを表示しています')
+      else setLoadError((err as Error).message)
       setLoading(false)
     }
-  }, [])
+  }, [addToast])
 
   useEffect(() => { loadAll() }, [loadAll])
 
