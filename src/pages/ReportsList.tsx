@@ -596,6 +596,9 @@ function CatBadge({ cat }: { cat: string }) {
   return <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: c.bg, color: c.color, border: `1px solid ${c.border}`, whiteSpace: 'nowrap' }}>{cat}</span>
 }
 
+// 船名別・バウチャー件数のチップ表示（非表示にしたい場合はfalse）
+const SHOW_SUMMARY_CHIPS = false
+
 const COLS = [
   ['稼働日', '82px'], ['港名', '80px'], ['船名', '120px'], ['人数', '48px'],
   ['対応区分', '92px'], ['業務内容', '320px'], ['備考', '160px'], ['駐車場', '82px'],
@@ -854,7 +857,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>食事代: <strong>¥{totalMeal.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>ホテル代金: <strong>¥{totalHotel.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>新幹線代金: <strong>¥{totalShinkansen.toLocaleString()}</strong></div>
-        {shipEntries.length > 1 && (
+        {SHOW_SUMMARY_CHIPS && shipEntries.length > 1 && (
           <div style={{ background: filterShip ? 'var(--accent-bg)' : 'var(--surface)', border: `1px solid ${filterShip ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-muted)' }}>🚢 船名別:</span>
             {shipEntries.map(([ship, cnt]) => (
@@ -869,7 +872,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
             {filterShip && <button onClick={() => setFilterShip('')} style={{ fontSize: 11, padding: '2px 8px', border: '1px solid var(--border)', borderRadius: 999, background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>✕ 解除</button>}
           </div>
         )}
-        {voucherEntries.length > 0 && (
+        {SHOW_SUMMARY_CHIPS && voucherEntries.length > 0 && (
           <div style={{ background: filterShip ? 'var(--accent-bg)' : 'var(--surface)', border: `1px solid ${filterShip ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-muted)' }}>🔗 バウチャー:</span>
             <span style={{ fontWeight: 700 }}>合計 {voucherTotal}件</span>
