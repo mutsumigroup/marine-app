@@ -99,8 +99,22 @@ export async function updateSettings(settings: Partial<Settings>): Promise<void>
 
 // ===================== REPORTS =====================
 
-// 一覧用：全列取得後にvoucher/hw_voucherをJS側で除外（DBスキーマに依存しない）
+// 一覧用：voucher/hw_voucher(base64)を含まない軽量ビュー reports_list を優先して取得。
+// ビューが未作成の環境では従来どおり全列取得してJS側で除外（スマホ等では重くなる）。
 export async function fetchReports(): Promise<Report[]> {
+  const lite = await supabase
+    .from('reports_list')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (!lite.error && lite.data) {
+    return lite.data.map((row: Record<string, unknown>) => ({
+      ...row,
+      has_voucher: !!row.has_voucher,
+      has_hw_voucher: !!row.has_hw_voucher,
+      voucher_count: Number(row.voucher_count ?? 0),
+    }) as unknown as Report)
+  }
+
   const { data, error } = await supabase
     .from('reports')
     .select('*')
