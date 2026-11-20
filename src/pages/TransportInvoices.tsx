@@ -311,7 +311,6 @@ export default function TransportInvoices({ settings, onSend, onPaid, onRevert }
   const [statusFilter, setStatusFilter] = useState<'all' | TransportStatus>('all')
 
   const load = async () => {
-    setLoading(true)
     const { data, error } = await supabase
       .from('transport_reports')
       .select('*')
@@ -320,7 +319,14 @@ export default function TransportInvoices({ settings, onSend, onPaid, onRevert }
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    // 日報一覧側での編集・削除を反映するため、画面に戻ったとき再読み込み
+    const onVisible = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => { document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('focus', onVisible) }
+  }, [])
 
   const monthMap = new Map<string, TransportReport[]>()
   reports.forEach(r => {

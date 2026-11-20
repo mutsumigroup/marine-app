@@ -46,13 +46,15 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail, fareMap }: {
   const tenkoOpt = TENKO_OPTIONS[f.tenkoIdx] ?? TENKO_OPTIONS[0]
   const tenkoFee = tenkoOpt.value
   const tollFee = parseInt(f.toll) || 0
-  const total = (fare ?? 0) + tenkoFee
+  const total = (fare ?? 0) + tenkoFee + tollFee
 
   const handleSave = async () => {
     setSaving(true)
     const updated: TransportReport = { ...report, date: f.date, from_area: f.fromArea, to_area: f.toArea, fare: fare ?? 0, tenko_label: tenkoOpt.label, tenko_fee: tenkoFee, toll_fee: tollFee, passengers: f.passengers, notes: f.notes, total, bill_month: f.billMonth, ...(({ ship_name: f.shipName }) as any) }
-    const { error } = await supabase.from('transport_reports').update(updated).eq('id', report.id)
-    if (!error) onSave(updated)
+    const { data: upd, error } = await supabase.from('transport_reports').update(updated).eq('id', report.id).select('id')
+    if (error) alert('保存に失敗しました: ' + error.message)
+    else if (!upd || upd.length === 0) alert('保存できませんでした（データベース側で更新が許可されていない可能性があります）。')
+    else onSave(updated)
     setSaving(false)
   }
 
@@ -75,8 +77,10 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail, fareMap }: {
   const handleDelete = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return }
     setDeleting(true)
-    await supabase.from('transport_reports').delete().eq('id', report.id)
-    onDelete(report.id)
+    const { data: del, error } = await supabase.from('transport_reports').delete().eq('id', report.id).select('id')
+    if (error) alert('削除に失敗しました: ' + error.message)
+    else if (!del || del.length === 0) alert('削除できませんでした（データベース側で削除が許可されていない可能性があります）。')
+    else onDelete(report.id)
     setDeleting(false)
   }
 
