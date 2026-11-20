@@ -1,4 +1,4 @@
-import { HashRouter as BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { HashRouter as BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { useAppState } from './hooks/useAppState'
 import Sidebar from './components/Sidebar'
 import { LoadingSpinner, ToastContainer, useIsMobile } from './components/UI'
@@ -50,6 +50,35 @@ function MobileHeader({ onMenu }: { onMenu: () => void }) {
   )
 }
 
+
+const BOTTOM_NAV = [
+  { path: '/', label: 'ホーム', icon: '⊞' },
+  { path: '/daily', label: '日報作成', icon: '📝' },
+  { path: '/reports', label: '日報一覧', icon: '📋' },
+  { path: '/invoices', label: '請求書', icon: '🧾' },
+  { path: '/settings', label: '設定', icon: '⚙️' },
+]
+
+function BottomNav() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isActive = (path: string) => path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
+  return (
+    <nav style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 200, display: 'flex', background: 'var(--surface)', borderTop: '1px solid var(--border)', paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: '0 -2px 8px rgba(0,0,0,.06)' }}>
+      {BOTTOM_NAV.map(item => {
+        const active = isActive(item.path)
+        return (
+          <button key={item.path} onClick={() => navigate(item.path)}
+            style={{ flex: 1, minHeight: 56, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, background: 'none', border: 'none', cursor: 'pointer', color: active ? 'var(--accent)' : 'var(--text-muted)', fontWeight: active ? 700 : 500, borderTop: active ? '2px solid var(--accent)' : '2px solid transparent' }}>
+            <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
+            <span style={{ fontSize: 10 }}>{item.label}</span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
 function AppInner() {
   const app = useAppState()
   const isMobile = useIsMobile()
@@ -57,7 +86,7 @@ function AppInner() {
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false)
 
   if (app.loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 16, background: '#f8fafc' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', gap: 16, background: '#f8fafc' }}>
       <LoadingSpinner />
       {app.loadSlow && (
         <div style={{ textAlign: 'center', animation: 'fadeIn 0.5s ease' }}>
@@ -69,7 +98,7 @@ function AppInner() {
   )
 
   if (app.loadError) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 20, padding: 24, background: '#f8fafc', textAlign: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', gap: 20, padding: 24, background: '#f8fafc', textAlign: 'center' }}>
       <div style={{ fontSize: 48 }}>⚠️</div>
       <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b' }}>データの読み込みに失敗しました</div>
       <div style={{ fontSize: 13, color: '#64748b', maxWidth: 320, lineHeight: 1.6 }}>
@@ -88,7 +117,7 @@ function AppInner() {
   )
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div className={isMobile ? 'has-bottom-nav' : undefined} style={{ display: 'flex', height: '100dvh', overflow: 'hidden' }}>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={!isMobile && desktopSidebarCollapsed} onToggle={() => setDesktopSidebarCollapsed(v => !v)} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {isMobile && <MobileHeader onMenu={() => setSidebarOpen(true)} />}
@@ -113,6 +142,7 @@ function AppInner() {
           </Suspense>
         </main>
       </div>
+      {isMobile && <BottomNav />}
       <ToastContainer toasts={app.toasts} remove={app.removeToast} />
     </div>
   )

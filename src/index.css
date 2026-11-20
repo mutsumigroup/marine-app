@@ -52,3 +52,27 @@ input[type=number]::-webkit-inner-spin-button { opacity: .4; }
 
 /* Utility */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }
+
+
+/* ========== スマホ向け（幅639px以下） ========== */
+html { -webkit-text-size-adjust: 100%; }
+@media (max-width: 639px) {
+  body { font-size: 14px; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+  /* iOSで入力時に画面が拡大されないよう16px、押しやすい高さに */
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),
+  select, textarea { font-size: 16px !important; min-height: 44px; }
+  input[type=checkbox], input[type=radio] { width: 20px; height: 20px; }
+  /* 編集モーダルは画面下から出るシート表示に */
+  .m-overlay { align-items: flex-end !important; padding: 0 !important; }
+  .m-box { width: 100% !important; max-width: 100% !important; max-height: calc(100dvh - 56px) !important;
+    border-radius: 16px 16px 0 0 !important; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)) !important; }
+  /* 画面上部の絞り込み（年・月・区分）を押しやすく */
+  .page-actions > select { flex: 1 1 calc(50% - 8px); min-width: 0; }
+  /* 集計ボックスは折り返さず横にスワイプ */
+  .stat-row { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .stat-row > * { flex-shrink: 0; white-space: nowrap; }
+  /* 表は横スクロールをなめらかに */
+  .scroll-x { -webkit-overflow-scrolling: touch; }
+  /* 画面下タブの分だけ余白 */
+  .has-bottom-nav main { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+}

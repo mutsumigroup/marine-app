@@ -184,8 +184,8 @@ function HwPopup({ report, onClose, onSavePdf, settings, onUpdateReport }: { rep
     }
   }
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '20px 24px', width: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,.18)', border: '1px solid var(--border)' }}>
+    <div className="m-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="m-box" style={{ background: 'var(--surface)', borderRadius: 12, padding: '20px 24px', width: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,.18)', border: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 14, fontWeight: 600 }}>🛣 高速道路詳細</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>✕</button>
@@ -375,8 +375,8 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
   }
   const handleSave = async () => { setSaving(true); const exp = (parseInt(String(f.park_fee)) || 0) + (parseInt(String(f.hw_fee)) || 0) + (parseInt(String(f.meal)) || 0) + (parseInt(String(f.hotel_fee ?? 0)) || 0) + (parseInt(String(f.shinkansen_fee ?? 0)) || 0) + (f.extra_expenses ?? []).reduce((s, e) => s + e.amount, 0); const ok = await onSave(report.id, { ...f, other_exp: 0, expenses: exp }); setSaving(false); if (ok) onClose() }
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '20px 24px', width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,.18)' }}>
+    <div className="m-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="m-box" style={{ background: 'var(--surface)', borderRadius: 12, padding: '20px 24px', width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,.18)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <div style={{ fontSize: 15, fontWeight: 600 }}>✏ 日報を編集</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-muted)' }}>✕</button>
@@ -638,6 +638,7 @@ const COLS = [
 
 export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpdateReport, onDeleteReport, prices = {}, settings }: Props) {
   const [searchParams, setSearchParams] = useSearchParams()
+  const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState<'ship' | 'transport'>('ship')
   const _now = new Date()
   const _currentYear = String(_now.getFullYear())
@@ -880,7 +881,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div className="stat-row" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>件数: <strong>{filtered.length}件</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>売上合計: <strong style={{ color: 'var(--accent)' }}>¥{totalAmount.toLocaleString()}</strong></div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 12 }}>駐車場: <strong>¥{totalPark.toLocaleString()}</strong></div>
@@ -1003,6 +1004,53 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
             <button disabled={bulkDownloading} onClick={() => bulkDownload(sorted.filter(r => selectedIds.has(String(r.id))))} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: bulkDownloading ? 'default' : 'pointer', fontWeight: 600, opacity: bulkDownloading ? 0.6 : 1 }}>{bulkDownloading ? '処理中...' : '📦 PDF一括ダウンロード'}</button>
             <button onClick={() => { setSelectionMode(false); setSelectedIds(new Set()) }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 5, padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>解除</button>
           </div>}
+        {isMobile ? (
+          <div>
+            {sorted.length === 0
+              ? <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-light)' }}>日報がありません</div>
+              : sorted.map(r => {
+                  const cached = voucherCache[r.id] ?? r.voucher ?? ''
+                  const extra = (r.extra_expenses ?? []).reduce((sum: number, e: { amount: number }) => sum + e.amount, 0)
+                  const chips: [string, number][] = [['駐車場', r.park_fee], ['高速', r.hw_fee], ['食事', r.meal], ['ホテル', r.hotel_fee ?? 0], ['新幹線', r.shinkansen_fee ?? 0], ['追加立替', extra]]
+                  return (
+                    <div key={r.id} id={`report-${r.id}`}
+                      onClick={async () => { if (selectionMode) { toggleRow(String(r.id)); return } const full = await api.fetchReportById(r.id); setEditReport(full ?? r) }}
+                      style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', background: selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : undefined }}>
+                      {selectionMode && (
+                        <input type="checkbox" checked={selectedIds.has(String(r.id))} onChange={() => toggleRow(String(r.id))} onClick={e => e.stopPropagation()} style={{ marginTop: 2, flexShrink: 0 }} />
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600 }}>{r.date}</span>
+                            <CatBadge cat={r.category} />
+                          </div>
+                          {r.amount > 0
+                            ? <strong style={{ color: 'var(--accent)', fontSize: 15, whiteSpace: 'nowrap' }}>¥{r.amount.toLocaleString()}</strong>
+                            : <span style={{ color: 'var(--warning)', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>未入力</span>}
+                        </div>
+                        <div style={{ marginTop: 4, fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.ship || '—'}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{r.port}{r.port && ' ・ '}{r.crew}名</div>
+                        {r.work && <div style={{ fontSize: 12, marginTop: 4, color: 'var(--text)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.work}</div>}
+                        {r.notes && <div style={{ fontSize: 11, marginTop: 3, color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>📝 {r.notes}</div>}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8, alignItems: 'center' }}>
+                          {chips.filter(([, v]) => v > 0).map(([label, v]) => (
+                            <span key={label} onClick={label === '高速' ? (e => { e.stopPropagation(); setHwReport(r) }) : undefined}
+                              style={{ fontSize: 11, padding: '3px 8px', borderRadius: 999, background: 'var(--surface2)', color: 'var(--text)', whiteSpace: 'nowrap' }}>{label} ¥{v.toLocaleString()}</span>
+                          ))}
+                          {(r.has_voucher || cached) && (
+                            <button onClick={(e) => openPdfFromList(r.id, cached, e)}
+                              style={{ fontSize: 12, padding: '5px 10px', borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--accent-bg)', color: 'var(--accent)', cursor: 'pointer', fontWeight: 600 }}>
+                              {fetchingVoucherId === r.id ? '読込中…' : '📎 PDF'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+          </div>
+        ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
@@ -1068,6 +1116,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
             </tbody>
           </table>
         </div>
+        )}
       </Card>
 
       {previewPdf && (

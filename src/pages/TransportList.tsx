@@ -88,8 +88,8 @@ function EditModal({ report, onClose, onSave, onDelete, dailyMail, fareMap }: {
   const btn = (variant: 'primary' | 'secondary' | 'danger' | 'success'): React.CSSProperties => ({ padding: '8px 16px', borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500, cursor: 'pointer', border: variant === 'secondary' ? '1px solid var(--border)' : 'none', background: variant === 'primary' ? 'var(--navy)' : variant === 'danger' ? 'var(--danger)' : variant === 'success' ? '#16a34a' : 'var(--surface2)', color: variant === 'secondary' ? 'var(--text)' : '#fff' })
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: 'var(--surface)', borderRadius: 12, width: '90%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+    <div className="m-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="m-box" style={{ background: 'var(--surface)', borderRadius: 12, width: '90%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ fontSize: 15, fontWeight: 600 }}>🚗 送迎日報 編集</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>

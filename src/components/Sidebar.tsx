@@ -29,7 +29,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggle }: { open?:
   }
 
   const navContent = (
-    <nav style={{ width: 190, background: 'var(--surface2)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', flexShrink: 0, overflowY: 'auto', height: '100vh' }}>
+    <nav style={{ width: 190, background: 'var(--surface2)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', flexShrink: 0, overflowY: 'auto', height: '100dvh' }}>
       <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>日報作成</div>
@@ -70,7 +70,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggle }: { open?:
     return (
       <>
         <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 490 }} />
-        <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 500, height: '100vh' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 500, height: '100dvh' }}>
           {navContent}
         </div>
       </>

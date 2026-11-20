@@ -141,8 +141,11 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
 }
 
 export function ToastContainer({ toasts, remove }: { toasts: Toast[]; remove: (id: string) => void }) {
+  const isMobile = useIsMobile()
   return (
-    <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 400, display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={isMobile
+      ? { position: 'fixed', bottom: 'calc(72px + env(safe-area-inset-bottom))', left: 12, right: 12, zIndex: 600, display: 'flex', flexDirection: 'column', gap: 8 }
+      : { position: 'fixed', bottom: 20, right: 20, zIndex: 400, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {toasts.map(t => {
         const colors: Record<string, [string, string]> = { success: ['var(--success-bg)', 'var(--success)'], error: ['var(--danger-bg)', 'var(--danger)'], info: ['var(--accent-bg)', 'var(--accent)'] }
         const [bg, color] = colors[t.type]
@@ -154,7 +157,7 @@ export function ToastContainer({ toasts, remove }: { toasts: Toast[]; remove: (i
 
 export function LoadingSpinner() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh', flexDirection: 'column', gap: 12 }}>
       <div style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Supabaseからデータを取得中...</span>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
@@ -170,7 +173,7 @@ export function PageHeader({ title, sub, children }: { title: string; sub?: stri
         <h1 style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)' }}>{title}</h1>
         {sub && <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</p>}
       </div>
-      {children && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>{children}</div>}
+      {children && <div className="page-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>{children}</div>}
     </div>
   )
 }
