@@ -99,21 +99,52 @@ export async function updateSettings(settings: Partial<Settings>): Promise<void>
 
 // ===================== REPORTS =====================
 
-// 一覧用：voucher/hw_voucher(base64)を含まない軽量ビュー reports_list を優先して取得。
-// ビューが未作成の環境では従来どおり全列取得してJS側で除外（スマホ等では重くなる）。
+// 一覧用：voucher/hw_voucher(base64)を除いた列だけを取得（PDF本体は開く時にon-demand取得）。
+// 列名は初回のみ1件取得して端末に保存。失敗時は従来どおり全列取得→JS側で除外にフォールバック。
+const REPORT_COLS_KEY = 'marine_reports_cols_v1'
+const HEAVY_COLS = ['voucher', 'hw_voucher']
+
+async function getLightReportColumns(): Promise<string | null> {
+  try {
+    const raw = localStorage.getItem(REPORT_COLS_KEY)
+    if (raw) {
+      const c = JSON.parse(raw) as { cols: string; t: number }
+      // 列追加に追従するため1日で作り直す
+      if (c.cols && Date.now() - c.t < 24 * 60 * 60 * 1000) return c.cols
+    }
+  } catch { /* ignore */ }
+  const { data, error } = await supabase.from('reports').select('*').limit(1)
+  if (error || !data || data.length === 0) return null
+  const cols = Object.keys(data[0] as Record<string, unknown>).filter(c => !HEAVY_COLS.includes(c))
+  if (cols.length === 0) return null
+  const joined = cols.join(',')
+  try { localStorage.setItem(REPORT_COLS_KEY, JSON.stringify({ cols: joined, t: Date.now() })) } catch { /* ignore */ }
+  return joined
+}
+
 export async function fetchReports(): Promise<Report[]> {
-  const lite = await supabase
-    .from('reports_list')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (!lite.error && lite.data) {
-    return lite.data.map((row: Record<string, unknown>) => ({
-      ...row,
-      has_voucher: !!row.has_voucher,
-      has_hw_voucher: !!row.has_hw_voucher,
-      voucher_count: Number(row.voucher_count ?? 0),
-    }) as unknown as Report)
-  }
+  try {
+    const cols = await getLightReportColumns()
+    if (cols) {
+      const [rows, vIds, hIds] = await Promise.all([
+        supabase.from('reports').select(cols).order('created_at', { ascending: false }),
+        supabase.from('reports').select('id').not('voucher', 'is', null).neq('voucher', ''),
+        supabase.from('reports').select('id').not('hw_voucher', 'is', null).neq('hw_voucher', ''),
+      ])
+      if (!rows.error && !vIds.error && !hIds.error && rows.data) {
+        const v = new Set((vIds.data ?? []).map((r: { id: string }) => r.id))
+        const h = new Set((hIds.data ?? []).map((r: { id: string }) => r.id))
+        return (rows.data as unknown as Record<string, unknown>[]).map(row => ({
+          ...row,
+          has_voucher: v.has(row.id as string),
+          has_hw_voucher: h.has(row.id as string),
+          voucher_count: v.has(row.id as string) ? 1 : 0,
+        }) as unknown as Report)
+      }
+      // 列定義が変わった等で失敗した場合は保存した列名を捨てて従来方式へ
+      try { localStorage.removeItem(REPORT_COLS_KEY) } catch { /* ignore */ }
+    }
+  } catch { /* フォールバックへ */ }
 
   const { data, error } = await supabase
     .from('reports')
@@ -121,7 +152,6 @@ export async function fetchReports(): Promise<Report[]> {
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(`日報の取得に失敗しました: ${error.message}`)
-  // voucherはon-demand取得のため除外してメモリ節約（件数のみ先に算出して残す）
   return (data ?? []).map(({ voucher: _v, hw_voucher: _hw, ...rest }: Record<string, unknown>) => {
     const voucherCount = typeof _v === 'string' ? _v.split('|||').filter(p => p.startsWith('http') || p.startsWith('data:')).length : 0
     return { ...rest, has_voucher: voucherCount > 0, has_hw_voucher: !!(typeof _hw === 'string' && _hw.length > 10), voucher_count: voucherCount } as unknown as Report
