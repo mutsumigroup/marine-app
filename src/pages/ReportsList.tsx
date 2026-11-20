@@ -4,6 +4,7 @@ import TransportList from './TransportList'
 import { useSearchParams } from 'react-router-dom'
 import { Card, Select, PageHeader, Btn, Field, Input, Grid, Divider, useIsMobile } from '../components/UI'
 import { CATEGORIES } from '../types'
+import { extractVoucherAmounts } from '../lib/voucherExtract'
 import type { Report, Settings } from '../types'
 import { sendEmail, buildDailyReportEmail } from '../lib/email'
 import * as api from '../lib/api'
@@ -273,6 +274,7 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [autoCalc, setAutoCalc] = useState(true)
   const [voucherUploading, setVoucherUploading] = useState(false)
+  const [extractMsg, setExtractMsg] = useState<{ pending: boolean; lines: string[] }>({ pending: false, lines: [] })
   const voucherFileRef = useRef<HTMLInputElement>(null)
   const set = (key: keyof Report) => (v: string) => setF(prev => ({ ...prev, [key]: v }))
   const setNum = (key: keyof Report) => (v: string) => setF(prev => ({ ...prev, [key]: parseInt(v) || 0 }))
@@ -301,6 +303,28 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
           const merged = [...voucherList, ...newDataUrls].join('|||')
           setF(prev => ({ ...prev, voucher: merged }))
           setVoucherUploading(false)
+          // 追加したPDFから立替金額（食事代・ホテル代金）を自動入力（既に金額が入っている項目は上書きしない）
+          setExtractMsg({ pending: true, lines: [] })
+          Promise.all(newDataUrls.map(u => extractVoucherAmounts(u).catch(() => null)))
+            .then(results => {
+              const ok = results.filter((r): r is NonNullable<typeof r> => r !== null)
+              const meal = ok.reduce((a, r) => a + r.meal, 0)
+              const hotel = ok.reduce((a, r) => a + r.hotel, 0)
+              const lines: string[] = []
+              const patch: Partial<Report> = {}
+              if (meal > 0) {
+                if (!(Number(f.meal) > 0)) { patch.meal = meal; lines.push(`食事代 ¥${meal.toLocaleString()} を自動入力`) }
+                else lines.push(`食事代 ¥${meal.toLocaleString()} を検出（入力済みのため変更なし）`)
+              }
+              if (hotel > 0) {
+                if (!(Number(f.hotel_fee ?? 0) > 0)) { patch.hotel_fee = hotel; lines.push(`ホテル代金 ¥${hotel.toLocaleString()} を自動入力`) }
+                else lines.push(`ホテル代金 ¥${hotel.toLocaleString()} を検出（入力済みのため変更なし）`)
+              }
+              if (Object.keys(patch).length > 0) setF(prev => ({ ...prev, ...patch }))
+              ok.forEach(r => r.notes.forEach(n => lines.push('⚠ ' + n)))
+              if (ok.length < results.length) lines.push('⚠ 一部のPDFは自動読み取りに失敗しました（手入力してください）')
+              setExtractMsg({ pending: false, lines })
+            })
         }
       }
       reader.readAsDataURL(file)
@@ -418,6 +442,13 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
                     {voucherUploading ? '読み込み中...' : `📎 PDFを追加（残り${5 - voucherList.length}枚）`}
                   </button>
                 </>
+              )}
+              {(extractMsg.pending || extractMsg.lines.length > 0) && (
+                <div style={{ marginTop: 6, padding: '8px 12px', borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 12, color: '#1d4ed8', lineHeight: 1.6 }}>
+                  {extractMsg.pending && <div>🔍 PDFを解析中…（スキャン画像はOCRのため数十秒かかることがあります）</div>}
+                  {extractMsg.lines.map((l, i) => <div key={i} style={l.startsWith('⚠') ? { color: '#b45309' } : undefined}>{l.startsWith('⚠') ? l : '📄 ' + l}</div>)}
+                  {!extractMsg.pending && extractMsg.lines.some(l => l.includes('自動入力')) && <div>内容を必ずご確認ください</div>}
+                </div>
               )}
             </div>
           </Field>

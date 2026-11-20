@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Card, CardTitle, Field, Input, Select, Divider, Btn, PageHeader, useIsMobile } from '../components/UI'
 import { CATEGORIES } from '../types'
+import { extractVoucherAmounts } from '../lib/voucherExtract'
 import type { Report } from '../types'
 
 interface Props {
@@ -92,6 +93,8 @@ function AutoInput({ value, onChange, placeholder, suggestions }: { value: strin
   )
 }
 
+type PdfExtract = { status: 'pending' | 'done' | 'error'; meal: number; hotel: number; notes: string[] }
+
 const EMPTY = {
   date: new Date().toISOString().slice(0, 10), port: '', ship: '', crew: '', category: '', work: '',
   amount: '', parkPlace: '', parkFee: '', hwFrom1: '', hwTo1: '', hwFrom2: '', hwTo2: '', hwFee: '', hwVoucher: '',
@@ -119,6 +122,8 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [pdfNames, setPdfNames] = useState<string[]>([])
+  const [pdfExtract, setPdfExtract] = useState<PdfExtract[]>([])
+  const autoFillRef = useRef({ meal: 0, hotel: 0 })
   const [hwPdfName, setHwPdfName] = useState('')
   const [previewPdf, setPreviewPdf] = useState<string | null>(null)
   const hwFileRef = useRef<HTMLInputElement>(null)
@@ -156,6 +161,12 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
         const draft = JSON.parse(saved)
         setF({ ...(draft.f ?? EMPTY), date: new Date().toISOString().slice(0, 10) })
         setPdfNames(draft.pdfNames ?? [])
+        {
+          const names: string[] = draft.pdfNames ?? []
+          const saved: PdfExtract[] = (draft.pdfExtract ?? []).map((e: PdfExtract) => ({ ...e, status: e.status === 'pending' ? 'error' : e.status }))
+          while (saved.length < names.length) saved.push({ status: 'error', meal: 0, hotel: 0, notes: [] })
+          setPdfExtract(saved.slice(0, names.length))
+        }
         setExtraItems(draft.extraItems ?? [])
         setAutoCalc(draft.autoCalc ?? true)
       }
@@ -164,10 +175,27 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
   }, [])
   useEffect(() => {
     const timer = setTimeout(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ f, pdfNames, extraItems, autoCalc }))
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ f, pdfNames, pdfExtract, extraItems, autoCalc }))
     }, 500)
     return () => clearTimeout(timer)
-  }, [f, pdfNames, extraItems, autoCalc])
+  }, [f, pdfNames, pdfExtract, extraItems, autoCalc])
+
+  // PDFから抽出した立替金額（食事代・ホテル代金）を自動入力。手入力済みの値は上書きしない
+  useEffect(() => {
+    const done = pdfExtract.filter(e => e.status === 'done')
+    const sumMeal = done.reduce((a, e) => a + e.meal, 0)
+    const sumHotel = done.reduce((a, e) => a + e.hotel, 0)
+    const last = autoFillRef.current
+    autoFillRef.current = { meal: sumMeal, hotel: sumHotel }
+    setF(prev => {
+      let next = prev
+      const curMeal = parseInt(prev.meal) || 0
+      const curHotel = parseInt(prev.hotelFee) || 0
+      if (curMeal === 0 || curMeal === last.meal) next = { ...next, meal: sumMeal > 0 ? String(sumMeal) : '' }
+      if (curHotel === 0 || curHotel === last.hotel) next = { ...next, hotelFee: sumHotel > 0 ? String(sumHotel) : '' }
+      return next
+    })
+  }, [pdfExtract])
 
   const calcAmount = (cat: string, crew: number) => { const p = prices[cat] ?? { ship: 10000, crew: 1000 }; return p.ship + crew * (p.crew ?? 0) }
   const set = (key: string) => (v: string) => setF(prev => ({ ...prev, [key]: v }))
@@ -175,6 +203,19 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
   const handleCrewChange = (v: string) => setF(prev => ({ ...prev, crew: v, amount: autoCalc ? String(calcAmount(prev.category, parseInt(v) || 0)) : prev.amount }))
   const extraTotal = extraItems.reduce((s, e) => s + e.amount, 0)
   const totalExp = (parseInt(f.parkFee) || 0) + (parseInt(f.hwFee) || 0) + (parseInt(f.meal) || 0) + (parseInt(f.hotelFee) || 0) + (parseInt(f.shinkansenFee) || 0) + extraTotal
+  const extractPending = pdfExtract.some(e => e.status === 'pending')
+  const extractMealSum = pdfExtract.filter(e => e.status === 'done').reduce((a, e) => a + e.meal, 0)
+  const extractHotelSum = pdfExtract.filter(e => e.status === 'done').reduce((a, e) => a + e.hotel, 0)
+  const extractNotes = pdfExtract.flatMap(e => e.notes)
+  const extractBanner = (extractPending || extractMealSum > 0 || extractHotelSum > 0 || extractNotes.length > 0) ? (
+    <div style={{ marginTop: 6, padding: '8px 12px', borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: 12, color: '#1d4ed8', lineHeight: 1.6 }}>
+      {extractPending && <div>🔍 PDFを解析中…（スキャン画像はOCRのため数十秒かかることがあります）</div>}
+      {(extractMealSum > 0 || extractHotelSum > 0) && (
+        <div>📄 PDFから自動入力：{[extractMealSum > 0 ? `食事代 ¥${extractMealSum.toLocaleString()}` : '', extractHotelSum > 0 ? `ホテル代金 ¥${extractHotelSum.toLocaleString()}` : ''].filter(Boolean).join(' / ')}（内容を必ずご確認ください）</div>
+      )}
+      {extractNotes.map((n, i) => <div key={i} style={{ color: '#b45309' }}>⚠ {n}</div>)}
+    </div>
+  ) : null
   const portList = [...new Set(pastReports.map(r => r.port).filter(Boolean))].sort()
   const shipList = [...new Set(pastReports.map(r => r.ship).filter(Boolean))].sort()
 
@@ -189,8 +230,14 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
     toAdd.forEach(file => {
       const reader = new FileReader()
       reader.onload = (ev) => {
-        setF(prev => ({ ...prev, vouchers: [...prev.vouchers, ev.target?.result as string] }))
+        const dataUrl = ev.target?.result as string
+        setF(prev => ({ ...prev, vouchers: [...prev.vouchers, dataUrl] }))
         setPdfNames(prev => [...prev, file.name])
+        const entry: PdfExtract = { status: 'pending', meal: 0, hotel: 0, notes: [] }
+        setPdfExtract(prev => [...prev, entry])
+        extractVoucherAmounts(dataUrl)
+          .then(r => setPdfExtract(prev => prev.map(x => x === entry ? { status: 'done', meal: r.meal, hotel: r.hotel, notes: r.notes } : x)))
+          .catch(() => setPdfExtract(prev => prev.map(x => x === entry ? { status: 'error', meal: 0, hotel: 0, notes: ['PDFの自動読み取りに失敗しました（手入力してください）'] } : x)))
       }
       reader.readAsDataURL(file)
     })
@@ -209,6 +256,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
   const removePdf = (i: number) => {
     setF(prev => ({ ...prev, vouchers: prev.vouchers.filter((_, idx) => idx !== i) }))
     setPdfNames(prev => prev.filter((_, idx) => idx !== i))
+    setPdfExtract(prev => prev.filter((_, idx) => idx !== i))
   }
 
   const addExtraItem = useCallback(() => setExtraItems(prev => [...prev, { label: '', amount: 0 }]), [])
@@ -223,7 +271,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
     const ok = await onSubmit({ date: f.date, port: f.port, ship: f.ship, crew: parseInt(f.crew) || 0, category: f.category, work: f.work, amount: parseInt(f.amount) || 0, park_place: f.parkPlace, park_fee: parseInt(f.parkFee) || 0, hw_from1: f.hwFrom1, hw_to1: f.hwTo1, hw_from2: f.hwFrom2, hw_to2: f.hwTo2, hw_fee: parseInt(f.hwFee) || 0, hw_voucher: f.hwVoucher, meal: parseInt(f.meal) || 0, hotel_fee: parseInt(f.hotelFee) || 0,
         shinkansen_fee: parseInt(f.shinkansenFee) || 0,
         other_exp: parseInt(f.otherExp) || 0, expenses: totalExp, extra_expenses: extraItems.length > 0 ? extraItems : undefined, voucher: f.vouchers.join("|||"), bill_month: f.billMonth, notes: f.notes, invoiced: false, paid: false })
-    if (ok) { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfNames([]); localStorage.removeItem('marine_daily_draft'); setSection('basic'); setExtraItems([]) }
+    if (ok) { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfNames([]); setPdfExtract([]); localStorage.removeItem('marine_daily_draft'); setSection('basic'); setExtraItems([]) }
     setSubmitting(false)
   }
 
@@ -281,6 +329,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
                       <button type="button" onClick={() => removePdf(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>×</button>
                     </div>
                   ))}
+                  {extractBanner}
                 </Field>
               </div>
             </Card>
@@ -394,6 +443,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
                 <button type="button" onClick={() => removePdf(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, padding: 0 }}>×</button>
               </div>
             ))}
+            {extractBanner}
           </Field>
           <Field label="請求対象月"><Input type="month" value={f.billMonth} onChange={set('billMonth')} /></Field>
         </div>
@@ -436,7 +486,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
         </div>
       </Card>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <Btn onClick={() => { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfNames([]); localStorage.removeItem('marine_daily_draft'); setExtraItems([]) }}>↺ クリア</Btn>
+        <Btn onClick={() => { setF({ ...EMPTY, date: new Date().toISOString().slice(0, 10), billMonth: new Date().toISOString().slice(0, 7) }); setPdfNames([]); setPdfExtract([]); localStorage.removeItem('marine_daily_draft'); setExtraItems([]) }}>↺ クリア</Btn>
         <Btn variant="primary" onClick={handleSubmit} disabled={submitting}>{submitting ? '送信中...' : '📨 日報送信'}</Btn>
       </div>
 
