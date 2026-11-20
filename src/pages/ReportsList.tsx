@@ -548,7 +548,7 @@ function ExtraExpenseCell({ items, otherExp = 0 }: { items: {label: string; amou
   )
 }
 
-function WorkCell({ work }: { work: string }) {
+function WorkCell({ work, label = '業務内容' }: { work: string; label?: string }) {
   const [show, setShow] = React.useState(false)
   if (!work || work === '—') return <span style={{ color: 'var(--text-light)', fontSize: 11 }}>—</span>
   return (
@@ -562,7 +562,7 @@ function WorkCell({ work }: { work: string }) {
           onClick={() => setShow(false)}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 20px', maxWidth: 360, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,.2)' }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px' }}>業務内容</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px' }}>{label}</div>
             <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text)' }}>{work}</div>
             <button onClick={() => setShow(false)} style={{ marginTop: 14, width: '100%', padding: '10px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)' }}>閉じる</button>
           </div>
@@ -598,7 +598,7 @@ function CatBadge({ cat }: { cat: string }) {
 
 const COLS = [
   ['稼働日', '82px'], ['港名', '80px'], ['船名', '120px'], ['人数', '48px'],
-  ['対応区分', '92px'], ['業務内容', '320px'], ['駐車場', '82px'],
+  ['対応区分', '92px'], ['業務内容', '320px'], ['備考', '160px'], ['駐車場', '82px'],
   ['高速料金 🛣', '90px'], ['食事代', '76px'], ['ホテル代金', '80px'], ['新幹線代金', '80px'], ['VOUCHER', '80px'], ['追加立替', '80px'], ['売上金額', '114px'],
 ]
 
@@ -997,6 +997,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                     <td style={{ ...TD, textAlign: 'center' }}>{r.crew}</td>
                     <td style={TD}><CatBadge cat={r.category} /></td>
                   <td style={{ ...TD, overflow: "visible", textOverflow: "clip", whiteSpace: "normal" }} onClick={(e) => e.stopPropagation()}><WorkCell work={r.work} />  </td>
+                    <td style={{ ...TD, overflow: "visible", textOverflow: "clip", whiteSpace: "normal" }} onClick={(e) => e.stopPropagation()}><WorkCell work={r.notes} label="備考" /></td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.park_fee > 0 ? `¥${r.park_fee.toLocaleString()}` : '—'}</td>
                     <td style={TD} onClick={e => { e.stopPropagation(); setHwReport(r) }}><HwCell report={r} onClick={() => setHwReport(r)} /></td>
                     <td style={{ ...TD, fontSize: 11 }}>{r.meal > 0 ? `¥${r.meal.toLocaleString()}` : '—'}</td>
