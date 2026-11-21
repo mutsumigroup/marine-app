@@ -374,7 +374,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                         {EXPENSE_KEY_MAP[e.label]
                           ? <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
-                          : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer', color: '#2563eb', textDecoration: 'underline dotted' }} title="日報一覧で確認">{e.label}</span>}
+                          : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer' }} title="日報一覧で確認">{e.label}</span>}
                         <button onClick={() => handleExpenseClick(e.label)} className="no-print" title="日報一覧で確認"
                           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>📋</button>
                       </span>
@@ -423,7 +423,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                         {EXPENSE_KEY_MAP[e.label]
                           ? <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
-                          : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer', color: '#2563eb', textDecoration: 'underline dotted' }} title="日報一覧で確認">{e.label}</span>}
+                          : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer' }} title="日報一覧で確認">{e.label}</span>}
                         <button onClick={() => handleExpenseClick(e.label)} className="no-print" title="日報一覧で確認"
                           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>📋</button>
                       </span>
