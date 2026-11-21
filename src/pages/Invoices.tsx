@@ -166,10 +166,9 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   const [saving, setSaving] = useState(false)
 
   const handleExpenseClick = (label: string) => {
-    const expKey = EXPENSE_KEY_MAP[label]
-    let url = `#/reports?month=${inv.billing_month}&from=invoices`
-    if (expKey) url += `&expense=${expKey}`
-    navigate(url.replace(/^#/, ''))
+    const expKey = EXPENSE_KEY_MAP[label] ?? `extra:${encodeURIComponent(label)}`
+    const url = `/reports?month=${inv.billing_month}&from=invoices&expense=${expKey}`
+    navigate(url)
   }
   const [pdfGenerating, setPdfGenerating] = useState(false)
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -372,9 +371,13 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                 {expItems.map((e, i) => (e as any)._type !== 'fixed' && (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
                     <td style={tdS}>
-                      {EXPENSE_KEY_MAP[e.label]
-                        ? <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
-                        : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer', color: '#2563eb', textDecoration: 'underline dotted' }} title="日報を確認">{e.label}</span>}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        {EXPENSE_KEY_MAP[e.label]
+                          ? <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
+                          : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer', color: '#2563eb', textDecoration: 'underline dotted' }} title="日報一覧で確認">{e.label}</span>}
+                        <button onClick={() => handleExpenseClick(e.label)} className="no-print" title="日報一覧で確認"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>📋</button>
+                      </span>
                     </td>
                     <td style={{ ...tdS, textAlign: 'right' }}>
                       ¥<InlineNum value={e.amount} onChange={v => setExpAmt(i, v)} width={90} />
@@ -417,9 +420,13 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
                 {expItems.map((e, i) => (e as any)._type === 'fixed' && (
                   <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
                     <td style={tdS}>
-                      {EXPENSE_KEY_MAP[e.label]
-                        ? <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
-                        : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer', color: '#2563eb', textDecoration: 'underline dotted' }} title="日報を確認">{e.label}</span>}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        {EXPENSE_KEY_MAP[e.label]
+                          ? <InlineLabel value={e.label} onChange={v => setExpLabel(i, v)} />
+                          : <span onClick={() => handleExpenseClick(e.label)} style={{ cursor: 'pointer', color: '#2563eb', textDecoration: 'underline dotted' }} title="日報一覧で確認">{e.label}</span>}
+                        <button onClick={() => handleExpenseClick(e.label)} className="no-print" title="日報一覧で確認"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>📋</button>
+                      </span>
                     </td>
                     <td style={{ ...tdS, textAlign: 'right' }}>
                       ¥<InlineNum value={e.amount} onChange={v => setExpAmt(i, v)} width={90} />

@@ -699,6 +699,10 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
 
   const expenseFilter = (r: Report) => {
     if (!filterExpense) return true
+    if (filterExpense.startsWith('extra:')) {
+      const label = decodeURIComponent(filterExpense.slice('extra:'.length))
+      return (r.extra_expenses ?? []).some(e => e.label === label && e.amount > 0)
+    }
     switch (filterExpense) {
       case 'park': return r.park_fee > 0
       case 'hw': return r.hw_fee > 0
@@ -709,6 +713,9 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       default: return true
     }
   }
+  const filterExpenseLabel = filterExpense.startsWith('extra:')
+    ? decodeURIComponent(filterExpense.slice('extra:'.length))
+    : (EXPENSE_LABEL_MAP[filterExpense] ?? filterExpense)
 
   // URLパラメータからcategoryを読み取る
   React.useEffect(() => {
@@ -876,7 +883,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       </PageHeader>
       {filterExpense && (
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '8px 14px', marginBottom: 12, fontSize: 12, color: '#1d4ed8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>📋 請求書から移動：<strong>{EXPENSE_LABEL_MAP[filterExpense] ?? filterExpense}</strong> がある日報のみ表示</span>
+          <span>📋 請求書から移動：<strong>{filterExpenseLabel}</strong> がある日報のみ表示</span>
           <button onClick={() => setFilterExpense('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: 11, padding: '2px 6px' }}>✕ 絞り込み解除</button>
         </div>
       )}
