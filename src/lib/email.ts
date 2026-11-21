@@ -168,6 +168,62 @@ export function buildTransportInvoiceEmail(params: {
     .replace(/{count}/g, String(params.count))
 }
 
+export const DEFAULT_COMBINED_INVOICE_TEMPLATE = `{client_name} 御中
+
+いつもお世話になっております。
+{billing_month}分の合算請求書（船泊・送迎）をお送りします。
+
+■ 請求月：{billing_month}
+
+【🚢 船泊請求】
+件数：{ship_count}件
+業務小計：¥{ship_subtotal}
+消費税（10%）：¥{ship_tax}
+立替金精算：¥{ship_expenses}
+船泊請求小計（税込）：¥{ship_total}
+
+【🚗 送迎請求】
+件数：{transport_count}件
+旅客運送報酬（税抜）：¥{transport_subtotal}
+消費税（10%）：¥{transport_tax}
+送迎請求小計（税込）：¥{transport_total}
+
+■ 合算ご請求金額（税込）：¥{combined_total}
+
+お手数ですが、ご確認のうえお振込みくださいますようお願いいたします。
+
+---
+マリン業務管理システム`
+
+export function buildCombinedInvoiceEmail(params: {
+  billing_month: string
+  ship_count: number
+  ship_subtotal: number
+  ship_tax: number
+  ship_expenses: number
+  ship_total: number
+  transport_count: number
+  transport_subtotal: number
+  transport_tax: number
+  transport_total: number
+  combined_total: number
+}, clientName: string, template?: string): string {
+  const tpl = template || DEFAULT_COMBINED_INVOICE_TEMPLATE
+  return tpl
+    .replace(/{client_name}/g, clientName || '')
+    .replace(/{billing_month}/g, params.billing_month)
+    .replace(/{ship_count}/g, String(params.ship_count))
+    .replace(/{ship_subtotal}/g, params.ship_subtotal.toLocaleString())
+    .replace(/{ship_tax}/g, params.ship_tax.toLocaleString())
+    .replace(/{ship_expenses}/g, params.ship_expenses.toLocaleString())
+    .replace(/{ship_total}/g, params.ship_total.toLocaleString())
+    .replace(/{transport_count}/g, String(params.transport_count))
+    .replace(/{transport_subtotal}/g, params.transport_subtotal.toLocaleString())
+    .replace(/{transport_tax}/g, params.transport_tax.toLocaleString())
+    .replace(/{transport_total}/g, params.transport_total.toLocaleString())
+    .replace(/{combined_total}/g, params.combined_total.toLocaleString())
+}
+
 export function buildInvoiceEmail(invoice: {
   id: string
   billing_month: string

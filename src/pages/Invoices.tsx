@@ -11,6 +11,13 @@ interface Props {
   settings: Settings
   onSend: (id: string) => Promise<boolean>
   onSendTransport: (month: string) => Promise<boolean>
+  onSendCombined: (p: {
+    month: string; invoiceId: string | null
+    shipNeedsSend: boolean; transportNeedsSend: boolean
+    shipSubtotal: number; shipTax: number; shipExpenses: number; shipTotal: number; shipCount: number
+    transportSubtotal: number; transportTax: number; transportTotal: number; transportCount: number
+    combinedTotal: number
+  }) => Promise<boolean>
   onPaidTransport: (month: string) => Promise<boolean>
   onRevertTransport: (month: string, status: '未請求' | '送信済') => Promise<boolean>
   onPaid: (id: string) => Promise<boolean>
@@ -479,7 +486,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   )
 }
 
-export default function Invoices({ invoices, reports, settings, onSend, onSendTransport, onPaidTransport, onRevertTransport, onPaid, onRevert, onUpdateInvoice }: Props) {
+export default function Invoices({ invoices, reports, settings, onSend, onSendTransport, onSendCombined, onPaidTransport, onRevertTransport, onPaid, onRevert, onUpdateInvoice }: Props) {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'ship' | 'transport' | 'combined'>('ship')
   const [filter, setFilter] = useState('')
@@ -527,7 +534,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onSendTr
         ))}
       </div>
       {activeTab === 'transport' ? <TransportInvoices settings={settings} onSend={onSendTransport} onPaid={onPaidTransport} onRevert={onRevertTransport} />
-      : activeTab === 'combined' ? <CombinedInvoices invoices={invoices} reports={reports} settings={settings} onSend={onSend} onSendTransport={onSendTransport} onPaid={onPaid} onPaidTransport={onPaidTransport} />
+      : activeTab === 'combined' ? <CombinedInvoices invoices={invoices} reports={reports} settings={settings} onSendCombined={onSendCombined} onPaid={onPaid} onPaidTransport={onPaidTransport} />
       : <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         {[

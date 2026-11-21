@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Report, Invoice, Settings, Toast, KyReport, PortMaster } from '../types'
 import * as api from '../lib/api'
 import { supabase } from '../lib/supabase'
-import { sendEmail, buildDailyReportEmail, buildInvoiceEmail, buildTransportInvoiceEmail } from '../lib/email'
+import { sendEmail, buildDailyReportEmail, buildInvoiceEmail, buildTransportInvoiceEmail, buildCombinedInvoiceEmail } from '../lib/email'
 
 const DEFAULT_SETTINGS: Settings = {
   company_name: '',
@@ -231,6 +231,62 @@ export function useAppState() {
       return false
     }
   }, [invoices, reports, settings, addToast])
+
+  const sendCombinedInvoice = useCallback(async (p: {
+    month: string
+    invoiceId: string | null
+    shipNeedsSend: boolean
+    transportNeedsSend: boolean
+    shipSubtotal: number
+    shipTax: number
+    shipExpenses: number
+    shipTotal: number
+    shipCount: number
+    transportSubtotal: number
+    transportTax: number
+    transportTotal: number
+    transportCount: number
+    combinedTotal: number
+  }): Promise<boolean> => {
+    try {
+      const sentAt = new Date().toLocaleString('ja-JP')
+      if (p.shipNeedsSend && p.invoiceId) {
+        await api.updateInvoice(p.invoiceId, { status: '送信済', sent_at: sentAt })
+        const targetReports = reports.filter(r => r.bill_month === p.month)
+        await Promise.all(targetReports.map(r => api.updateReport(r.id, { invoiced: true })))
+        setInvoices(prev => prev.map(i => i.id === p.invoiceId ? { ...i, status: '送信済', sent_at: sentAt } : i))
+        setReports(prev => prev.map(r => r.bill_month === p.month ? { ...r, invoiced: true } : r))
+      }
+      if (p.transportNeedsSend) {
+        await supabase.from('transport_reports').update({ sent: true }).eq('bill_month', p.month)
+      }
+      if (settings.client_email || settings.inv_mail) {
+        try {
+          const toEmail = settings.inv_mail || settings.client_email
+          const message = buildCombinedInvoiceEmail({
+            billing_month: p.month,
+            ship_count: p.shipCount, ship_subtotal: p.shipSubtotal, ship_tax: p.shipTax, ship_expenses: p.shipExpenses, ship_total: p.shipTotal,
+            transport_count: p.transportCount, transport_subtotal: p.transportSubtotal, transport_tax: p.transportTax, transport_total: p.transportTotal,
+            combined_total: p.combinedTotal,
+          }, settings.client_name)
+          await sendEmail({
+            to_email: toEmail,
+            subject: `【合算請求書】${p.month}分 ${settings.client_name}`,
+            message,
+          })
+          addToast('success', `合算請求書 ${p.month}分 を ${toEmail} へメール送信しました（${sentAt}）`)
+        } catch {
+          addToast('info', 'ステータスを更新しました。メール送信に失敗しました。')
+        }
+      } else {
+        addToast('success', `合算請求書 ${p.month}分 のステータスを送信済みに更新しました（${sentAt}）`)
+      }
+      return true
+    } catch (err) {
+      addToast('error', `送信失敗: ${(err as Error).message}`)
+      return false
+    }
+  }, [reports, settings, addToast])
 
   const revertInvoice = useCallback(async (id: string, status: Invoice['status']): Promise<boolean> => {
     const inv = invoices.find(i => i.id === id)
@@ -503,6 +559,7 @@ export function useAppState() {
     addToast, removeToast,
     submitReport, saveSettings,
     sendInvoice,
+    sendCombinedInvoice,
     sendTransportInvoice, markTransportPaid, revertTransportInvoice, markPaid, revertInvoice,
     updateAmount,
     updateReport,

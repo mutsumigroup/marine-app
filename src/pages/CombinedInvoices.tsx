@@ -348,12 +348,17 @@ function CombinedInvoiceSheet({ c, settings, onClose }: {
 /* 合算請求書 一覧 */
 /* ------------------------------------------------------------------ */
 
-export default function CombinedInvoices({ invoices, reports, settings, onSend, onSendTransport, onPaid, onPaidTransport }: {
+export default function CombinedInvoices({ invoices, reports, settings, onSendCombined, onPaid, onPaidTransport }: {
   invoices: Invoice[]
   reports: Report[]
   settings: Settings
-  onSend: (id: string) => Promise<boolean>
-  onSendTransport: (month: string) => Promise<boolean>
+  onSendCombined: (p: {
+    month: string; invoiceId: string | null
+    shipNeedsSend: boolean; transportNeedsSend: boolean
+    shipSubtotal: number; shipTax: number; shipExpenses: number; shipTotal: number; shipCount: number
+    transportSubtotal: number; transportTax: number; transportTotal: number; transportCount: number
+    combinedTotal: number
+  }) => Promise<boolean>
   onPaid: (id: string) => Promise<boolean>
   onPaidTransport: (month: string) => Promise<boolean>
 }) {
@@ -423,8 +428,16 @@ export default function CombinedInvoices({ invoices, reports, settings, onSend, 
   const handleSendBoth = async (c: CombinedMonth) => {
     setProcessing(c.month)
     try {
-      if (c.invoice && ['未請求', '作成済'].includes(c.invoice.status)) await onSend(c.invoice.id)
-      if (c.transportReports.length > 0 && getTransportStatus(c.transportReports) === '未請求') await onSendTransport(c.month)
+      const shipNeedsSend = !!c.invoice && ['未請求', '作成済'].includes(c.invoice.status)
+      const transportNeedsSend = c.transportReports.length > 0 && getTransportStatus(c.transportReports) === '未請求'
+      await onSendCombined({
+        month: c.month,
+        invoiceId: c.invoice?.id ?? null,
+        shipNeedsSend, transportNeedsSend,
+        shipSubtotal: c.shipSub, shipTax: c.shipTax, shipExpenses: c.shipExp, shipTotal: c.shipTotal, shipCount: c.shipReports.length,
+        transportSubtotal: c.transportSub, transportTax: c.transportTax, transportTotal: c.transportTotal, transportCount: c.transportReports.length,
+        combinedTotal: c.combinedTotal,
+      })
       await load()
     } finally { setProcessing(null) }
   }
