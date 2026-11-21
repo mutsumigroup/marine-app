@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import TransportInvoices from './TransportInvoices'
+import CombinedInvoices from './CombinedInvoices'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Btn, PageHeader } from '../components/UI'
 import type { Invoice, Report, Settings } from '../types'
@@ -480,7 +481,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
 
 export default function Invoices({ invoices, reports, settings, onSend, onSendTransport, onPaidTransport, onRevertTransport, onPaid, onRevert, onUpdateInvoice }: Props) {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<'ship' | 'transport'>('ship')
+  const [activeTab, setActiveTab] = useState<'ship' | 'transport' | 'combined'>('ship')
   const [filter, setFilter] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const [previewId, setPreviewId] = useState<string | null>(() => searchParams.get('id'))
@@ -518,14 +519,16 @@ export default function Invoices({ invoices, reports, settings, onSend, onSendTr
     <div style={{ padding: '20px 22px', maxWidth: 900 }}>
       <PageHeader title="請求書管理" sub="月次請求書の作成・送信・管理（Supabase）" />
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-        {([['ship', '🚢 船泊請求書'], ['transport', '🚗 送迎請求書']] as const).map(([key, label]) => (
+        {([['ship', '🚢 船泊請求書'], ['transport', '🚗 送迎請求書'], ['combined', '📑 合算請求書']] as const).map(([key, label]) => (
           <button key={key} onClick={() => setActiveTab(key)}
             style={{ padding: '10px 20px', fontSize: 13, fontWeight: activeTab === key ? 600 : 400, color: activeTab === key ? 'var(--accent)' : 'var(--text-muted)', background: 'none', border: 'none', borderBottom: activeTab === key ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer', marginBottom: -1 }}>
             {label}
           </button>
         ))}
       </div>
-      {activeTab === 'transport' ? <TransportInvoices settings={settings} onSend={onSendTransport} onPaid={onPaidTransport} onRevert={onRevertTransport} /> : <div>
+      {activeTab === 'transport' ? <TransportInvoices settings={settings} onSend={onSendTransport} onPaid={onPaidTransport} onRevert={onRevertTransport} />
+      : activeTab === 'combined' ? <CombinedInvoices invoices={invoices} reports={reports} settings={settings} onSend={onSend} onSendTransport={onSendTransport} onPaid={onPaid} onPaidTransport={onPaidTransport} />
+      : <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         {[
           { label: '請求総額',   value: `¥${totalAmt.toLocaleString()}`,  color: '#1a1a1a' },
