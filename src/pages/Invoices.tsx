@@ -534,7 +534,7 @@ export default function Invoices({ invoices, reports, settings, onSend, onSendTr
         ))}
       </div>
       {activeTab === 'transport' ? <TransportInvoices settings={settings} onSend={onSendTransport} onPaid={onPaidTransport} onRevert={onRevertTransport} />
-      : activeTab === 'combined' ? <CombinedInvoices invoices={invoices} reports={reports} settings={settings} onSendCombined={onSendCombined} onPaid={onPaid} onPaidTransport={onPaidTransport} />
+      : activeTab === 'combined' ? <CombinedInvoices invoices={invoices} reports={reports} settings={settings} onSendCombined={onSendCombined} onPaid={onPaid} onPaidTransport={onPaidTransport} onRevert={onRevert} onRevertTransport={onRevertTransport} />
       : <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         {[

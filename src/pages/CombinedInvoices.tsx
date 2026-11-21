@@ -348,7 +348,7 @@ function CombinedInvoiceSheet({ c, settings, onClose }: {
 /* 合算請求書 一覧 */
 /* ------------------------------------------------------------------ */
 
-export default function CombinedInvoices({ invoices, reports, settings, onSendCombined, onPaid, onPaidTransport }: {
+export default function CombinedInvoices({ invoices, reports, settings, onSendCombined, onPaid, onPaidTransport, onRevert, onRevertTransport }: {
   invoices: Invoice[]
   reports: Report[]
   settings: Settings
@@ -361,6 +361,8 @@ export default function CombinedInvoices({ invoices, reports, settings, onSendCo
   }) => Promise<boolean>
   onPaid: (id: string) => Promise<boolean>
   onPaidTransport: (month: string) => Promise<boolean>
+  onRevert: (id: string, status: string) => Promise<boolean>
+  onRevertTransport: (month: string, status: '未請求' | '送信済') => Promise<boolean>
 }) {
   const [transportReports, setTransportReports] = useState<TransportReport[]>([])
   const [loading, setLoading] = useState(true)
@@ -451,6 +453,21 @@ export default function CombinedInvoices({ invoices, reports, settings, onSendCo
     } finally { setProcessing(null) }
   }
 
+  const handleRevertBoth = async (c: CombinedMonth, target: '未請求' | '送信済') => {
+    if (!confirm(`ステータスを「${target}」に戻しますか？`)) return
+    setProcessing(c.month)
+    try {
+      if (target === '未請求') {
+        if (c.invoice && ['作成済', '送信済', '入金待ち'].includes(c.invoice.status)) await onRevert(c.invoice.id, '未請求')
+        if (c.transportReports.length > 0 && getTransportStatus(c.transportReports) !== '未請求') await onRevertTransport(c.month, '未請求')
+      } else {
+        if (c.invoice && c.invoice.status === '入金済') await onRevert(c.invoice.id, '送信済')
+        if (c.transportReports.length > 0 && getTransportStatus(c.transportReports) === '入金済') await onRevertTransport(c.month, '送信済')
+      }
+      await load()
+    } finally { setProcessing(null) }
+  }
+
   const previewC = previewMonth ? combined.find(c => c.month === previewMonth) ?? null : null
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>読み込み中...</div>
@@ -505,6 +522,18 @@ export default function CombinedInvoices({ invoices, reports, settings, onSendCo
                 {canMarkPaid && (
                   <Btn size="sm" variant="primary" disabled={processing === c.month} onClick={() => handlePaidBoth(c)}>
                     {processing === c.month ? '処理中...' : '✓ まとめて入金済にする'}
+                  </Btn>
+                )}
+                {(shipStatus === '入金済' || tStatus === '入金済') && (
+                  <Btn size="sm" variant="ghost" disabled={processing === c.month} onClick={() => handleRevertBoth(c, '送信済')}
+                    style={{ fontSize: 11, color: 'var(--text-muted)', border: '1px dashed var(--border-dark)' }}>
+                    ↩ 送信済に戻す
+                  </Btn>
+                )}
+                {((shipStatus && ['作成済', '送信済', '入金待ち'].includes(shipStatus)) || tStatus === '送信済') && (
+                  <Btn size="sm" variant="ghost" disabled={processing === c.month} onClick={() => handleRevertBoth(c, '未請求')}
+                    style={{ fontSize: 11, color: 'var(--text-muted)', border: '1px dashed var(--border-dark)' }}>
+                    ↩ 未請求に戻す
                   </Btn>
                 )}
               </div>
