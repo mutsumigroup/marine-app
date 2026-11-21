@@ -8,6 +8,15 @@ type TransportStatus = '未請求' | '送信済' | '入金済'
 const getTransportStatus = (reps: TransportReport[]): TransportStatus =>
   reps.some(r => r.paid) ? '入金済' : reps.some(r => r.sent) ? '送信済' : '未請求'
 
+type CombinedStatus = '未請求' | '送信済' | '入金済'
+const getCombinedStatus = (shipStatus: string | null, transportStatus: TransportStatus | null): CombinedStatus => {
+  const sides = [shipStatus, transportStatus].filter((s): s is string => !!s)
+  if (sides.length === 0) return '未請求'
+  if (sides.every(s => s === '入金済')) return '入金済'
+  if (sides.some(s => s !== '未請求')) return '送信済'
+  return '未請求'
+}
+
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, [string, string]> = {
     '未請求':   ['#fff7e6', '#d97706'],
@@ -368,6 +377,7 @@ export default function CombinedInvoices({ invoices, reports, settings, onSendCo
   const [loading, setLoading] = useState(true)
   const [previewMonth, setPreviewMonth] = useState<string | null>(null)
   const [processing, setProcessing] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'all' | CombinedStatus>('all')
 
   const load = async () => {
     const { data, error } = await supabase.from('transport_reports').select('*').order('date', { ascending: false })
@@ -426,6 +436,11 @@ export default function CombinedInvoices({ invoices, reports, settings, onSendCo
     const ts = c.transportReports.length > 0 ? getTransportStatus(c.transportReports) : null
     return ss === '入金済' || ts === '入金済'
   }).reduce((s, c) => s + c.combinedTotal, 0)
+  const unbilledCount = combined.filter(c => {
+    const ss = c.invoice?.status ?? (c.shipReports.length > 0 ? '未請求' : null)
+    const ts = c.transportReports.length > 0 ? getTransportStatus(c.transportReports) : null
+    return getCombinedStatus(ss, ts) === '未請求'
+  }).length
 
   const handleSendBoth = async (c: CombinedMonth) => {
     setProcessing(c.month)
@@ -468,6 +483,12 @@ export default function CombinedInvoices({ invoices, reports, settings, onSendCo
     } finally { setProcessing(null) }
   }
 
+  const filteredCombined = statusFilter === 'all' ? combined : combined.filter(c => {
+    const ss = c.invoice?.status ?? (c.shipReports.length > 0 ? '未請求' : null)
+    const ts = c.transportReports.length > 0 ? getTransportStatus(c.transportReports) : null
+    return getCombinedStatus(ss, ts) === statusFilter
+  })
+
   const previewC = previewMonth ? combined.find(c => c.month === previewMonth) ?? null : null
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>読み込み中...</div>
@@ -479,7 +500,7 @@ export default function CombinedInvoices({ invoices, reports, settings, onSendCo
           { label: '合算請求総額', value: `¥${totalAll.toLocaleString()}`, color: '#1a1a1a' },
           { label: '入金待ち',     value: `¥${waitAmt.toLocaleString()}`,  color: '#dc2626' },
           { label: '入金済',       value: `¥${paidAmt.toLocaleString()}`,  color: '#16a34a' },
-          { label: '対象月数',     value: `${combined.length}ヶ月`,        color: '#d97706' },
+          { label: '未請求件数',   value: `${unbilledCount}ヶ月`,          color: '#d97706' },
         ].map(c => (
           <div key={c.label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 14px', boxShadow: 'var(--shadow)' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 3 }}>{c.label}</div>
@@ -492,16 +513,31 @@ export default function CombinedInvoices({ invoices, reports, settings, onSendCo
         🚢 船泊請求書と🚗 送迎請求書を月ごとに合算した請求書です。「👁 確認・PDF作成」で見やすいデザインの請求書を確認し、そのままPDFをダウンロードできます。
       </div>
 
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+        {(['all', '未請求', '送信済', '入金済'] as const).map(f => (
+          <button key={f} onClick={() => setStatusFilter(f)}
+            style={{
+              padding: '5px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              border: `1.5px solid ${statusFilter === f ? 'var(--navy)' : 'var(--border)'}`,
+              background: statusFilter === f ? 'var(--navy)' : 'var(--surface)',
+              color: statusFilter === f ? '#fff' : 'var(--text-muted)',
+              transition: 'all .15s',
+            }}>
+            {f === 'all' ? 'すべて' : f}
+          </button>
+        ))}
+      </div>
+
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
-        {combined.length === 0 ? (
+        {filteredCombined.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>データがありません</div>
-        ) : combined.map((c, idx) => {
+        ) : filteredCombined.map((c, idx) => {
           const shipStatus = c.invoice?.status ?? (c.shipReports.length > 0 ? '未請求' : null)
           const tStatus = c.transportReports.length > 0 ? getTransportStatus(c.transportReports) : null
           const canSend = (!!shipStatus && ['未請求', '作成済'].includes(shipStatus)) || tStatus === '未請求'
           const canMarkPaid = (!!shipStatus && ['送信済', '入金待ち'].includes(shipStatus)) || tStatus === '送信済'
           return (
-            <div key={c.month} style={{ borderBottom: idx < combined.length - 1 ? '0.5px solid var(--border)' : 'none', padding: '14px 18px' }}>
+            <div key={c.month} style={{ borderBottom: idx < filteredCombined.length - 1 ? '0.5px solid var(--border)' : 'none', padding: '14px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
                 <div style={{ fontSize: 14, fontWeight: 600, minWidth: 70 }}>{c.month}</div>
                 {shipStatus && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>🚢<StatusBadge status={shipStatus} /></span>}
