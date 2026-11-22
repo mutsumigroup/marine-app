@@ -285,51 +285,56 @@ export function EditModal({ report, onClose, onSave, onDelete, prices, settings 
   const [voucherNames, setVoucherNames] = useState<Record<number, string>>({})
   const [editingNameIdx, setEditingNameIdx] = useState<number | null>(null)
   const [previewPdfModal, setPreviewPdfModal] = useState<string | null>(null)
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (ev) => resolve(ev.target?.result as string)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(file)
+    })
+
   const handleVoucherFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).filter(fi => fi.type === 'application/pdf')
     if (!files.length) return
     const remaining = 5 - voucherList.length
     if (remaining <= 0) { alert('Voucherは最大5枚までです'); return }
     const toAdd = files.slice(0, remaining)
-    setVoucherUploading(true)
-    let loaded = 0
-    const newDataUrls: string[] = []
-    toAdd.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        newDataUrls.push(ev.target?.result as string)
-        loaded++
-        if (loaded === toAdd.length) {
-          const merged = [...voucherList, ...newDataUrls].join('|||')
-          setF(prev => ({ ...prev, voucher: merged }))
-          setVoucherUploading(false)
-          // 追加したPDFから立替金額（食事代・ホテル代金）を自動入力（既に金額が入っている項目は上書きしない）
-          setExtractMsg({ pending: true, lines: [] })
-          Promise.all(newDataUrls.map(u => extractVoucherAmounts(u).catch(() => null)))
-            .then(results => {
-              const ok = results.filter((r): r is NonNullable<typeof r> => r !== null)
-              const meal = ok.reduce((a, r) => a + r.meal, 0)
-              const hotel = ok.reduce((a, r) => a + r.hotel, 0)
-              const lines: string[] = []
-              const patch: Partial<Report> = {}
-              if (meal > 0) {
-                if (!(Number(f.meal) > 0)) { patch.meal = meal; lines.push(`食事代 ¥${meal.toLocaleString()} を自動入力`) }
-                else lines.push(`食事代 ¥${meal.toLocaleString()} を検出（入力済みのため変更なし）`)
-              }
-              if (hotel > 0) {
-                if (!(Number(f.hotel_fee ?? 0) > 0)) { patch.hotel_fee = hotel; lines.push(`ホテル代金 ¥${hotel.toLocaleString()} を自動入力`) }
-                else lines.push(`ホテル代金 ¥${hotel.toLocaleString()} を検出（入力済みのため変更なし）`)
-              }
-              if (Object.keys(patch).length > 0) setF(prev => ({ ...prev, ...patch }))
-              ok.forEach(r => r.notes.forEach(n => lines.push('⚠ ' + n)))
-              if (ok.length < results.length) lines.push('⚠ 一部のPDFは自動読み取りに失敗しました（手入力してください）')
-              setExtractMsg({ pending: false, lines })
-            })
-        }
-      }
-      reader.readAsDataURL(file)
-    })
     e.target.value = ''
+    setVoucherUploading(true)
+    ;(async () => {
+      const newDataUrls: string[] = []
+      for (const file of toAdd) {
+        try { newDataUrls.push(await readFileAsDataUrl(file)) } catch { /* skip unreadable file */ }
+      }
+      const merged = [...voucherList, ...newDataUrls].join('|||')
+      setF(prev => ({ ...prev, voucher: merged }))
+      setVoucherUploading(false)
+
+      // 追加したPDFから立替金額（食事代・ホテル代金）を自動入力（既に金額が入っている項目は上書きしない）
+      // 1枚ずつ順番に解析する（並行実行するとPDF解析が競合し、一部のファイルの金額が読み取られないことがあるため）
+      setExtractMsg({ pending: true, lines: [] })
+      const results: ({ meal: number; hotel: number; notes: string[] } | null)[] = []
+      for (const u of newDataUrls) {
+        try { results.push(await extractVoucherAmounts(u)) } catch { results.push(null) }
+      }
+      const ok = results.filter((r): r is NonNullable<typeof r> => r !== null)
+      const meal = ok.reduce((a, r) => a + r.meal, 0)
+      const hotel = ok.reduce((a, r) => a + r.hotel, 0)
+      const lines: string[] = []
+      const patch: Partial<Report> = {}
+      if (meal > 0) {
+        if (!(Number(f.meal) > 0)) { patch.meal = meal; lines.push(`食事代 ¥${meal.toLocaleString()} を自動入力`) }
+        else lines.push(`食事代 ¥${meal.toLocaleString()} を検出（入力済みのため変更なし）`)
+      }
+      if (hotel > 0) {
+        if (!(Number(f.hotel_fee ?? 0) > 0)) { patch.hotel_fee = hotel; lines.push(`ホテル代金 ¥${hotel.toLocaleString()} を自動入力`) }
+        else lines.push(`ホテル代金 ¥${hotel.toLocaleString()} を検出（入力済みのため変更なし）`)
+      }
+      if (Object.keys(patch).length > 0) setF(prev => ({ ...prev, ...patch }))
+      ok.forEach(r => r.notes.forEach(n => lines.push('⚠ ' + n)))
+      if (ok.length < results.length) lines.push('⚠ 一部のPDFは自動読み取りに失敗しました（手入力してください）')
+      setExtractMsg({ pending: false, lines })
+    })()
   }
   const openVoucherPdf = (url: string) => {
     if (url.startsWith('data:')) {

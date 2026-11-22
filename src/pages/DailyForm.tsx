@@ -219,6 +219,14 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
   const portList = [...new Set(pastReports.map(r => r.port).filter(Boolean))].sort()
   const shipList = [...new Set(pastReports.map(r => r.ship).filter(Boolean))].sort()
 
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (ev) => resolve(ev.target?.result as string)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(file)
+    })
+
   const handlePdfSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     if (!files.length) return
@@ -227,21 +235,29 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
     const remaining = 5 - pdfNames.length
     const toAdd = pdfs.slice(0, remaining)
     if (pdfs.length > remaining) alert('最大5枚までです')
-    toAdd.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string
+    e.target.value = ''
+    // PDFの読み取り・自動解析は1枚ずつ順番に処理する（並行実行するとPDF解析が競合し、
+    // 一部のファイルの金額が読み取られないことがあるため）
+    ;(async () => {
+      for (const file of toAdd) {
+        let dataUrl: string
+        try {
+          dataUrl = await readFileAsDataUrl(file)
+        } catch {
+          continue
+        }
         setF(prev => ({ ...prev, vouchers: [...prev.vouchers, dataUrl] }))
         setPdfNames(prev => [...prev, file.name])
         const entry: PdfExtract = { status: 'pending', meal: 0, hotel: 0, notes: [] }
         setPdfExtract(prev => [...prev, entry])
-        extractVoucherAmounts(dataUrl)
-          .then(r => setPdfExtract(prev => prev.map(x => x === entry ? { status: 'done', meal: r.meal, hotel: r.hotel, notes: r.notes } : x)))
-          .catch(() => setPdfExtract(prev => prev.map(x => x === entry ? { status: 'error', meal: 0, hotel: 0, notes: ['PDFの自動読み取りに失敗しました（手入力してください）'] } : x)))
+        try {
+          const r = await extractVoucherAmounts(dataUrl)
+          setPdfExtract(prev => prev.map(x => x === entry ? { status: 'done', meal: r.meal, hotel: r.hotel, notes: r.notes } : x))
+        } catch {
+          setPdfExtract(prev => prev.map(x => x === entry ? { status: 'error', meal: 0, hotel: 0, notes: ['PDFの自動読み取りに失敗しました（手入力してください）'] } : x))
+        }
       }
-      reader.readAsDataURL(file)
-    })
-    e.target.value = ''
+    })()
   }
 
   const handleHwPdfSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
