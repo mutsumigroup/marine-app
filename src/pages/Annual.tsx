@@ -86,6 +86,11 @@ export default function Annual({ reports, invoices, settings }: Props) {
                 style={{ cursor: hasData ? 'pointer' : 'default', borderBottom: '1px solid var(--border)' }}
                 onMouseEnter={e => { if (hasData) (e.currentTarget as HTMLTableRowElement).style.background = 'var(--accent-bg)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                onMouseDown={e => { if (hasData) (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
+                onMouseUp={e => { if (hasData) (e.currentTarget as HTMLTableRowElement).style.background = 'var(--accent-bg)' }}
+                onTouchStart={e => { if (hasData) (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
+                onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
               >
                 <td style={{ padding: '8px 10px', fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{i + 1}月</td>
                 <td style={{ padding: '8px 10px', fontSize: 13 }}>{m.value > 0 ? <strong>¥{m.value.toLocaleString()}</strong> : '—'}</td>

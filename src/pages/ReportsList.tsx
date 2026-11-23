@@ -1028,6 +1028,12 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                   return (
                     <div key={r.id} id={`report-${r.id}`}
                       onClick={async () => { if (selectionMode) { toggleRow(String(r.id)); return } const full = await api.fetchReportById(r.id); setEditReport(full ?? r) }}
+                      onMouseDown={e => { (e.currentTarget as HTMLDivElement).style.background = '#dbeafe' }}
+                      onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = '#dbeafe' }}
+                      onMouseUp={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : '' }}
+                      onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : '' }}
+                      onTouchCancel={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : '' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : '' }}
                       style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', background: selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : undefined }}>
                       {selectionMode && (
                         <input type="checkbox" checked={selectedIds.has(String(r.id))} onChange={() => toggleRow(String(r.id))} onClick={e => e.stopPropagation()} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -1082,7 +1088,12 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                 : sorted.map(r => (
                   <tr key={r.id} id={`report-${r.id}`} onClick={async () => { const full = await api.fetchReportById(r.id); setEditReport(full ?? r) }} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
+                    onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                    onMouseDown={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
+                    onMouseUp={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
+                    onTouchStart={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
+                    onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                    onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
                     {selectionMode && <td style={{ padding: '7px 8px', textAlign: 'center', width: 36 }} onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={selectedIds.has(String(r.id))} onChange={() => toggleRow(String(r.id))} style={{ cursor: 'pointer' }} />
                   </td>}

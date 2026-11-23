@@ -273,7 +273,12 @@ export default function Dashboard({ reports, invoices, settings, reload, onUpdat
                   return (
                     <tr key={r.id} onClick={() => setEditReport(r)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
+                      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                      onMouseDown={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
+                      onMouseUp={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
+                      onTouchStart={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
+                      onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                      onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
                       <td style={{ padding: '7px 8px' }}>{r.date}</td>
                       <td style={{ padding: '7px 8px', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.port}</td>
                       <td style={{ padding: '7px 8px', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.ship}>{r.ship}</td>

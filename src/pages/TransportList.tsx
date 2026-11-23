@@ -258,7 +258,12 @@ export default function TransportList({ dailyMail = '' }: { dailyMail?: string }
                 <tr key={r.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                   onClick={() => setEditReport(r)}
                   onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--accent-bg)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
+                  onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                  onMouseDown={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
+                  onMouseUp={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--accent-bg)' }}
+                  onTouchStart={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
+                  onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                  onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}>
                   <td style={{ padding: '10px 8px', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.date}</td>
                   <td style={{ padding: '10px 8px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(r as any).ship_name || '—'}</td>
                   <td style={{ padding: '10px 8px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.from_area || '—'}</td>
