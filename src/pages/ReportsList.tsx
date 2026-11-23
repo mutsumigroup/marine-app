@@ -764,6 +764,26 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       return next
     })
   }
+  const tabBarRef = useRef<HTMLDivElement>(null)
+  const headerBlockRef = useRef<HTMLDivElement>(null)
+  const cardHeaderRef = useRef<HTMLDivElement>(null)
+  const [tabBarH, setTabBarH] = useState(0)
+  const [headerBlockH, setHeaderBlockH] = useState(0)
+  const [cardHeaderH, setCardHeaderH] = useState(0)
+  useEffect(() => {
+    const measure = () => {
+      setTabBarH(tabBarRef.current?.offsetHeight ?? 0)
+      setHeaderBlockH(headerBlockRef.current?.offsetHeight ?? 0)
+      setCardHeaderH(cardHeaderRef.current?.offsetHeight ?? 0)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    if (tabBarRef.current) ro.observe(tabBarRef.current)
+    if (headerBlockRef.current) ro.observe(headerBlockRef.current)
+    if (cardHeaderRef.current) ro.observe(cardHeaderRef.current)
+    window.addEventListener('resize', measure)
+    return () => { ro.disconnect(); window.removeEventListener('resize', measure) }
+  }, [activeTab])
   const toggleRow = (id: string) => {
     setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
@@ -870,7 +890,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
 
   return (
     <div style={{ padding: '16px 18px' }}>
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
+      <div ref={tabBarRef} style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 16, position: 'sticky', top: 0, zIndex: 35, background: 'var(--bg)' }}>
         {(['ship', 'transport'] as const).map(key => (
           <button key={key} onClick={() => setActiveTab(key)}
             style={{ padding: '10px 20px', fontSize: 13, fontWeight: activeTab === key ? 600 : 400, color: activeTab === key ? 'var(--text)' : 'var(--text-muted)', background: 'none', border: 'none', borderBottom: activeTab === key ? '2px solid var(--text)' : '2px solid transparent', cursor: 'pointer', marginBottom: -1 }}>
@@ -879,6 +899,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         ))}
       </div>
       {activeTab === 'transport' ? <TransportList /> : <div>
+      <div ref={headerBlockRef} style={{ position: 'sticky', top: tabBarH, zIndex: 30, background: 'var(--bg)', paddingBottom: 4 }}>
       <PageHeader title="日報一覧" sub={filterMonth ? `${filterMonth} の日報` : '行をクリック→編集 / 高速料金をクリック→詳細'}>
         <Select value={filterYear} onChange={v => { setFilterYear(v); setFilterMonth('') }}>
           <option value="">すべての年</option>
@@ -1017,7 +1038,10 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         </div>
       )}
 
+      </div>
+
       <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <div ref={cardHeaderRef} style={{ position: 'sticky', top: tabBarH + headerBlockH, zIndex: 25, background: 'var(--surface)' }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>💡 行をクリックすると編集できます</div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 12px', borderBottom: '1px solid var(--border)' }}>
             <button onClick={() => { setSelectionMode(v => { if(v) setSelectedIds(new Set()); return !v }) }} style={{ color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600, background: selectionMode ? 'rgba(59,130,246,0.1)' : 'none' }}>{/* selectionModeBtn */}{selectionMode ? '✕ キャンセル' : '☑ 一括ダウンロード'}</button>
@@ -1028,6 +1052,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
             <button disabled={bulkDownloading} onClick={() => bulkDownload(sorted.filter(r => selectedIds.has(String(r.id))))} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: bulkDownloading ? 'default' : 'pointer', fontWeight: 600, opacity: bulkDownloading ? 0.6 : 1 }}>{bulkDownloading ? '処理中...' : '📦 PDF一括ダウンロード'}</button>
             <button onClick={() => { setSelectionMode(false); setSelectedIds(new Set()) }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 5, padding: '4px 8px', fontSize: 12, cursor: 'pointer' }}>解除</button>
           </div>}
+        </div>
         {isMobile ? (
           <div>
             {sorted.length === 0
@@ -1083,13 +1108,13 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
         ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-            <thead>
+            <thead style={{ position: 'sticky', top: tabBarH + headerBlockH + cardHeaderH, zIndex: 20 }}>
               <tr style={{ background: 'var(--surface2)' }}>
-                {selectionMode && <th style={{ padding: '7px 8px', width: 36, textAlign: 'center' }}>
+                {selectionMode && <th style={{ padding: '7px 8px', width: 36, textAlign: 'center', position: 'sticky', top: tabBarH + headerBlockH + cardHeaderH, zIndex: 20, background: 'var(--surface2)' }}>
                   <input type="checkbox" checked={sorted.length > 0 && sorted.every(r => selectedIds.has(String(r.id)))} onChange={() => toggleAllRows(sorted)} style={{ cursor: 'pointer' }} />
                 </th>}
                 {COLS.map(([h, w]) => (
-                  <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: h === '売上金額' ? 'var(--accent)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.3px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textAlign: 'left', width: w === 'auto' ? undefined : w, background: h === '売上金額' ? 'var(--accent-bg)' : undefined }}>{h}</th>
+                  <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: h === '売上金額' ? 'var(--accent)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.3px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textAlign: 'left', width: w === 'auto' ? undefined : w, background: h === '売上金額' ? 'var(--accent-bg)' : 'var(--surface2)', position: 'sticky', top: tabBarH + headerBlockH + cardHeaderH, zIndex: 20 }}>{h}</th>
                 ))}
               </tr>
             </thead>
