@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Card, CardTitle, Field, Input, Select, Divider, Btn, PageHeader, useIsMobile } from '../components/UI'
 import { CATEGORIES } from '../types'
 import { extractVoucherAmounts } from '../lib/voucherExtract'
+import PdfPreviewModal from '../components/PdfPreviewModal'
 import type { Report } from '../types'
 
 interface Props {
@@ -529,16 +530,7 @@ export default function DailyForm({ onSubmit, pastReports = [], prices = {}, cus
       )}
     </div>
       {previewPdf && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#fff' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#1e293b', color: '#fff', flexShrink: 0, paddingTop: 'max(10px, env(safe-area-inset-top))' }}>
-            <span style={{ fontSize: 14, fontWeight: 600 }}>📄 PDFプレビュー</span>
-            <button onClick={() => setPreviewPdf(null)}
-              style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
-              ✕ 閉じる
-            </button>
-          </div>
-          <iframe src={previewPdf} style={{ flex: 1, border: 'none', width: '100%', display: 'block' }} title="PDF Preview" />
-        </div>
+        <PdfPreviewModal src={previewPdf} onClose={() => setPreviewPdf(null)} />
       )}
     </>
   )

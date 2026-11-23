@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Card, Select, PageHeader, Btn, Field, Input, Grid, Divider, useIsMobile } from '../components/UI'
 import { CATEGORIES } from '../types'
 import { extractVoucherAmounts } from '../lib/voucherExtract'
+import PdfPreviewModal from '../components/PdfPreviewModal'
 import type { Report, Settings } from '../types'
 import { sendEmail, buildDailyReportEmail } from '../lib/email'
 import * as api from '../lib/api'
@@ -1132,16 +1133,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
       </Card>
 
       {previewPdf && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#fff' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#1e293b', color: '#fff', flexShrink: 0, paddingTop: 'max(10px, env(safe-area-inset-top))' }}>
-            <span style={{ fontSize: 14, fontWeight: 600 }}>📄 PDFプレビュー</span>
-            <button onClick={() => setPreviewPdf(null)}
-              style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
-              ✕ 閉じる
-            </button>
-          </div>
-          <iframe src={previewPdf} style={{ flex: 1, border: 'none', width: '100%', display: 'block' }} title="PDF Preview" />
-        </div>
+        <PdfPreviewModal src={previewPdf} onClose={() => setPreviewPdf(null)} />
       )}
       {hwReport && <HwPopup report={hwReport} onClose={() => setHwReport(null)} onSavePdf={onSavePdf} settings={settings} onUpdateReport={onUpdateReport} />}
       {editReport && <EditModal report={editReport} onClose={() => setEditReport(null)} onSave={onUpdateReport} onDelete={onDeleteReport} prices={prices} settings={settings} />}
