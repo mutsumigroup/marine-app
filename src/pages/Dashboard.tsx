@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { EditModal } from './ReportsList'
 import { Btn, StatGrid, StatCard, Card, CardTitle, BarChart, ProgressBar, PageHeader } from '../components/UI'
-import { loadVisited, saveVisited, VISITED_BG } from '../lib/visited'
+import { VISITED_BG } from '../lib/visited'
 import type { Report, Invoice, Settings } from '../types'
 
 
@@ -11,16 +11,7 @@ interface Props { reports: Report[]; invoices: Invoice[]; settings: Settings; re
 export default function Dashboard({ reports, invoices, settings, reload, onUpdateReport, onDeleteReport }: Props) {
   const navigate = useNavigate()
   const [editReport, setEditReport] = useState<Report | null>(null)
-  const [visited, setVisited] = useState<Set<string>>(() => loadVisited('daily'))
-  const markVisited = (id: string) => {
-    setVisited(prev => {
-      if (prev.has(id)) return prev
-      const next = new Set(prev)
-      next.add(id)
-      saveVisited('daily', next)
-      return next
-    })
-  }
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null)
   const now = new Date()
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const yr = String(now.getFullYear())
@@ -282,15 +273,15 @@ export default function Dashboard({ reports, invoices, settings, reload, onUpdat
                   }
                   const c = catColors[r.category]
                   return (
-                    <tr key={r.id} onClick={() => { markVisited(String(r.id)); setEditReport(r) }}
-                      style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: visited.has(String(r.id)) ? VISITED_BG : undefined }}
+                    <tr key={r.id} onClick={() => { setLastClickedId(String(r.id)); setEditReport(r) }}
+                      style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: lastClickedId === String(r.id) ? VISITED_BG : undefined }}
                       onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = visited.has(String(r.id)) ? VISITED_BG : '' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = lastClickedId === String(r.id) ? VISITED_BG : '' }}
                       onMouseDown={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
                       onMouseUp={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
                       onTouchStart={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
-                      onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = visited.has(String(r.id)) ? VISITED_BG : '' }}
-                      onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = visited.has(String(r.id)) ? VISITED_BG : '' }}>
+                      onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = lastClickedId === String(r.id) ? VISITED_BG : '' }}
+                      onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = lastClickedId === String(r.id) ? VISITED_BG : '' }}>
                       <td style={{ padding: '7px 8px' }}>{r.date}</td>
                       <td style={{ padding: '7px 8px', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.port}</td>
                       <td style={{ padding: '7px 8px', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.ship}>{r.ship}</td>

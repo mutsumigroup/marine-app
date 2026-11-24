@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { TransportReport } from '../types/transport'
 import { TENKO_OPTIONS } from '../lib/fareTable'
 import { sendEmail } from '../lib/email'
-import { loadVisited, saveVisited, VISITED_BG } from '../lib/visited'
+import { VISITED_BG } from '../lib/visited'
 
 function SentBadge({ sent }: { sent: boolean }) {
   return (
@@ -181,16 +181,7 @@ export default function TransportList({ dailyMail = '' }: { dailyMail?: string }
   const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()))
   const [filterMonth, setFilterMonth] = useState(new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'))
   const [editReport, setEditReport] = useState<TransportReport | null>(null)
-  const [visited, setVisited] = useState<Set<string>>(() => loadVisited('transport'))
-  const markVisited = (id: string) => {
-    setVisited(prev => {
-      if (prev.has(id)) return prev
-      const next = new Set(prev)
-      next.add(id)
-      saveVisited('transport', next)
-      return next
-    })
-  }
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null)
   const [fareMap, setFareMap] = useState<Record<string, Record<string, number>>>({})
 
   useEffect(() => {
@@ -267,15 +258,15 @@ export default function TransportList({ dailyMail = '' }: { dailyMail?: string }
                 <tr><td colSpan={9} style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>送迎日報がありません</td></tr>
               ) : filtered.map(r => (
                 <tr key={r.id}
-                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: visited.has(String(r.id)) ? VISITED_BG : undefined }}
-                  onClick={() => { markVisited(String(r.id)); setEditReport(r) }}
+                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: lastClickedId === String(r.id) ? VISITED_BG : undefined }}
+                  onClick={() => { setLastClickedId(String(r.id)); setEditReport(r) }}
                   onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--accent-bg)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = visited.has(String(r.id)) ? VISITED_BG : '' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = lastClickedId === String(r.id) ? VISITED_BG : '' }}
                   onMouseDown={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
                   onMouseUp={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--accent-bg)' }}
                   onTouchStart={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
-                  onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = visited.has(String(r.id)) ? VISITED_BG : '' }}
-                  onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = visited.has(String(r.id)) ? VISITED_BG : '' }}>
+                  onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = lastClickedId === String(r.id) ? VISITED_BG : '' }}
+                  onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = lastClickedId === String(r.id) ? VISITED_BG : '' }}>
                   <td style={{ padding: '10px 8px', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.date}</td>
                   <td style={{ padding: '10px 8px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(r as any).ship_name || '—'}</td>
                   <td style={{ padding: '10px 8px', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.from_area || '—'}</td>

@@ -6,7 +6,7 @@ import { Card, Select, PageHeader, Btn, Field, Input, Grid, Divider, useIsMobile
 import { CATEGORIES } from '../types'
 import { extractVoucherAmounts } from '../lib/voucherExtract'
 import PdfPreviewModal from '../components/PdfPreviewModal'
-import { loadVisited, saveVisited, VISITED_BG } from '../lib/visited'
+import { VISITED_BG } from '../lib/visited'
 import type { Report, Settings } from '../types'
 import { sendEmail, buildDailyReportEmail } from '../lib/email'
 import * as api from '../lib/api'
@@ -754,16 +754,7 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const [editReport, setEditReport] = useState<Report | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [selectionMode, setSelectionMode] = useState(false)
-  const [visited, setVisited] = useState<Set<string>>(() => loadVisited('daily'))
-  const markVisited = (id: string) => {
-    setVisited(prev => {
-      if (prev.has(id)) return prev
-      const next = new Set(prev)
-      next.add(id)
-      saveVisited('daily', next)
-      return next
-    })
-  }
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null)
   const tabBarRef = useRef<HTMLDivElement>(null)
   const headerBlockRef = useRef<HTMLDivElement>(null)
   const cardHeaderRef = useRef<HTMLDivElement>(null)
@@ -1063,14 +1054,14 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                   const chips: [string, number][] = [['駐車場', r.park_fee], ['高速', r.hw_fee], ['食事', r.meal], ['ホテル', r.hotel_fee ?? 0], ['新幹線', r.shinkansen_fee ?? 0], ['追加立替', extra]]
                   return (
                     <div key={r.id} id={`report-${r.id}`}
-                      onClick={async () => { if (selectionMode) { toggleRow(String(r.id)); return } markVisited(String(r.id)); const full = await api.fetchReportById(r.id); setEditReport(full ?? r) }}
+                      onClick={async () => { if (selectionMode) { toggleRow(String(r.id)); return } setLastClickedId(String(r.id)); const full = await api.fetchReportById(r.id); setEditReport(full ?? r) }}
                       onMouseDown={e => { (e.currentTarget as HTMLDivElement).style.background = '#dbeafe' }}
                       onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = '#dbeafe' }}
-                      onMouseUp={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (visited.has(String(r.id)) ? VISITED_BG : '') }}
-                      onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (visited.has(String(r.id)) ? VISITED_BG : '') }}
-                      onTouchCancel={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (visited.has(String(r.id)) ? VISITED_BG : '') }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (visited.has(String(r.id)) ? VISITED_BG : '') }}
-                      style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', background: selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (visited.has(String(r.id)) ? VISITED_BG : undefined) }}>
+                      onMouseUp={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (lastClickedId === String(r.id) ? VISITED_BG : '') }}
+                      onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (lastClickedId === String(r.id) ? VISITED_BG : '') }}
+                      onTouchCancel={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (lastClickedId === String(r.id) ? VISITED_BG : '') }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (lastClickedId === String(r.id) ? VISITED_BG : '') }}
+                      style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', background: selectionMode && selectedIds.has(String(r.id)) ? 'var(--accent-bg)' : (lastClickedId === String(r.id) ? VISITED_BG : undefined) }}>
                       {selectionMode && (
                         <input type="checkbox" checked={selectedIds.has(String(r.id))} onChange={() => toggleRow(String(r.id))} onClick={e => e.stopPropagation()} style={{ marginTop: 2, flexShrink: 0 }} />
                       )}
@@ -1122,15 +1113,15 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
               {sorted.length === 0
                 ? <tr><td colSpan={COLS.length + 1} style={{ padding: 32, textAlign: 'center', color: 'var(--text-light)' }}>日報がありません</td></tr>
                 : sorted.map(r => (
-                  <tr key={r.id} id={`report-${r.id}`} onClick={async () => { markVisited(String(r.id)); const full = await api.fetchReportById(r.id); setEditReport(full ?? r) }}
-                    style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: visited.has(String(r.id)) ? VISITED_BG : undefined }}
+                  <tr key={r.id} id={`report-${r.id}`} onClick={async () => { setLastClickedId(String(r.id)); const full = await api.fetchReportById(r.id); setEditReport(full ?? r) }}
+                    style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: lastClickedId === String(r.id) ? VISITED_BG : undefined }}
                     onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = visited.has(String(r.id)) ? VISITED_BG : '' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = lastClickedId === String(r.id) ? VISITED_BG : '' }}
                     onMouseDown={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
                     onMouseUp={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#f0f6ff' }}
                     onTouchStart={e => { (e.currentTarget as HTMLTableRowElement).style.background = '#dbeafe' }}
-                    onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = visited.has(String(r.id)) ? VISITED_BG : '' }}
-                    onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = visited.has(String(r.id)) ? VISITED_BG : '' }}>
+                    onTouchEnd={e => { (e.currentTarget as HTMLTableRowElement).style.background = lastClickedId === String(r.id) ? VISITED_BG : '' }}
+                    onTouchCancel={e => { (e.currentTarget as HTMLTableRowElement).style.background = lastClickedId === String(r.id) ? VISITED_BG : '' }}>
                     {selectionMode && <td style={{ padding: '7px 8px', textAlign: 'center', width: 36 }} onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={selectedIds.has(String(r.id))} onChange={() => toggleRow(String(r.id))} style={{ cursor: 'pointer' }} />
                   </td>}
