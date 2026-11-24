@@ -769,15 +769,18 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
   const cardHeaderRef = useRef<HTMLDivElement>(null)
   const [tabBarH, setTabBarH] = useState(0)
   const [headerBlockH, setHeaderBlockH] = useState(0)
+  const [cardHeaderH, setCardHeaderH] = useState(0)
   useEffect(() => {
     const measure = () => {
       setTabBarH(tabBarRef.current?.offsetHeight ?? 0)
       setHeaderBlockH(headerBlockRef.current?.offsetHeight ?? 0)
+      setCardHeaderH(cardHeaderRef.current?.offsetHeight ?? 0)
     }
     measure()
     const ro = new ResizeObserver(measure)
     if (tabBarRef.current) ro.observe(tabBarRef.current)
     if (headerBlockRef.current) ro.observe(headerBlockRef.current)
+    if (cardHeaderRef.current) ro.observe(cardHeaderRef.current)
     window.addEventListener('resize', measure)
     return () => { ro.disconnect(); window.removeEventListener('resize', measure) }
   }, [activeTab])
@@ -1103,15 +1106,15 @@ export default function ReportsList({ reports, onUpdateAmount, onSavePdf, onUpda
                 })}
           </div>
         ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: `calc(100vh - ${tabBarH + headerBlockH + cardHeaderH}px - 24px)`, minHeight: 200 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--surface2)' }}>
-                {selectionMode && <th style={{ padding: '7px 8px', width: 36, textAlign: 'center' }}>
+                {selectionMode && <th style={{ padding: '7px 8px', width: 36, textAlign: 'center', position: 'sticky', top: 0, zIndex: 5, background: 'var(--surface2)' }}>
                   <input type="checkbox" checked={sorted.length > 0 && sorted.every(r => selectedIds.has(String(r.id)))} onChange={() => toggleAllRows(sorted)} style={{ cursor: 'pointer' }} />
                 </th>}
                 {COLS.map(([h, w]) => (
-                  <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: h === '売上金額' ? 'var(--accent)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.3px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textAlign: 'left', width: w === 'auto' ? undefined : w, background: h === '売上金額' ? 'var(--accent-bg)' : undefined }}>{h}</th>
+                  <th key={h} style={{ padding: '7px 8px', fontSize: 10, fontWeight: 600, color: h === '売上金額' ? 'var(--accent)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.3px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap', textAlign: 'left', width: w === 'auto' ? undefined : w, background: h === '売上金額' ? 'var(--accent-bg)' : 'var(--surface2)', position: 'sticky', top: 0, zIndex: 5 }}>{h}</th>
                 ))}
               </tr>
             </thead>
