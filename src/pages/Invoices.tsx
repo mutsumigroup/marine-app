@@ -240,7 +240,7 @@ function InvoiceSheet({ inv, reports, settings, onClose, onSend, onUpdateInvoice
   const [dirty, setDirty] = useState(false)
 
   // ✅ FIX: 業務小計はrowsの計算値から（テーブル表示と一致 & インライン編集に即時反映）
-  const subtotal = monthReports.reduce((s, r) => s + (r.amount ?? 0), 0)
+  const subtotal = rows.reduce((s, r) => s + r.count * r.shipP + r.crew * r.crewP, 0)
   // ✅ FIX: 消費税は切り捨て（日本の標準的な計算方法）
   const tax = Math.floor(subtotal * 0.1)
   const bizTotal = subtotal + tax
