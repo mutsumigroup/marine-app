@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useIsMobile } from './UI'
+import { APP_VERSION } from '../lib/changelog'
 
 const NAV = [
   { group: 'メイン', items: [
@@ -15,6 +16,7 @@ const NAV = [
   ]},
   { group: '設定', items: [
     { path: '/settings', label: '設定', icon: '⚙️' },
+    { path: '/changelog', label: '更新履歴', icon: '🕘' },
   ]},
 ]
 
@@ -60,6 +62,9 @@ export default function Sidebar({ open, onClose, collapsed, onToggle }: { open?:
         <div style={{ fontSize: 10, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }} />
           Supabase 接続中
+        </div>
+        <div onClick={() => handleNav('/changelog')} style={{ fontSize: 10, color: 'var(--text-light)', marginTop: 4, cursor: 'pointer' }}>
+          v{APP_VERSION}
         </div>
       </div>
     </nav>

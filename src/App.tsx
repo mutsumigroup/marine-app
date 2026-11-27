@@ -16,6 +16,7 @@ import DailyMenu from './pages/DailyMenu'
 import TransportList from './pages/TransportList'
 import KyList from './pages/KyList'
 import PortMasterPage from './pages/PortMasterPage'
+const Changelog = lazy(() => import('./pages/Changelog'))
 import { useState, lazy, Suspense } from 'react'
 
 const PAGE_TITLES: Record<string, string> = {
@@ -33,6 +34,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/transport': '送迎日報一覧',
   '/ky': 'KY報告一覧',
   '/ports': '港マスター',
+  '/changelog': '更新履歴',
 }
 
 function MobileHeader({ onMenu }: { onMenu: () => void }) {
@@ -138,6 +140,7 @@ function AppInner() {
             <Route path="/ky/new" element={<KyForm onSubmit={app.submitKyReport} portMasters={app.portMasters} pastReports={app.reports.map(r => ({ port: r.port, ship: r.ship }))} operatorName={app.settings.company_name} />} />
             <Route path="/ky" element={<KyList kyReports={app.kyReports} onDelete={app.deleteKyReport} />} />
             <Route path="/ports" element={<PortMasterPage portMasters={app.portMasters} onSave={app.savePortMaster} onDelete={app.deletePortMasterById} />} />
+            <Route path="/changelog" element={<Changelog />} />
           </Routes>
           </Suspense>
         </main>
